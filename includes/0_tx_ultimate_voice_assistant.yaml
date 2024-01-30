@@ -1,0 +1,157 @@
+substitutions:
+  audio_lrclk_pin: GPIO4
+  audio_bclk_pin: GPIO2
+  audio_sdata_pin: GPIO15
+
+button:
+  - platform: template
+    name: Start assistant
+    id: start_assistant
+    entity_category: config
+    on_press:
+      - if:
+          condition:
+            - voice_assistant.is_running
+          then:
+            - voice_assistant.stop
+            - delay: 1s
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.start
+          else:
+            - voice_assistant.start
+switch:
+  - platform: template
+    name: Use wake word
+    id: use_wake_word
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    entity_category: config
+    on_turn_on:
+      - lambda: id(va).set_use_wake_word(true);
+      - if:
+          condition:
+            not:
+              - voice_assistant.is_running
+          then:
+            - voice_assistant.start_continuous
+            - light.turn_on:
+                id: leds_wakeword
+                brightness: !lambda "return id(va_color)[3]/100.0;"
+                red: !lambda "return id(va_color)[0]/100.0;"
+                green: !lambda "return id(va_color)[1]/100.0;"
+                blue:  !lambda "return id(va_color)[2]/100.0;"
+            - globals.set:
+                id: va_state
+                value: 'true'
+#     - script.execute: reset_led
+    on_turn_off:
+      - voice_assistant.stop
+      - lambda: id(va).set_use_wake_word(false);
+      - globals.set:
+          id: va_state
+          value: 'false'
+      - script.execute: refresh_led_default
+
+#speaker:
+#  - platform: i2s_audio
+#    id: audio_out
+#    dac_type: external
+#    i2s_dout_pin: ${audio_sdata_pin}
+#    i2s_audio_id: audio_i2s
+#    mode: mono
+
+media_player:
+  - platform: i2s_audio
+    id: media_out
+    name: ${friendly_name} Player
+    dac_type: external
+    i2s_dout_pin: ${audio_sdata_pin}
+    i2s_audio_id: audio_i2s
+    i2s_comm_fmt: lsb
+    mode: stereo
+
+microphone:
+  - platform: i2s_audio
+    i2s_audio_id: audio_mic_i2s
+    i2s_din_pin: ${mic_sdata_pin}
+    adc_type: external
+    id: mic_i2s
+    pdm: false
+
+voice_assistant:
+  id: va
+  microphone: mic_i2s
+#  speaker: audio_out
+  media_player: media_out
+  use_wake_word: false
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 5.0
+  on_wake_word_detected:
+    - light.turn_on:
+        id: leds
+        red: 0
+        green: 0
+        blue: 1
+        effect: "Scan"
+  on_stt_vad_start:
+    - light.turn_on:
+        id: leds
+        red: 0
+        green: 1
+        blue: 0
+        effect: "Scan"
+  on_intent_start:
+    - light.turn_on:
+        id: leds
+        effect: "Rainbow"
+    - delay: 2s
+    - light.turn_off:
+        id: leds
+        transition_length: ${transition_length}
+    - delay: ${transition_length}
+    - script.execute: refresh_led_default
+  on_end:
+    - if:
+        condition:
+          and:
+            - switch.is_on: use_wake_word
+            - not:
+              - voice_assistant.is_running
+        then:
+          - lambda: id(va).set_use_wake_word(true);
+          - voice_assistant.start_continuous:
+
+  on_error:
+    - script.execute: refresh_led_default
+#    - light.turn_on:
+#        id: leds
+#        red: 1
+#        green: 0
+#        blue: 0
+#    - delay: 2s
+#    - light.turn_off: leds
+
+  on_client_connected:
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - voice_assistant.start_continuous:
+#          - script.execute: reset_led
+  on_client_disconnected:
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - voice_assistant.stop:
+#          - light.turn_off: leds
+
+i2s_audio:
+  - id: audio_mic_i2s
+    i2s_lrclk_pin: ${mic_lrclk_pin}
+    i2s_bclk_pin: ${mic_bclk_pin}
+  - id: audio_i2s
+    i2s_lrclk_pin: ${audio_lrclk_pin}
+    i2s_bclk_pin: ${audio_bclk_pin}
+

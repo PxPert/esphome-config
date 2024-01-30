@@ -1,0 +1,26 @@
+light:
+  - platform: partition
+    name: "LEDs Wakeword"
+    default_transition_length: ${transition_length}
+    id: leds_wakeword
+    internal: true
+    segments:
+      - id: leds
+        from: 24
+        to: 25
+  - platform: partition
+    name: "LEDs Wakeword Excluded"
+    default_transition_length: ${transition_length}
+    id: leds_wakeword_excluded
+    internal: true
+    segments:
+      - id: leds
+        from: 0
+        to: 23
+      - id: leds
+        from: 26
+        to: 31
+
+globals:
+  - id: !extend led_with_va_on
+    initial_value: leds_wakeword_excluded

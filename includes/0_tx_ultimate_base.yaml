@@ -1,0 +1,330 @@
+substitutions:
+
+  latitude: "43.5756296"
+  longitude: "12.1440740"
+
+  vibra_time: 150ms
+  button_on_time: 500ms
+
+  transition_length: 500ms
+
+  nightlight_color: "{80,70,0,20}"
+  button_color: "{33,100,56,100}"
+  touch_color: "{0,100,100,100}"
+  va_color: "{0,0,100,75}"
+
+  long_press_color: "{100,40,26,100}"
+  long_press_effect: ""
+
+  multi_touch_color: "{100,100,33,100}"
+  multi_touch_effect: "Pulse"
+
+  swipe_left_color: "{0,100,0,100}"
+  swipe_left_effect: "Scan"
+
+  swipe_right_color: "{100,0,70,100}"
+  swipe_right_effect: "Scan"
+
+  relay_1_pin: GPIO18
+  relay_2_pin: GPIO17
+  relay_3_pin: GPIO27
+  relay_4_pin: GPIO23
+
+  vibra_motor_pin: GPIO21
+  pa_power_pin: GPIO26
+
+  led_pin: GPIO13
+  status_led_pin: GPIO33
+
+  uart_tx_pin: GPIO19
+  uart_rx_pin: GPIO22
+
+  touchpanel_power_pin: GPIO5
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  project:
+    name: TxUltimate
+    version: "1.0"
+preferences:
+  flash_write_interval: 6h
+
+mdns:
+  disabled: True
+
+esp32:
+  board: esp32dev
+  flash_size: 8MB
+  framework:
+#    type: esp-idf
+    type: arduino
+
+logger:
+#  hardware_uart: UART2
+  level: DEBUG
+  baud_rate: 0
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  password: !secret ota_pwd
+
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  use_address: ${use_ip_address}
+
+  ap:
+    password: !secret ap_pwd
+
+captive_portal:
+
+external_components:
+  - source: /config/components
+    components: [tx_ultimate_touch]
+
+time:
+  - platform: homeassistant
+
+sun:
+  latitude: ${latitude}
+  longitude: ${longitude}
+
+  on_sunrise:
+    - then:
+      - script.execute: check_night_light
+  on_sunset:
+      - script.execute: check_night_light
+
+globals:
+  - id: leds_list
+    type: light::AddressableLightState*[1]
+    initial_value: '{leds}'
+    restore_value: no
+  - id: relay_states
+    type: bool[1]
+    initial_value: '{false}'
+    restore_value: yes
+  - id: relay_count
+    type: int
+    initial_value: '1'
+    restore_value: no
+  - id: va_state
+    type: bool
+    initial_value: 'false'
+    restore_value: yes
+  - id: led_with_va_on
+    type: light::AddressableLightState*
+    initial_value: 'NULL'
+    restore_value: no
+
+  - id: button_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${button_color}
+  - id: touch_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${touch_color}
+  - id: va_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${va_color}
+  - id: swipe_left_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${swipe_left_color}
+  - id: swipe_right_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${swipe_right_color}
+  - id: long_press_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${long_press_color}
+  - id: multi_touch_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${multi_touch_color}
+  - id: nightlight_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${nightlight_color}
+
+output:
+  - platform: gpio
+    pin: ${vibra_motor_pin}
+    id: vibra_output
+
+button:
+  - id: vibra
+    platform: output
+    name: "${friendly_name} Vibration"
+    output: vibra_output
+    duration: ${vibra_time}
+    entity_category: config
+  - platform: safe_mode
+    name: "${friendly_name} (Safe Mode)"
+  - platform: restart
+    name: "${friendly_name} Restart"
+
+switch:
+  - platform: template
+    name: Relays light
+    id: relays_light
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - script.execute: refresh_led_default
+    on_turn_off:
+      - script.execute: refresh_led_default
+  - platform: template
+    name: Night light
+    id: night_light
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - script.execute: check_night_light
+    on_turn_off:
+      - script.execute: check_night_light
+  - platform: gpio
+    id: pa_power
+    pin: ${pa_power_pin}
+    name: "PA Power"
+    internal: true
+    restore_mode: ALWAYS_ON
+
+  - platform: gpio
+    name: "touch panel power"
+    pin:
+      number: ${touchpanel_power_pin}
+      inverted: true
+    id: touch_power
+    internal: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+uart:
+  tx_pin: ${uart_tx_pin}
+  rx_pin: ${uart_rx_pin}
+  id: my_uart
+  baud_rate: 115200
+  data_bits: 8
+  stop_bits: 1
+  parity: NONE
+#   debug:
+#     direction: RX
+#     dummy_receiver: false
+#     after:
+#       timeout: 2s
+#       bytes: 2048
+# #    sequence:
+# #      - lambda: UARTDebug::log_hex(direction, bytes, ' ');
+
+binary_sensor:
+  - platform: template
+    name: "Night light active"
+    id: night_light_active
+
+  - platform: template
+    name: "Swipe left"
+    id: swipe_left
+    on_press:
+      - delay: ${button_on_time}
+      - binary_sensor.template.publish:
+          id: swipe_left
+          state: OFF
+
+  - platform: template
+    name: "Swipe_right"
+    id: swipe_right
+    on_press:
+      - delay: ${button_on_time}
+      - binary_sensor.template.publish:
+          id: swipe_right
+          state: OFF
+
+  - platform: template
+    name: "Multi Touch"
+    id: multi_touch
+    on_press:
+      - delay: ${button_on_time}
+      - binary_sensor.template.publish:
+          id: multi_touch
+          state: OFF
+
+sensor:
+  - platform: template
+    name: "Touch Press"
+    id: touch_press
+    filters:
+      timeout:
+        timeout: ${button_on_time}
+        value: -1
+  - platform: template
+    name: "Touch Release"
+    id: touch_release
+    filters:
+      timeout:
+        timeout: ${button_on_time}
+        value: -1
+  - platform: template
+    name: "Touch Long Release"
+    id: touch_long_release
+    filters:
+      timeout:
+        timeout: ${button_on_time}
+        value: -1
+
+
+tx_ultimate_touch:
+  id: tx_touch
+  uart: my_uart
+
+  on_press:
+    - button.press: vibra
+    - script.execute:
+        id: handle_touch
+        index: !lambda "return ceil ( ( (touch.x) / 10.0f ) * ( id(relay_count)) ) - 1;"
+    - lambda: >
+        ESP_LOGD("tx_ultimate_touch.on_press", "Touch Position: %d / State: %d", touch.x, touch.state);
+
+  on_release:
+    - script.execute:
+        id: handle_release
+        index: !lambda "return ceil ( ( (touch.x) / 10.0f ) * ( id(relay_count)) ) - 1;"
+    - lambda: >
+        ESP_LOGD("tx_ultimate_touch.on_release", "Release Position: %d / State: %d", touch.x, touch.state);
+
+  on_long_touch_release:
+    - script.execute:
+        id: handle_long_release
+        index: !lambda "return ceil ( ( (touch.x) / 10.0f ) * ( id(relay_count)) ) - 1;"
+    - lambda: >
+        ESP_LOGD("tx_ultimate_touch.on_long_touch_release", "Long Touch Release Position: %d / State: %d", touch.x, touch.state);
+
+  on_swipe_left:
+    - script.execute: handle_swipe_left
+    - lambda: >
+        ESP_LOGD("tx_ultimate_touch.on_swipe_left", "Swipe Left Position: %d / State: %d", touch.x, touch.state);
+
+  on_swipe_right:
+    - script.execute: handle_swipe_right
+    - lambda: >
+        ESP_LOGD("tx_ultimate_touch.on_swipe_right", "Swipe Right Position: %d / State: %d", touch.x, touch.state);
+
+  on_full_touch_release:
+    - script.execute: handle_full_touch
+    - binary_sensor.template.publish:
+        id: multi_touch
+        state: ON
+    - lambda: >
+        ESP_LOGD("tx_ultimate_touch.on_full_touch_release", "Full Touch Release Position: %d / State: %d", touch.x, touch.state);
+
+
+packages:
+  base_scripts: !include 0_tx_ultimate_base_scripts.yaml
+  base_leds: !include 0_tx_ultimate_base_leds.yaml
+

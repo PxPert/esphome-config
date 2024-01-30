@@ -1,0 +1,58 @@
+light:
+  - platform: partition
+    name: "LEDs Wakeword"
+    default_transition_length: ${transition_length}
+    id: leds_wakeword
+    internal: true
+    segments:
+      - id: leds
+        from: 24
+        to: 25
+  - platform: partition
+    name: "LEDs Wakeword Excluded"
+    default_transition_length: ${transition_length}
+    id: leds_wakeword_excluded
+    internal: true
+    segments:
+      - id: leds
+        from: 0
+        to: 3
+      - id: leds
+        from: 20
+        to: 23
+      - id: leds
+        from: 26
+        to: 31
+  - platform: partition
+    name: "LEDs Left"
+    default_transition_length: ${transition_length}
+    id: leds_left
+    internal: true
+    segments:
+      - id: leds
+        from: 0
+        to: 3
+      - id: leds
+        from: 20
+        to: 31
+  - platform: partition
+    name: "LEDs Right"
+    default_transition_length: ${transition_length}
+    id: leds_right
+    internal: true
+    segments:
+      - id: leds
+        from: 4
+        to: 19
+
+globals:
+  - id: !extend led_with_va_on
+    initial_value: leds_wakeword_excluded
+  - id: !extend leds_list
+    type: light::AddressableLightState*[2]
+    initial_value: '{leds_left, leds_right}'
+  - id: !extend relay_states
+    type: bool[2]
+    initial_value: '{false,false}'
+  - id: !extend relay_count
+    initial_value: '2'

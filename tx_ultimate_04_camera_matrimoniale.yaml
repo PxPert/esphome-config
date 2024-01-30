@@ -1,0 +1,41 @@
+substitutions:
+  name: "interruttore-camera-matrimoniale"
+  friendly_name: "Camera matrimoniale"
+
+#  ip_address: 192.168.2.141
+#  use_ip_address: 192.168.2.141 # Usato per cambi di IP
+#  gateway: 192.168.2.2
+
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+
+  touch_zones: "1"
+#esp32_ble_tracker:
+#  scan_parameters:
+#    active: True
+#    continuous: false
+
+packages:
+  va: !include
+    file: includes/0_tx_ultimate_voice_assistant.yaml
+    vars:
+      mic_lrclk_pin: GPIO3
+      mic_bclk_pin: GPIO1
+      mic_sdata_pin: GPIO0  
+  device_base: !include includes/0_tx_ultimate_base.yaml
+  light_1: !include
+    file: includes/0_tx_ultimate_light.yaml
+    vars:
+      id: relay_1
+      name: "${friendly_name} L1"
+      pin: ${relay_1_pin}
+      leds_id: "leds"
+
+script:
+  - id: !extend on_touchfield_1
+    then:
+      - light.toggle: relay_1
+  - id: !extend refresh_led_trigger
+    then:
+      - script.execute: led_on_relay_1
+      - script.execute: led_on_va

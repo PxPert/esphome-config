@@ -1,0 +1,131 @@
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2811
+    pin: ${led_pin}
+    num_leds: 32
+    name: "Leds"
+    id: leds
+    default_transition_length: ${transition_length}
+    method:
+      type: esp32_rmt
+    effects:
+      - addressable_rainbow:
+          name: "Rainbow"
+          speed: 30
+          width: 8
+      - pulse:
+          name: "Pulse"
+          transition_length: 500ms
+          update_interval: 500ms
+      - addressable_scan:
+          name: "Scan"
+          move_interval: 100ms
+          scan_width: 3
+#      - lambda:
+#          name: My Custom Effect
+#          update_interval: 1s
+#          lambda: |-
+#            static int state = 0;
+#            auto call = id(my_light).turn_on();
+#            // Transition of 1000ms = 1s
+#            call.set_transition_length(1000);
+#            if (state == 0) {
+#              call.set_rgb(1.0, 1.0, 1.0);
+#            } else if (state == 1) {
+#              call.set_rgb(1.0, 0.0, 1.0);
+#            } else if (state == 2) {
+#              call.set_rgb(0.0, 0.0, 1.0);
+#            } else {
+#              call.set_rgb(1.0, 0.0, 0.0);
+#            }
+#            call.perform();
+#            state += 1;
+#            if (state == 4)
+#              state = 0;
+#  - platform: fastled_clockless
+#    rgb_order: GRB
+#    chipset: WS2811
+#    pin: ${led_pin}
+#    num_leds: 32
+#    name: "NeoPixel Light"
+#    id: leds
+#    default_transition_length: 0s
+##    method:
+##      type: esp32_rmt
+#    effects:
+#      - addressable_rainbow:
+#          name: "Rainbow"
+#          speed: 30
+#          width: 8
+#      - pulse:
+#          name: "Pulse"
+#          transition_length: 1.4s
+#          update_interval: 1s
+
+#   - platform: partition
+#     name: "LEDs Top"
+#     id: leds_top
+# #    internal: true
+#     segments:
+#       - id: leds
+#         from: 31
+#         to: 31
+#       - id: leds
+#         from: 0
+#         to: 8
+#     effects:
+#       - addressable_scan:
+#           name: "Scan"
+#       - addressable_rainbow:
+#           name: "Rainbow"
+#           speed: 10
+#           width: 20
+#
+#   - platform: partition
+#     name: "LEDs Right"
+#     id: leds_right
+# #    internal: true
+#     segments:
+#       - id: leds
+#         from: 9
+#         to: 14
+#     effects:
+#       - addressable_scan:
+#           name: "Scan"
+#       - addressable_rainbow:
+#           name: "Rainbow"
+#           speed: 10
+#           width: 20
+#
+#   - platform: partition
+#     name: "LEDs Bottom"
+#     id: leds_bottom
+# #    internal: true
+#     segments:
+#       - id: leds
+#         from: 15
+#         to: 24
+#     effects:
+#       - addressable_scan:
+#           name: "Scan"
+#       - addressable_rainbow:
+#           name: "Rainbow"
+#           speed: 10
+#           width: 20
+#
+#   - platform: partition
+#     name: "LEDs Left"
+#     id: leds_left
+# #    internal: true
+#     segments:
+#       - id: leds
+#         from: 25
+#         to: 30
+#     effects:
+#       - addressable_scan:
+#           name: "Scan"
+#       - addressable_rainbow:
+#           name: "Rainbow"
+#           speed: 10
+#           width: 20

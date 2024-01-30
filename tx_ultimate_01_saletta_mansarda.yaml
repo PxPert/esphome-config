@@ -1,0 +1,55 @@
+substitutions:
+  name: "interruttore-saletta-mansarda"
+  friendly_name: "Saletta mansarda"
+
+  use_ip_address: 192.168.2.141 # Usato da esphome per monitor e upload
+
+  wifi_ssid: !secret wifi_dmz_ssid
+  wifi_password: !secret wifi_dmz_password
+
+#esp32_ble_tracker:
+#  scan_parameters:
+#    active: True
+#    continuous: false
+
+packages:
+  # Configurazione di base
+  device_base: !include includes/0_tx_ultimate_base.yaml
+
+  # Supporto Voice Assistant
+  va: !include
+    file: includes/0_tx_ultimate_voice_assistant.yaml
+    vars:
+      mic_lrclk_pin: GPIO3
+      mic_bclk_pin: GPIO1
+      mic_sdata_pin: GPIO0
+
+  # Configurazione leds
+  leds: !include includes/0_tx_ultimate_leds_2_zone.yaml
+
+  # Relè e luci locali
+  light_1: !include
+    file: includes/0_tx_ultimate_light.yaml
+    vars:
+      id: relay_1
+      relay_index: 0
+      name: "Saletta mansarda"
+      pin: ${relay_1_pin}
+  light_2: !include
+    file: includes/0_tx_ultimate_relay.yaml
+    vars:
+      id: relay_2
+      relay_index: 1
+      name: "Sala mansarda"
+      pin: ${relay_2_pin}
+
+script:
+  - id: !extend on_release
+    then:
+      - if:
+          condition:
+            lambda: "return index == 0;"
+          then:
+            - light.toggle: relay_1
+          else:
+            - switch.toggle: relay_2

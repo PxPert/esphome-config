@@ -1,0 +1,23 @@
+substitutions:
+  relay_index: "-1"
+
+switch:
+  - platform: gpio
+    id: ${id}
+    name: "${name}"
+    pin: ${pin}
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      then:
+        - lambda: |-
+            if (${relay_index} > -1) {
+              id(relay_states)[${relay_index}] = true;
+              id(refresh_led_default)->execute();
+            };
+    on_turn_off:
+      then:
+        - lambda: |-
+            if (${relay_index} > -1) {
+              id(relay_states)[${relay_index}] = false;
+              id(refresh_led_default)->execute();
+            };
