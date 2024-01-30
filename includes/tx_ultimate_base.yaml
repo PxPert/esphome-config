@@ -45,7 +45,7 @@ esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   project:
-    name: TxUltimate
+    name: Sonoff.TxUltimate
     version: "1.0"
 preferences:
   flash_write_interval: 6h
@@ -325,6 +325,6 @@ tx_ultimate_touch:
 
 
 packages:
-  base_scripts: !include 0_tx_ultimate_base_scripts.yaml
-  base_leds: !include 0_tx_ultimate_base_leds.yaml
+  base_scripts: !include tx_ultimate_base_scripts.yaml
+  base_leds: !include tx_ultimate_base_leds.yaml
 

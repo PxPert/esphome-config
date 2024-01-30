@@ -14,33 +14,33 @@ substitutions:
 
 packages:
   # Configurazione di base
-  device_base: !include includes/0_tx_ultimate_base.yaml
+  device_base: !include includes/tx_ultimate_base.yaml
 
   # Supporto Voice Assistant
   va: !include
-    file: includes/0_tx_ultimate_voice_assistant.yaml
+    file: includes/tx_ultimate_voice_assistant.yaml
     vars:
       mic_lrclk_pin: GPIO3
       mic_bclk_pin: GPIO1
       mic_sdata_pin: GPIO0
 
   # Configurazione leds
-  leds: !include includes/0_tx_ultimate_leds_2_zone.yaml
+  leds: !include includes/tx_ultimate_leds_2_zone.yaml
 
   # Relè e luci locali
-  light_1: !include
-    file: includes/0_tx_ultimate_light.yaml
+  light_2: !include
+    file: includes/tx_ultimate_light.yaml
     vars:
       id: relay_1
-      relay_index: 0
-      name: "Saletta mansarda"
-      pin: ${relay_1_pin}
-  light_2: !include
-    file: includes/0_tx_ultimate_relay.yaml
-    vars:
-      id: relay_2
       relay_index: 1
       name: "Sala mansarda"
+      pin: ${relay_1_pin}
+  light_1: !include
+    file: includes/tx_ultimate_light.yaml
+    vars:
+      id: relay_2
+      relay_index: 0
+      name: "Saletta mansarda"
       pin: ${relay_2_pin}
 
 script:
@@ -50,6 +50,6 @@ script:
           condition:
             lambda: "return index == 0;"
           then:
-            - light.toggle: relay_1
+            - light.toggle: relay_2
           else:
-            - switch.toggle: relay_2
+            - light.toggle: relay_1

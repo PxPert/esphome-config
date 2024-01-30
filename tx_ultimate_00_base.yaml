@@ -1,0 +1,13 @@
+substitutions:
+  name: "txultimate-base-settings"
+  friendly_name: "TxUltimateBaseCfg"
+
+  wifi_ssid: !secret wifi_dmz_ssid
+  wifi_password: !secret wifi_dmz_password
+
+packages:
+  # Configurazione di base
+  device_base: !include includes/tx_ultimate_base.yaml
+
+  # Configurazione leds
+  leds: !include includes/tx_ultimate_leds_1_zone.yaml

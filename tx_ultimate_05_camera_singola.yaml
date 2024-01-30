@@ -1,8 +1,8 @@
 substitutions:
-  name: "interruttore-camera-emanuele"
-  friendly_name: "Camera Emanuele"
+  name: "interruttore-camera-singola"
+  friendly_name: "Camera singola"
 
-  use_ip_address: 192.168.2.142 # Usato da esphome per monitor e upload
+  use_ip_address: 192.168.2.145 # Usato da esphome per monitor e upload
 
   wifi_ssid: !secret wifi_dmz_ssid
   wifi_password: !secret wifi_dmz_password
@@ -33,7 +33,7 @@ packages:
     vars:
       id: relay_1
       relay_index: 0
-      name: "Camera Emanuele"
+      name: "Luce"
       pin: ${relay_1_pin}
 
 script:
