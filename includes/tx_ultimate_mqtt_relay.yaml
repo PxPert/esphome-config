@@ -1,0 +1,59 @@
+substitutions:
+  relay_index: "-1"
+  mqtt_json_key: ""
+  mqtt_json_max_value_length: "1024"
+text_sensor:
+  - platform: mqtt_subscribe
+    id: mqtt_sensor_${id}
+    internal: true
+    topic: ${subscribe_topic}
+    on_value:
+      then:
+        - lambda: |-
+            if (${relay_index} > -1) {
+              if ("${mqtt_json_key}" != "" ) {
+                StaticJsonDocument<${mqtt_json_max_value_length}> doc;
+
+                if (deserializeJson(doc, x) == DeserializationError::Ok) {
+                  const char* val = doc["${mqtt_json_key}"].as<const char*>();
+                  if (val != nullptr) {
+                    id(relay_states)[${relay_index}] = (strcmp(val, "${value_on}") == 0);
+                    id(refresh_led_default)->execute();
+                  }
+                }
+              } else {
+                id(relay_states)[${relay_index}] = (x == "${value_on}");
+                id(refresh_led_default)->execute();
+              }
+            };
+
+script:
+  - id: mqtt_toggle_${id}
+    mode: restart
+    then:
+    - mqtt.publish:
+        topic: ${command_topic}
+        payload: ${command_toggle}
+
+# Example: MQTT With JSON values
+#  mqtt_relay_1: !include
+#    file: includes/tx_ultimate_mqtt_relay.yaml
+#    vars:
+#      id: relay_1
+#      relay_index: 0
+#      subscribe_topic: "interruttore-saletta-mansarda/light/sala_mansarda/state"
+#      value_on: "ON"
+#      mqtt_json_key: "state"
+#      command_topic: "interruttore-saletta-mansarda/light/sala_mansarda/command"
+
+# Example: MQTT With Raw values
+#      command_toggle: "{ \"state\": \"TOGGLE\" }"
+#  mqtt_relay_2: !include
+#    file: includes/tx_ultimate_mqtt_relay.yaml
+#    vars:
+#      id: relay_2
+#      relay_index: 1
+#      subscribe_topic: "sonoff_mini_06/stat/POWER"
+#      value_on: "ON"
+#      command_topic: "sonoff_mini_06/cmnd/Power1"
+#      command_toggle: "TOGGLE"

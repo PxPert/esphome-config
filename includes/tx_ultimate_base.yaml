@@ -76,7 +76,6 @@ wifi:
   ssid: ${wifi_ssid}
   password: ${wifi_password}
   use_address: ${use_ip_address}
-
   ap:
     password: !secret ap_pwd
 

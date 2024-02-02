@@ -16,6 +16,10 @@ packages:
   # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 
+  # Connessione MQTT
+  mqtt_client: !include includes/mqtt_client.yaml
+
+
   # Supporto Voice Assistant
   va: !include
     file: includes/tx_ultimate_voice_assistant.yaml
@@ -36,7 +40,15 @@ packages:
       name: "Cucina"
       pin: ${relay_1_pin}
 
+
+# Topic verso altri esphome:      "interruttore-soggiorno-cucina/light/cucina/command"
+# Valore:       "{ "state": "TOGGLE" }"
+
 script:
   - id: !extend on_release
     then:
-      - light.toggle: relay_1
+      - if:
+          condition:
+            lambda: "return index == 0;"
+          then:
+            - light.toggle: relay_1
