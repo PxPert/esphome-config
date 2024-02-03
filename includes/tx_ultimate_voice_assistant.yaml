@@ -19,6 +19,12 @@ button:
             - voice_assistant.start
           else:
             - voice_assistant.start
+
+globals:
+  - id: !extend ww_switch
+    initial_value: use_wake_word
+    restore_value: no
+
 switch:
   - platform: template
     name: Use wake word

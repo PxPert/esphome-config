@@ -13,6 +13,11 @@ substitutions:
   touch_color: "{0,100,100,100}"
   va_color: "{0,0,100,75}"
 
+  activate_effect: "Pulse-Fast"
+  deactivate_effect: "Pulse-Slow"
+  activate_transition_ms: "1000"
+  de_activate_transition_ms: "1000"
+
   long_press_color: "{100,40,26,100}"
   long_press_effect: ""
 
@@ -99,6 +104,10 @@ sun:
       - script.execute: check_night_light
 
 globals:
+  - id: suspend_refresh
+    type: bool
+    initial_value: 'false'
+    restore_value: no
   - id: leds_list
     type: light::AddressableLightState*[1]
     initial_value: '{leds}'
@@ -117,6 +126,10 @@ globals:
     restore_value: yes
   - id: led_with_va_on
     type: light::AddressableLightState*
+    initial_value: 'NULL'
+    restore_value: no
+  - id: ww_switch
+    type: template_::TemplateSwitch*
     initial_value: 'NULL'
     restore_value: no
 
@@ -245,15 +258,6 @@ binary_sensor:
           id: swipe_right
           state: OFF
 
-  - platform: template
-    name: "Multi Touch"
-    id: multi_touch
-    on_press:
-      - delay: ${button_on_time}
-      - binary_sensor.template.publish:
-          id: multi_touch
-          state: OFF
-
 sensor:
   - platform: template
     name: "Touch Press"
@@ -265,13 +269,6 @@ sensor:
   - platform: template
     name: "Touch Release"
     id: touch_release
-    filters:
-      timeout:
-        timeout: ${button_on_time}
-        value: -1
-  - platform: template
-    name: "Touch Long Release"
-    id: touch_long_release
     filters:
       timeout:
         timeout: ${button_on_time}
@@ -299,8 +296,9 @@ tx_ultimate_touch:
 
   on_long_touch_release:
     - script.execute:
-        id: handle_long_release
+        id: handle_long_press
         index: !lambda "return ceil ( ( (touch.x) / 10.0f ) * ( id(relay_count)) ) - 1;"
+        x: !lambda "return touch.x;"
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_long_touch_release", "Long Touch Release Position: %d / State: %d", touch.x, touch.state);
 
@@ -316,9 +314,6 @@ tx_ultimate_touch:
 
   on_full_touch_release:
     - script.execute: handle_full_touch
-    - binary_sensor.template.publish:
-        id: multi_touch
-        state: ON
     - lambda: >
         ESP_LOGD("tx_ultimate_touch.on_full_touch_release", "Full Touch Release Position: %d / State: %d", touch.x, touch.state);
 

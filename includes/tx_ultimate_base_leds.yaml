@@ -18,6 +18,14 @@ light:
           name: "Pulse"
           transition_length: 500ms
           update_interval: 500ms
+      - pulse:
+          name: "Pulse-Slow"
+          transition_length: 1000ms
+          update_interval: 1000ms
+      - pulse:
+          name: "Pulse-Fast"
+          transition_length: 500ms
+          update_interval: 500ms
       - addressable_scan:
           name: "Scan"
           move_interval: 100ms

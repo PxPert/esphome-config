@@ -1,0 +1,39 @@
+sensor:
+  - platform: template
+    name: "Multi Touch"
+    id: multi_touch
+    on_press:
+      - delay: ${button_on_time}
+      - binary_sensor.template.publish:
+          id: multi_touch
+          state: OFF
+
+script:
+  - id: on_full_touch # STUB to be extended in main yaml
+    mode: restart
+    then:
+
+  - id: handle_full_touch
+    mode: restart
+    then:
+      - script.execute:
+          id: on_full_touch
+      - binary_sensor.template.publish:
+          id: multi_touch
+          state: ON
+      - light.turn_on:
+          id: leds
+          brightness: !lambda "return id(multi_touch_color)[3]/100.0;"
+          red: !lambda "return id(multi_touch_color)[0]/100.0;"
+          green: !lambda "return id(multi_touch_color)[1]/100.0;"
+          blue:  !lambda "return id(multi_touch_color)[2]/100.0;"
+          transition_length: 0ms
+      - light.turn_on:
+          id: leds
+          effect: ${multi_touch_effect}
+      - delay: 2s
+      - light.turn_off:
+          id: leds
+          transition_length: ${transition_length}
+      - delay: ${transition_length}
+      - script.execute: refresh_led_default

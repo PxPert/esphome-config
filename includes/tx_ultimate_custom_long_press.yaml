@@ -1,0 +1,41 @@
+sensor:
+  - platform: template
+    name: "Touch Long Press"
+    id: touch_long_press
+    filters:
+      timeout:
+        timeout: ${button_on_time}
+        value: -1
+
+script:
+  - id: on_long_press # STUB to be extended in main yaml
+    parameters:
+      index: int
+    mode: restart
+    then:
+
+  - id: handle_long_press
+    mode: restart
+    parameters:
+      index: int
+    then:
+      - script.execute:
+          id: on_long_press
+          index: !lambda return index;
+      - sensor.template.publish:
+          id: touch_long_press
+          state: !lambda return index;
+      - lambda: |-
+          light::AddressableLightState* led_to_toggle = id(leds_list)[index];
+          if ( (index == 0) && (id(led_with_va_on)) && ( id(va_state)))
+            { led_to_toggle = id(led_with_va_on); }
+          auto toggle_settings = led_to_toggle->turn_on();
+          toggle_settings.set_rgb(id(long_press_color)[0]/100.0, id(long_press_color)[1]/100.0, id(long_press_color)[2]/100.0);
+          toggle_settings.set_brightness(id(long_press_color)[3]/100.0);
+          toggle_settings.perform();
+      - delay: 3s
+      - light.turn_off:
+          id: leds
+          transition_length: ${transition_length}
+      - delay: ${transition_length}
+      - script.execute: refresh_led_default
