@@ -176,7 +176,14 @@ script:
   - id: handle_full_touch
     mode: restart
     then:
-
+      - if:
+          condition:
+            lambda: "return id(start_assistant_button);"
+          then:
+            - lambda: |-
+                id(start_assistant_button)->press();
+          else:
+            - script.execute: refresh_led_default
 
   - id: handle_long_press
     mode: restart

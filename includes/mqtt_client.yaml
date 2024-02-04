@@ -4,4 +4,4 @@ mqtt:
   password: !secret mqtt_pwd
   discovery: false
   client_id: ${name}
-  log_topic: null
+#  log_topic: null

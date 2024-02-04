@@ -3,7 +3,8 @@ substitutions:
   latitude: "43.5756296"
   longitude: "12.1440740"
 
-  vibra_time: 150ms
+  vibra_time: 50ms
+
   button_on_time: 500ms
 
   transition_length: 500ms
@@ -92,6 +93,7 @@ external_components:
 
 time:
   - platform: homeassistant
+    timezone: Europe/Rome
 
 sun:
   latitude: ${latitude}
@@ -108,6 +110,7 @@ globals:
     type: bool
     initial_value: 'false'
     restore_value: no
+
   - id: leds_list
     type: light::AddressableLightState*[1]
     initial_value: '{leds}'
@@ -120,6 +123,7 @@ globals:
     type: int
     initial_value: '1'
     restore_value: no
+
   - id: va_state
     type: bool
     initial_value: 'false'
@@ -130,6 +134,10 @@ globals:
     restore_value: no
   - id: ww_switch
     type: template_::TemplateSwitch*
+    initial_value: 'NULL'
+    restore_value: no
+  - id: start_assistant_button
+    type: template_::TemplateButton*
     initial_value: 'NULL'
     restore_value: no
 
@@ -153,14 +161,6 @@ globals:
     type: int [4]
     restore_value: no
     initial_value: ${swipe_right_color}
-  - id: long_press_color
-    type: int [4]
-    restore_value: no
-    initial_value: ${long_press_color}
-  - id: multi_touch_color
-    type: int [4]
-    restore_value: no
-    initial_value: ${multi_touch_color}
   - id: nightlight_color
     type: int [4]
     restore_value: no

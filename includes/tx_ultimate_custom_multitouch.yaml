@@ -7,6 +7,11 @@ sensor:
       - binary_sensor.template.publish:
           id: multi_touch
           state: OFF
+globals:
+  - id: multi_touch_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${multi_touch_color}
 
 script:
   - id: on_full_touch # STUB to be extended in main yaml

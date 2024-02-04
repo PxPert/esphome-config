@@ -7,6 +7,12 @@ sensor:
         timeout: ${button_on_time}
         value: -1
 
+globals:
+  - id: long_press_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${long_press_color}
+
 script:
   - id: on_long_press # STUB to be extended in main yaml
     parameters:

@@ -13,12 +13,11 @@ substitutions:
 #    continuous: false
 
 packages:
-  # Configurazione di base
-  device_base: !include includes/tx_ultimate_base.yaml
-
   # Connessione MQTT
   mqtt_client: !include includes/mqtt_client.yaml
 
+# Configurazione di base
+  device_base: !include includes/tx_ultimate_base.yaml
 
   # Supporto Voice Assistant
   va: !include

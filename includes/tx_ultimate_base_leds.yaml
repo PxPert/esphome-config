@@ -1,14 +1,19 @@
 light:
-  - platform: neopixelbus
-    type: GRB
-    variant: WS2811
+#  - platform: neopixelbus
+#    variant: WS2811
+#    type: GRB
+#    method:
+#      type: esp32_rmt
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    chipset: ws2812
+    rmt_channel: 1
+
     pin: ${led_pin}
     num_leds: 32
     name: "Leds"
     id: leds
     default_transition_length: ${transition_length}
-    method:
-      type: esp32_rmt
     effects:
       - addressable_rainbow:
           name: "Rainbow"

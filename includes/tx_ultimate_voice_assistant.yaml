@@ -3,7 +3,26 @@ substitutions:
   audio_bclk_pin: GPIO2
   audio_sdata_pin: GPIO15
 
+  vibra_time_wake_word: 50ms
+  vibra_time_ww_off: 200ms
+
+  vibra_time_response: 50ms
+  vibra_time_response_off: 100ms
+
+  text_not_understood: "Mi dispiace, non ho capito"
+
 button:
+  - id: vibra_intent
+    platform: output
+    output: vibra_output
+    duration: ${vibra_time_response}
+    internal: true
+  - id: vibra_ww
+    platform: output
+    output: vibra_output
+    duration: ${vibra_time_wake_word}
+    internal: true
+
   - platform: template
     name: Start assistant
     id: start_assistant
@@ -14,15 +33,50 @@ button:
             - voice_assistant.is_running
           then:
             - voice_assistant.stop
+            - wait_until:
+                condition:
+                  not:
+                    - voice_assistant.is_running
+                timeout: 1s
             - delay: 1s
             - lambda: id(va).set_use_wake_word(false);
-            - voice_assistant.start
-          else:
-            - voice_assistant.start
+            - globals.set:
+                id: va_state
+                value: 'false'
+      - globals.set:
+          id: va_capturing
+          value: "true"
+      - voice_assistant.start
+      - light.turn_on:
+          id: leds
+          red: 0
+          green: 0
+          blue: 1
+          brightness: 1
+          effect: "Scan"
+      - if:
+          condition:
+            - switch.is_on: use_wake_word
+          then:
+            - wait_until:
+                condition:
+                  not:
+                    - voice_assistant.is_running
+                timeout: 30s
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous
 
 globals:
   - id: !extend ww_switch
     initial_value: use_wake_word
+    restore_value: no
+  - id: !extend start_assistant_button
+    initial_value: start_assistant
+    restore_value: no
+
+  - id: va_capturing
+    type: bool
+    initial_value: 'false'
     restore_value: no
 
 switch:
@@ -40,15 +94,12 @@ switch:
               - voice_assistant.is_running
           then:
             - voice_assistant.start_continuous
-            - light.turn_on:
-                id: leds_wakeword
-                brightness: !lambda "return id(va_color)[3]/100.0;"
-                red: !lambda "return id(va_color)[0]/100.0;"
-                green: !lambda "return id(va_color)[1]/100.0;"
-                blue:  !lambda "return id(va_color)[2]/100.0;"
-            - globals.set:
-                id: va_state
-                value: 'true'
+#            - light.turn_on:
+#                id: leds_wakeword
+#                brightness: !lambda "return id(va_color)[3]/100.0;"
+#                red: !lambda "return id(va_color)[0]/100.0;"
+#                green: !lambda "return id(va_color)[1]/100.0;"
+#                blue:  !lambda "return id(va_color)[2]/100.0;"
 #     - script.execute: reset_led
     on_turn_off:
       - voice_assistant.stop
@@ -94,39 +145,100 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 5.0
   on_wake_word_detected:
+    - globals.set:
+        id: va_capturing
+        value: "true"
     - light.turn_on:
         id: leds
         red: 0
         green: 0
         blue: 1
+        brightness: 1
         effect: "Scan"
+    - button.press: vibra_ww
   on_stt_vad_start:
+    - globals.set:
+        id: va_capturing
+        value: "true"
     - light.turn_on:
         id: leds
         red: 0
         green: 1
         blue: 0
+        brightness: 1
         effect: "Scan"
   on_intent_start:
-    - light.turn_on:
-        id: leds
-        effect: "Rainbow"
-    - delay: 2s
-    - light.turn_off:
-        id: leds
-        transition_length: ${transition_length}
-    - delay: ${transition_length}
-    - script.execute: refresh_led_default
+    - button.press: vibra_intent
+  on_tts_start:
+    - globals.set:
+        id: va_capturing
+        value: "false"
+    - if:
+        condition:
+          lambda: 'return x == "${text_not_understood}";'
+        then:
+          - light.turn_on:
+              id: leds
+              red: 1
+              green: 0
+              blue: 0
+              brightness: 1
+              effect: "None"
+#              effect: "Scan"
+        else:
+          - light.turn_on:
+              id: leds
+              effect: "None"
+#              effect: "Rainbow"
+              red: 0
+              green: 1
+              blue: 0
+              brightness: 1
+  on_tts_end:
+    - delay: 5s
+    - script.execute: refresh_led_full_off_default
+#    - repeat:
+#        count: 2
+#        then:
+#          - button.press: vibra_intent
+#          - delay: ${vibra_time_response_off}
+#    - delay: 2s
+#    - light.turn_off:
+#        id: leds
+#        transition_length: ${transition_length}
+#    - delay: ${transition_length}
+#    - script.execute: refresh_led_default
+  on_start:
+    - if:
+        condition:
+          - lambda: "return id(va).is_continuous();"
+        then:
+          - globals.set:
+              id: va_state
+              value: 'true'
+          - script.execute: refresh_led_default
   on_end:
     - if:
         condition:
-          and:
-            - switch.is_on: use_wake_word
-            - not:
-              - voice_assistant.is_running
+          - lambda: "return id(va_capturing);"
         then:
-          - lambda: id(va).set_use_wake_word(true);
-          - voice_assistant.start_continuous:
+          - globals.set:
+              id: va_capturing
+              value: "false"
+          - globals.set:
+              id: va_state
+              value: 'false'
+          - delay: 2s
+          - script.execute: refresh_led_full_off_default
+#    - if:
+#        condition:
+#          and:
+#            - switch.is_on: use_wake_word
+#            - not:
+#              - voice_assistant.is_running
+#        then:
+#          - lambda: id(va).set_use_wake_word(true);
+#          - voice_assistant.start_continuous:
 
   on_error:
     - script.execute: refresh_led_default
