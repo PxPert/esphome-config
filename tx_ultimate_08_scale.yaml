@@ -1,8 +1,8 @@
 substitutions:
-  name: "interruttore-soggiorno-cucina"
-  friendly_name: "Soggiorno Cucina"
+  name: "interruttore-scale"
+  friendly_name: "Scale"
 
-  use_ip_address: 192.168.2.146 # Usato da esphome per monitor e upload
+  use_ip_address: 192.168.2.148 # Usato da esphome per monitor e upload
 
   wifi_ssid: !secret wifi_dmz_ssid
   wifi_password: !secret wifi_dmz_password
@@ -32,12 +32,14 @@ packages:
 
   # Relè e luci locali
   light_1: !include
-    file: includes/tx_ultimate_light.yaml
+    file: includes/tx_ultimate_mqtt_relay.yaml
     vars:
       id: relay_1
       relay_index: 0
-      name: "Cucina"
-      pin: ${relay_1_pin}
+      subscribe_topic: "sonoff_tx_03/stat/POWER2"
+      value_on: "ON"
+      command_topic: "sonoff_tx_03/cmnd/Power2"
+      command_toggle: "TOGGLE"
   light_2: !include
     file: includes/tx_ultimate_mqtt_relay.yaml
     vars:
@@ -59,9 +61,6 @@ packages:
       command_topic: "interruttore-soggiorno-corr/light/soggiorno_destra/command"
       command_toggle: "{ \"state\": \"TOGGLE\" }"
 
-# Topic verso altri esphome:      "interruttore-soggiorno-cucina/light/cucina/command"
-# Valore:       "{ "state": "TOGGLE" }"
-
 script:
   - id: !extend on_release
     then:
@@ -69,7 +68,7 @@ script:
           condition:
             lambda: "return index == 0;"
           then:
-            - light.toggle: relay_1
+            - script.execute: mqtt_toggle_relay_1
           else:
             - if:
                 condition:
@@ -82,16 +81,10 @@ script:
   - id: !extend on_swipe_right
     then:
       - mqtt.publish:
-          topic: sonoff_dualr2_04/cmnd/ShutterStopOpen
-          payload: ""
-      - mqtt.publish:
-          topic: sonoff_dualr2_05/cmnd/ShutterStopOpen
+          topic: sonoff_4ch_02/cmnd/ShutterStopOpen1
           payload: ""
   - id: !extend on_swipe_left
     then:
       - mqtt.publish:
-          topic: sonoff_dualr2_04/cmnd/ShutterStopClose
-          payload: ""
-      - mqtt.publish:
-          topic: sonoff_dualr2_05/cmnd/ShutterStopClose
+          topic: sonoff_4ch_02/cmnd/ShutterStopClose1
           payload: ""
