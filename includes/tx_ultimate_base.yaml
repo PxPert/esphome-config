@@ -25,7 +25,7 @@ substitutions:
   multi_touch_color: "{100,100,33,100}"
   multi_touch_effect: "Pulse"
 
-  swipe_left_color: "{0,100,0,100}"
+  swipe_left_color: "{19,100,100,100}"
   swipe_left_effect: "Scan"
 
   swipe_right_color: "{100,0,70,100}"
@@ -63,8 +63,16 @@ esp32:
   board: esp32dev
   flash_size: 8MB
   framework:
-#    type: esp-idf
-    type: arduino
+    type: esp-idf
+#    type: arduino
+
+external_components:
+  - source: /config/components
+    components: [tx_ultimate_touch]
+  - source: github://pr#5230
+    components:
+      - esp_adf
+    refresh: 0s
 
 logger:
 #  hardware_uart: UART2
@@ -87,9 +95,6 @@ wifi:
 
 captive_portal:
 
-external_components:
-  - source: /config/components
-    components: [tx_ultimate_touch]
 
 time:
   - platform: homeassistant

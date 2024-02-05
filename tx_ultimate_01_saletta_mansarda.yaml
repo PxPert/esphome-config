@@ -28,23 +28,33 @@ packages:
       mic_sdata_pin: GPIO0
 
   # Configurazione leds
-  leds: !include includes/tx_ultimate_leds_2_zone.yaml
+  leds: !include includes/tx_ultimate_leds_3_zone.yaml
 
   # Relè e luci locali
-  light_2: !include
-    file: includes/tx_ultimate_light.yaml
-    vars:
-      id: relay_1
-      relay_index: 1
-      name: "Sala mansarda"
-      pin: ${relay_1_pin}
   light_1: !include
     file: includes/tx_ultimate_light.yaml
     vars:
-      id: relay_2
+      id: relay_1
       relay_index: 0
       name: "Saletta mansarda"
       pin: ${relay_2_pin}
+  light_2: !include
+    file: includes/tx_ultimate_light.yaml
+    vars:
+      id: relay_2
+      relay_index: 1
+      name: "Sala mansarda"
+      pin: ${relay_1_pin}
+  light_3: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_3
+      relay_index: 2
+      subscribe_topic: "sonoff_mini_06/stat/POWER"
+      value_on: "ON"
+      command_topic: "sonoff_mini_06/cmnd/Power1"
+      command_toggle: "TOGGLE"
+
 
 script:
   - id: !extend on_release
@@ -53,6 +63,23 @@ script:
           condition:
             lambda: "return index == 0;"
           then:
-            - light.toggle: relay_2
-          else:
             - light.toggle: relay_1
+          else:
+            - if:
+                condition:
+                  lambda: "return index == 1;"
+                then:
+                  - light.toggle: relay_2
+                else:
+                  - script.execute: mqtt_toggle_relay_3
+
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_dualr2_03/cmnd/ShutterStopOpen
+          payload: ""
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_dualr2_03/cmnd/ShutterStopClose
+          payload: ""

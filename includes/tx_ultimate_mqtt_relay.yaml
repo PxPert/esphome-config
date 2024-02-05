@@ -11,7 +11,7 @@ text_sensor:
       then:
         - lambda: |-
             if (${relay_index} > -1) {
-              if ("${mqtt_json_key}" != "" ) {
+              if (strcmp("${mqtt_json_key}", "") != 0 ) {
                 StaticJsonDocument<${mqtt_json_max_value_length}> doc;
 
                 if (deserializeJson(doc, x) == DeserializationError::Ok) {

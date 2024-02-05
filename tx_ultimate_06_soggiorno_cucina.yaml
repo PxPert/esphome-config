@@ -16,7 +16,7 @@ packages:
   # Connessione MQTT
   mqtt_client: !include includes/mqtt_client.yaml
 
-# Configurazione di base
+  # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 
   # Supporto Voice Assistant

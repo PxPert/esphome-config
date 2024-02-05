@@ -13,6 +13,9 @@ substitutions:
 #    continuous: false
 
 packages:
+  # Connessione MQTT
+  mqtt_client: !include includes/mqtt_client.yaml
+
   # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 

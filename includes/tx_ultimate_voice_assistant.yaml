@@ -109,23 +109,32 @@ switch:
           value: 'false'
       - script.execute: refresh_led_default
 
-#speaker:
+
+#media_player:
 #  - platform: i2s_audio
-#    id: audio_out
+#    id: media_out
+#    name: ${friendly_name} Player
 #    dac_type: external
 #    i2s_dout_pin: ${audio_sdata_pin}
 #    i2s_audio_id: audio_i2s
-#    mode: mono
+#    i2s_comm_fmt: lsb
+#    mode: stereo
 
-media_player:
-  - platform: i2s_audio
-    id: media_out
-    name: ${friendly_name} Player
+i2s_audio:
+  - id: audio_mic_i2s
+    i2s_lrclk_pin: ${mic_lrclk_pin}
+    i2s_bclk_pin: ${mic_bclk_pin}
+  - id: audio_i2s
+    i2s_lrclk_pin: ${audio_lrclk_pin}
+    i2s_bclk_pin: ${audio_bclk_pin}
+
+speaker:
+  - id: audio_out
+    platform: i2s_audio
     dac_type: external
     i2s_dout_pin: ${audio_sdata_pin}
     i2s_audio_id: audio_i2s
-    i2s_comm_fmt: lsb
-    mode: stereo
+    mode: mono
 
 microphone:
   - platform: i2s_audio
@@ -135,11 +144,15 @@ microphone:
     id: mic_i2s
     pdm: false
 
+esp_adf:
+
+
 voice_assistant:
   id: va
   microphone: mic_i2s
-#  speaker: audio_out
-  media_player: media_out
+  speaker: audio_out
+#  media_player: media_out
+  vad_threshold: 5
   use_wake_word: false
   noise_suppression_level: 2
   auto_gain: 31dBFS
@@ -155,7 +168,7 @@ voice_assistant:
         blue: 1
         brightness: 1
         effect: "Scan"
-    - button.press: vibra_ww
+#    - button.press: vibra_ww
   on_stt_vad_start:
     - globals.set:
         id: va_capturing
@@ -167,8 +180,8 @@ voice_assistant:
         blue: 0
         brightness: 1
         effect: "Scan"
-  on_intent_start:
-    - button.press: vibra_intent
+#  on_intent_start:
+#    - button.press: vibra_intent
   on_tts_start:
     - globals.set:
         id: va_capturing
@@ -194,8 +207,7 @@ voice_assistant:
               green: 1
               blue: 0
               brightness: 1
-  on_tts_end:
-    - delay: 5s
+  on_tts_stream_end:
     - script.execute: refresh_led_full_off_default
 #    - repeat:
 #        count: 2
@@ -265,11 +277,5 @@ voice_assistant:
           - voice_assistant.stop:
 #          - light.turn_off: leds
 
-i2s_audio:
-  - id: audio_mic_i2s
-    i2s_lrclk_pin: ${mic_lrclk_pin}
-    i2s_bclk_pin: ${mic_bclk_pin}
-  - id: audio_i2s
-    i2s_lrclk_pin: ${audio_lrclk_pin}
-    i2s_bclk_pin: ${audio_bclk_pin}
+
 
