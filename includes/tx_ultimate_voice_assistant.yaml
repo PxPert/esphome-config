@@ -71,6 +71,7 @@ globals:
     initial_value: use_wake_word
     restore_value: no
   - id: !extend start_assistant_button
+    type: template_::TemplateButton*
     initial_value: start_assistant
     restore_value: no
 

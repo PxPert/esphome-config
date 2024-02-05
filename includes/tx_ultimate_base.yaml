@@ -187,6 +187,10 @@ button:
     name: "${friendly_name} (Safe Mode)"
   - platform: restart
     name: "${friendly_name} Restart"
+  - platform: template
+    name: Declare button only
+    id: declare_button_only
+    internal: true
 
 switch:
   - platform: template

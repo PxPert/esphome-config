@@ -50,9 +50,9 @@ packages:
     vars:
       id: relay_3
       relay_index: 2
-      subscribe_topic: "sonoff_mini_06/stat/POWER"
+      subscribe_topic: "sonoff_tx_03/stat/POWER1"
       value_on: "ON"
-      command_topic: "sonoff_mini_06/cmnd/Power1"
+      command_topic: "sonoff_tx_03/cmnd/Power1"
       command_toggle: "TOGGLE"
 
 
@@ -76,10 +76,10 @@ script:
   - id: !extend on_swipe_right
     then:
       - mqtt.publish:
-          topic: sonoff_dualr2_03/cmnd/ShutterStopOpen
+          topic: sonoff_tx_03/cmnd/ShutterStopOpen
           payload: ""
   - id: !extend on_swipe_left
     then:
       - mqtt.publish:
-          topic: sonoff_dualr2_03/cmnd/ShutterStopClose
+          topic: sonoff_tx_03/cmnd/ShutterStopClose
           payload: ""
