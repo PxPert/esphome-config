@@ -43,3 +43,14 @@ script:
   - id: !extend on_release
     then:
       - light.toggle: relay_1
+
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_dualr2_06/cmnd/ShutterStopOpen1
+          payload: ""
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_dualr2_06/cmnd/ShutterStopClose1
+          payload: ""

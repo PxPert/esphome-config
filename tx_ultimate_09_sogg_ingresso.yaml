@@ -1,0 +1,132 @@
+substitutions:
+  name: "interruttore-sogg-ingresso"
+  friendly_name: "Soggiorno ingresso"
+
+  use_ip_address: 192.168.2.149 # Usato da esphome per monitor e upload
+
+  wifi_ssid: !secret wifi_dmz_ssid
+  wifi_password: !secret wifi_dmz_password
+
+#esp32_ble_tracker:
+#  scan_parameters:
+#    active: True
+#    continuous: false
+
+packages:
+  # Connessione MQTT
+  mqtt_client: !include includes/mqtt_client.yaml
+
+  # Configurazione di base
+  device_base: !include includes/tx_ultimate_base.yaml
+
+  # Configurazione leds
+  leds: !include includes/tx_ultimate_leds_4_zone.yaml
+
+  # Configurazione Custom multitouch
+#  multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
+
+  # Relè e luci locali
+  light_1: !include
+    file: includes/tx_ultimate_light.yaml
+    vars:
+      id: relay_1
+      relay_index: 0
+      name: "Luci esterne ingresso"
+      pin: ${relay_1_pin}
+  light_2: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_2
+      relay_index: 1
+      subscribe_topic: "interruttore-soggiorno-corr/light/soggiorno_sinistra/state"
+      value_on: "ON"
+      mqtt_json_key: "state"
+      command_topic: "interruttore-soggiorno-corr/light/soggiorno_sinistra/command"
+      command_toggle: "{ \"state\": \"TOGGLE\" }"
+  light_3: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_3
+      relay_index: 2
+      subscribe_topic: "interruttore-soggiorno-corr/light/soggiorno_destra/state"
+      value_on: "ON"
+      mqtt_json_key: "state"
+      command_topic: "interruttore-soggiorno-corr/light/soggiorno_destra/command"
+      command_toggle: "{ \"state\": \"TOGGLE\" }"
+  light_4: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_4
+      relay_index: 3
+      subscribe_topic: "interruttore-soggiorno-cucina/light/cucina/state"
+      value_on: "ON"
+      mqtt_json_key: "state"
+      command_topic: "interruttore-soggiorno-cucina/light/cucina/command"
+      command_toggle: "{ \"state\": \"TOGGLE\" }"
+
+script:
+  - id: !extend on_release
+    then:
+      - if:
+          condition:
+            lambda: "return index == 0;"
+          then:
+            - light.toggle: relay_1
+          else:
+            - if:
+                condition:
+                  lambda: "return index == 1;"
+                then:
+                  - script.execute: mqtt_toggle_relay_2
+                else:
+                  - if:
+                      condition:
+                        lambda: "return index == 2;"
+                      then:
+                        - script.execute: mqtt_toggle_relay_3
+                      else:
+                        - script.execute: mqtt_toggle_relay_4
+
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_4ch_02/cmnd/ShutterStopOpen2
+          payload: ""
+      - mqtt.publish:
+          topic: sonoff_4ch_03/cmnd/ShutterStopOpen2
+          payload: ""
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_4ch_02/cmnd/ShutterStopClose2
+          payload: ""
+      - mqtt.publish:
+          topic: sonoff_4ch_03/cmnd/ShutterStopClose2
+          payload: ""
+
+switch:
+  - platform: template
+    id: loop_campanello
+    name: "Loop Campanello"
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - while:
+            condition:
+              switch.is_on: loop_campanello
+            then:
+              - button.press: campanello
+              - delay: 5s
+
+output:
+  - platform: gpio
+    pin: ${relay_2_pin}
+    id: campanello_gpio
+
+button:
+  - id: campanello
+    name: "Campanello"
+    platform: output
+    output: campanello_gpio
+    duration: 200ms

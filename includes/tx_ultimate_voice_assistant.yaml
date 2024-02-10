@@ -155,9 +155,9 @@ voice_assistant:
 #  media_player: media_out
   vad_threshold: 5
   use_wake_word: false
-  noise_suppression_level: 2
+  noise_suppression_level: 4
   auto_gain: 31dBFS
-  volume_multiplier: 5.0
+  volume_multiplier: 15.0
   on_wake_word_detected:
     - globals.set:
         id: va_capturing
@@ -209,6 +209,7 @@ voice_assistant:
               blue: 0
               brightness: 1
   on_tts_stream_end:
+    - delay: 1s
     - script.execute: refresh_led_full_off_default
 #    - repeat:
 #        count: 2

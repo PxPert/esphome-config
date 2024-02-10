@@ -13,6 +13,9 @@ substitutions:
 #    continuous: false
 
 packages:
+  # Connessione MQTT
+  mqtt_client: !include includes/mqtt_client.yaml
+
   # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 
@@ -40,3 +43,14 @@ script:
   - id: !extend on_release
     then:
       - light.toggle: relay_1
+
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_4ch_03/cmnd/ShutterStopOpen1
+          payload: ""
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_4ch_03/cmnd/ShutterStopClose1
+          payload: ""
