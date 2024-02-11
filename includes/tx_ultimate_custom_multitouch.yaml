@@ -1,4 +1,4 @@
-sensor:
+binary_sensor:
   - platform: template
     name: "Multi Touch"
     id: multi_touch
@@ -18,7 +18,7 @@ script:
     mode: restart
     then:
 
-  - id: handle_full_touch
+  - id: !extend handle_full_touch
     mode: restart
     then:
       - script.execute:

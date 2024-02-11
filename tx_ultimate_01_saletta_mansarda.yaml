@@ -83,3 +83,31 @@ script:
       - mqtt.publish:
           topic: sonoff_tx_03/cmnd/ShutterStopClose
           payload: ""
+
+switch:
+  - platform: template
+    id: loop_campanello
+    name: "Loop Campanello"
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    on_turn_on:
+      then:
+        - while:
+            condition:
+              switch.is_on: loop_campanello
+            then:
+              - button.press: campanello
+              - delay: 5s
+
+output:
+  - platform: gpio
+    pin: ${relay_3_pin}
+    id: campanello_gpio
+
+button:
+  - id: campanello
+    name: "Campanello"
+    platform: output
+    output: campanello_gpio
+    command_topic: interruttore-sogg-ingresso/button/campanello/command
+    duration: 200ms

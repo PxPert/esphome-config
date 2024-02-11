@@ -20,7 +20,7 @@ script:
     mode: restart
     then:
 
-  - id: handle_long_press
+  - id: !extend handle_long_press
     mode: restart
     parameters:
       index: int

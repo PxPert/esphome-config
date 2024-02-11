@@ -23,7 +23,7 @@ packages:
   leds: !include includes/tx_ultimate_leds_4_zone.yaml
 
   # Configurazione Custom multitouch
-#  multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
+  multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
 
   # Relè e luci locali
   light_1: !include
