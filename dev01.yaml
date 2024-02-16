@@ -1,0 +1,47 @@
+esphome:
+  name: dev01
+  friendly_name: Dev01
+
+esp8266:
+  board: esp12e
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "Ki7BHPj/MK59/Kr0zSKb+AO6tfnzoTVnKOsPPHps0K8="
+
+ota:
+  password: "fbd26c949814f43813805a0a3314802a"
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.104
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Dev01 Fallback Hotspot"
+    password: "muu6AUZABIoq"
+
+captive_portal:
+    
+i2c:
+  sda: GPIO5
+  scl: GPIO4
+  frequency: 500kHz
+
+font:
+  - file: 'fonts/LiberationMono-Regular.ttf'
+    id: font3
+    size: 14
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x32"
+    address: 0x3C
+    invert: True
+    lambda: |-
+      it.printf(0, 0,id(font3),"Numero: %d",123);

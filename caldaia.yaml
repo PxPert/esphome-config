@@ -1,0 +1,433 @@
+esphome:
+  name: caldaia
+  friendly_name: Caldaia
+  platformio_options:
+    board_build.ldscript: eagle.flash.4m.ld
+    lib_deps:  # required by freebear-nc/esphome-opentherm
+      - https://github.com/freebear-nc/opentherm_library.git
+  on_boot:
+    priority: -100.0
+    then:
+      - number.set:
+          id: t_set
+          value: !lambda "return id(t_set_template).state;"
+      - number.set:
+          id: t_dwh_set
+          value: !lambda "return id(t_dwh_set_template).state;"
+#      - lambda: |-
+#          id(error_text) = "caricato";
+#          id(test_float) = id(t_set_template).state;
+#          id(test_float2) = id(t_dwh_set_template).state;
+esp8266:
+  board: esp12e
+    
+# Enable logging
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "ONGndsPBLTrbez58HKlf3fimMXhxqqtfkBjO2FkuWV0="
+
+ota:
+  password: "c1f93a6277d0b91935a9544e92682365"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 192.168.1.104
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Caldaia Fallback Hotspot"
+    password: "RCLZpxy2TsrH"
+
+captive_portal:
+
+external_components:
+  - source: github://freebear-nc/esphome-opentherm
+
+# external_components:
+#   source: 
+#     type: local
+#     path: /config/components/esphome-opentherm/components
+
+opentherm:
+  in_pin: 12
+  out_pin: 14
+
+dallas:
+  - pin: GPIO13
+
+#output:
+#  - platform: opentherm
+#    t_set:
+#      id: t_set
+#      min_value: 20
+#      max_value: 65
+#      zero_means_zero: true
+#
+#climate:
+#  - platform: pid
+#    name: "Central heating"
+#    heat_output: t_set
+#    default_target_temperature: 20
+#    sensor: ch_room_temperature
+#    control_parameters:
+#      kp: 0.4
+#      ki: 0.004
+globals:
+  - id: error_text
+    type: const char*
+    initial_value: 'NULL'
+    restore_value: no
+#  - id: test_float
+#    type: float
+#    initial_value: '0'
+#    restore_value: no
+#  - id: test_float2
+#    type: float
+#    initial_value: '0'
+#    restore_value: no
+
+number:
+  - platform: opentherm
+    t_set:
+      id: t_set
+      internal: true
+#      zero_means_zero: true
+    t_dhw_set:
+      internal: true
+      id: t_dwh_set
+  - platform: template
+    name: "Temperatura boiler"
+    id: t_set_template
+    restore_value: true
+    min_value: 20
+    max_value: 75
+    mode: slider
+    device_class: temperature
+    unit_of_measurement: "°C"
+    initial_value: 65
+    set_action:
+    - logger.log:
+        format: "Set valore temp boiler: %.0f"
+        args: [ 'id(flame_on).state' ]
+        level: INFO
+    - number.set:
+        id: t_set
+        value: !lambda "return x;"
+    optimistic: true
+    step: 1
+  - platform: template
+    name: "Temperatura acqua"
+    id: t_dwh_set_template
+    restore_value: true
+    min_value: 20
+    max_value: 65
+    device_class: temperature
+    unit_of_measurement: "°C"
+    initial_value: 40
+    mode: slider
+    set_action:
+    - lambda: |-
+        id(error_text) = "OKKKK";
+    - logger.log:
+        format: "Set valore temp acqua: %.0f"
+        args: [ 'id(flame_on).state' ]
+        level: INFO
+    - number.set:
+        id: t_dwh_set
+        value: !lambda "return x;"
+    optimistic: true
+    step: 1
+
+switch:
+  - platform: opentherm
+    ch_enable:
+      id: ch_enable
+      name: "Riscaldamento"
+      mode: start_off
+    dhw_enable:
+      id: dwh_enable
+      name: "Acqua calda"
+      mode: restore_default_on
+#  - platform: template
+#    name: Test Error1
+#    id: test_1
+#    optimistic: true
+#    restore_mode: ALWAYS_OFF
+#    on_turn_on:
+#      - lambda: |-
+#          id(error_text) = id(test_1).state?"Low Water Press":NULL;
+#      - component.update: lcd_display
+#    on_turn_off:
+#      - lambda: |-
+#          id(error_text) = id(test_1).state?"Test1":NULL;
+#      - component.update: lcd_display
+#  - platform: template
+#    id: test_2
+#    name: Test Error2
+#    optimistic: true
+#    restore_mode: ALWAYS_OFF
+#    on_turn_on:
+#      - lambda: |-
+#          id(error_text) = id(test_2).state?"Test2":NULL;
+#      - component.update: lcd_display
+#    on_turn_off:
+#      - lambda: |-
+#          id(error_text) = id(test_2).state?"Test2":NULL;
+#      - component.update: lcd_display
+
+
+binary_sensor:
+  - platform: opentherm
+    ch_active:
+      id: ch_active
+      name: "Central Heating active"
+    dhw_active:
+      id: dhw_active
+      name: "Domestic Hot Water active"
+    flame_on:
+      name: "Flame on"
+      id: flame_on
+#      on_state:
+#        then:
+#          - logger.log:
+#              format: "Stato fiamma: %d"
+#              args: [ 'id(flame_on).state' ]
+#              level: INFO
+    fault_indication:
+      id: fault_indication
+      name: "Fault indication"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(fault_indication).state?"Fault indication":NULL;
+          - component.update: lcd_display
+    diagnostic_indication:
+      id: diagnostic_indication
+      name: "Diagnostic event"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(diagnostic_indication).state?"Diagnostic event":NULL;
+          - component.update: lcd_display
+    service_request:
+      id: service_request
+      name: "Service Request"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(service_request).state?"Service request":NULL;
+          - component.update: lcd_display
+    lockout_reset:
+      id: lockout_reset
+      name: "Lockout Reset"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(lockout_reset).state?"Lockout reset":NULL;
+          - component.update: lcd_display
+    low_water_pressure:
+      id: low_water_pressure
+      name: "Low Water Pressure"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(low_water_pressure).state?"Low water press":NULL;
+          - component.update: lcd_display
+    flame_fault:
+      id: flame_fault
+      name: "Gas/Flame Fault"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(flame_fault).state?"Gas/Flame fault":NULL;
+          - component.update: lcd_display
+    air_pressure_fault:
+      id: air_pressure_fault
+      name: "Air Pressure Fault"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(air_pressure_fault).state?"Air Press fault":NULL;
+          - component.update: lcd_display
+    water_over_temperature:
+      id: water_over_temperature
+      name: "Water Over Temperature"
+      on_state:
+        then:
+          - lambda: |-
+              id(error_text) = id(water_over_temperature).state?"Water overtemp":NULL;
+          - component.update: lcd_display
+
+sensor:
+  - platform: opentherm
+
+    rel_mod_level:
+      name: "Boiler Relative modulation level"
+    ch_pressure:
+      id: ch_pressure
+      name: "Water pressure in CH circuit (bar)"
+    t_boiler:
+      name: "Boiler water temperature"
+      id: t_boiler
+      on_value:
+        then:
+          - logger.log:
+              format: "Temperatura acqua: %.1f"
+              level: INFO
+              args: [ 'id(t_boiler).state' ]
+    t_dhw:
+      id: t_dhw
+      name: "DHW temperature (°C)"
+    t_ret:
+      name: "Return water temperature (°C)"
+    t_exhaust:
+      name: "Boiler exhaust temperature (°C)"
+    burner_operation_hours:
+      name: "Number of hours that burner is in operation"
+    t_dhw_set:
+      name: "Domestic hot water temperature setpoint (°C)"
+    oem_fault_code:
+      id: oem_fault_code
+      name: "OEM fault code"
+    oem_diagnostic_code:
+      id: oem_diagnostic_code
+      name: "OEM diagnostic code"
+
+    # 60°
+    t_dhw_set_ub:
+      name: "Upper bound for adjustment of DHW setpoint (°C)"
+    # 37°
+    t_dhw_set_lb:
+      name: "Lower bound for adjustment of DHW setpoint (°C)"
+
+    # 80°
+    max_t_set_ub:
+      name: "Upper bound for adjustment of max CH setpoint (°C)"
+    # 40°
+    max_t_set_lb:
+      name: "Lower bound for adjustment of max CH setpoint (°C)"
+
+    # Fisso 80°
+    max_t_set:
+      name: "Maximum allowable CH water setpoint (°C)"
+
+
+# Letture non disponibili
+#    t_outside:
+#      name: "Outside temperature (°C)"
+#    dhw_flow_rate:
+#      name: "Water flow rate in DHW circuit (l/min)"
+#    t_flow_ch2:
+#      name: "Flow water temperature CH2 circuit (°C)"
+#    t_dhw2:
+#      name: "Domestic hot water temperature 2 (°C)"
+#    burner_starts:
+#      name: "Number of starts burner"
+#    ch_pump_starts:
+#      name: "Number of starts CH pump"
+#    dhw_pump_valve_starts:
+#      name: "Number of starts DHW pump/valve"
+#    dhw_burner_starts:
+#      name: "Number of starts burner during DHW mode"
+#    ch_pump_operation_hours:
+#      name: "Number of hours that CH pump has been running"
+#    dhw_pump_valve_operation_hours:
+#      name: "Number of hours that DHW pump has been running or DHW valve has been opened"
+#    dhw_burner_operation_hours:
+#      name: "Number of hours that burner is in operation during DHW mode"
+#    otc_ratio_ub:
+#      name: "Upper bound of OTC curve ()"
+#    otc_ratio_lb:
+#      name: "Lower bound of OTC curve ()"
+#    otc_hc_ratio:
+#      name: "OTC heat curve ratio (°C)"
+#    t_heat_exchanger:
+#      name: "Boiler heat exchanger temperature (°C)"
+#    boiler_fan_speed:
+#      name: "Boiler fan speed"
+#    boiler_flame_current:
+#      name: "Boiler flame current (uA)"
+#    max_capacity:
+#      name: "Maximum boiler capacity (KW)"
+#    min_mod_level:
+#      name: "Minimum modulation level (%)"
+
+  - platform: dallas
+    address: 0xed0622700cacb928
+    name: "Temperatura cucina"
+
+i2c:
+  sda: GPIO5
+  scl: GPIO4
+  frequency: 500kHz
+
+font:
+  - file: 'fonts/Roboto-Regular.ttf'
+    id: font_small
+    size: 11
+  - file: 'fonts/Roboto-Regular.ttf'
+    id: font_big
+    size: 18
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: md_state_icons
+    size: 16
+    glyphs:
+      - "\U000F0AD7" # radiator-disabled
+      - "\U000F1B29" # faucet (rubinetto)
+      - "\U000F0238" # flame
+      - "\U000F1A85" # water-thermometer
+      - "\U000F0438" # radiator
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: md_big_icons
+    size: 20
+    glyphs:
+      - "\U000F0026" # alert
+
+
+
+display:
+  - platform: ssd1306_i2c
+    id: lcd_display
+    model: "SSD1306 128x32"
+    address: 0x3C
+#    invert: True
+    lambda: |-
+      if (id(error_text)) {
+        // Errore
+        it.printf(14,16,id(md_big_icons),TextAlign::CENTER_LEFT,"\U000F0026");
+        // it.printf(34,0,id(font_big),TextAlign::TOP_LEFT,"Err %.0f/%.0f",id(test_float),id(test_float2));
+        it.printf(34,0,id(font_big),TextAlign::TOP_LEFT,"Err %.0f/%.0f",id(oem_fault_code).state,id(oem_diagnostic_code).state);
+        it.printf(34,32,id(font_small),TextAlign::BOTTOM_LEFT,"%s",id(error_text));
+
+      } else if (id(dhw_active).state) {
+        // Rubinetto aperto
+        it.print(128, 32,id(md_state_icons),TextAlign::BOTTOM_RIGHT,"\U000F1A85");
+        it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.1f°/%.0f°",id(t_dhw).state,id(t_dwh_set).state);
+        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.2f bar  %.1f°/%.0f°",id(ch_pressure).state,id(t_boiler).state,id(t_set).state);
+      } else if (id(ch_active).state) {
+        // Riscaldamento acceso
+        it.print(128, 32,id(md_state_icons),TextAlign::BOTTOM_RIGHT,"\U000F0438");
+        it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.1f°/%.0f°",id(t_boiler).state,id(t_set).state);
+        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.2f bar",id(ch_pressure).state);
+      } else {
+        it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.2f bar  %.1f°",id(ch_pressure).state,id(t_boiler).state);
+      }
+
+      if (id(flame_on).state) {
+        // Fiamma accesa
+        it.print(128, 0,id(md_state_icons),TextAlign::TOP_RIGHT,"\U000F0238");
+      }
+
+      if (id(dwh_enable).state) {
+        // Acqua calda abilitata
+        it.print(0, 0,id(md_state_icons),TextAlign::TOP_LEFT,"\U000F1B29");
+      }
+
+      if (id(ch_enable).state) {
+        // Riscaldamento abilitato
+        it.print(0, 32,id(md_state_icons),TextAlign::BOTTOM_LEFT,"\U000F0AD7");
+      }
