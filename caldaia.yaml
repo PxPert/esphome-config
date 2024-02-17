@@ -4,7 +4,7 @@ esphome:
   platformio_options:
     board_build.ldscript: eagle.flash.4m.ld
     lib_deps:  # required by freebear-nc/esphome-opentherm
-      - https://github.com/freebear-nc/opentherm_library.git
+      - https://github.com/PxPert/opentherm_library.git
   on_boot:
     priority: -100.0
     then:
@@ -45,7 +45,7 @@ wifi:
 captive_portal:
 
 external_components:
-  - source: github://freebear-nc/esphome-opentherm
+  - source: github://PxPert/esphome-opentherm
 
 # external_components:
 #   source: 
@@ -55,6 +55,12 @@ external_components:
 opentherm:
   in_pin: 12
   out_pin: 14
+  ch_enable: true
+  dhw_enable: true
+#  cooling_enable: false
+#  otc_active: false
+#  ch2_active: false
+#  sync_mode: false
 
 dallas:
   - pin: GPIO13
@@ -99,21 +105,18 @@ number:
     t_dhw_set:
       internal: true
       id: t_dwh_set
+#      zero_means_zero: true
   - platform: template
     name: "Temperatura boiler"
     id: t_set_template
     restore_value: true
-    min_value: 20
+    min_value: 0
     max_value: 75
     mode: slider
     device_class: temperature
     unit_of_measurement: "°C"
     initial_value: 65
     set_action:
-    - logger.log:
-        format: "Set valore temp boiler: %.0f"
-        args: [ 'id(flame_on).state' ]
-        level: INFO
     - number.set:
         id: t_set
         value: !lambda "return x;"
@@ -123,19 +126,13 @@ number:
     name: "Temperatura acqua"
     id: t_dwh_set_template
     restore_value: true
-    min_value: 20
+    min_value: 0
     max_value: 65
     device_class: temperature
     unit_of_measurement: "°C"
     initial_value: 40
     mode: slider
     set_action:
-    - lambda: |-
-        id(error_text) = "OKKKK";
-    - logger.log:
-        format: "Set valore temp acqua: %.0f"
-        args: [ 'id(flame_on).state' ]
-        level: INFO
     - number.set:
         id: t_dwh_set
         value: !lambda "return x;"
@@ -149,9 +146,17 @@ switch:
       name: "Riscaldamento"
       mode: start_off
     dhw_enable:
-      id: dwh_enable
+      id: dhw_enable
       name: "Acqua calda"
       mode: restore_default_on
+    sm_active:
+      id: sm_active
+      name: "Summer mode"
+      mode: restore_default_off
+    dhw_block:
+      id: dhw_block
+      name: "Blocca Acqua calda"
+      mode: restore_default_off
 #  - platform: template
 #    name: Test Error1
 #    id: test_1
@@ -181,6 +186,32 @@ switch:
 
 
 binary_sensor:
+  - platform: gpio
+    pin:
+      number: 0
+      mode:
+        input: true
+        pullup: true
+    name: "Pulsante"
+    filters:
+      - delayed_on: 10ms
+    on_press:
+      then:
+        - lambda: |-
+            if (id(ch_enable).state) {
+              if ( (id(dhw_enable).state) && (id(sm_active).state)) {
+                id(sm_active).toggle();
+                id(dhw_enable).toggle();
+              } else if (id(dhw_enable).state) {
+                id(sm_active).toggle();
+              } else {
+                id(dhw_enable).toggle();
+              }
+            } else {
+              id(dhw_enable).toggle();
+            }
+        - component.update: lcd_display
+
   - platform: opentherm
     ch_active:
       id: ch_active
@@ -188,15 +219,15 @@ binary_sensor:
     dhw_active:
       id: dhw_active
       name: "Domestic Hot Water active"
+      on_state:
+        then:
+          - component.update: lcd_display
     flame_on:
       name: "Flame on"
       id: flame_on
-#      on_state:
-#        then:
-#          - logger.log:
-#              format: "Stato fiamma: %d"
-#              args: [ 'id(flame_on).state' ]
-#              level: INFO
+      on_state:
+        then:
+          - component.update: lcd_display
     fault_indication:
       id: fault_indication
       name: "Fault indication"
@@ -264,25 +295,28 @@ binary_sensor:
 
 sensor:
   - platform: opentherm
-
     rel_mod_level:
       name: "Boiler Relative modulation level"
     ch_pressure:
       id: ch_pressure
       name: "Water pressure in CH circuit (bar)"
+      on_value:
+        then:
+          - component.update: lcd_display
     t_boiler:
       name: "Boiler water temperature"
       id: t_boiler
       on_value:
         then:
-          - logger.log:
-              format: "Temperatura acqua: %.1f"
-              level: INFO
-              args: [ 'id(t_boiler).state' ]
+          - component.update: lcd_display
     t_dhw:
       id: t_dhw
       name: "DHW temperature (°C)"
+      on_value:
+        then:
+          - component.update: lcd_display
     t_ret:
+      id: t_ret
       name: "Return water temperature (°C)"
     t_exhaust:
       name: "Boiler exhaust temperature (°C)"
@@ -407,14 +441,15 @@ display:
         // Rubinetto aperto
         it.print(128, 32,id(md_state_icons),TextAlign::BOTTOM_RIGHT,"\U000F1A85");
         it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.1f°/%.0f°",id(t_dhw).state,id(t_dwh_set).state);
-        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.2f bar  %.1f°/%.0f°",id(ch_pressure).state,id(t_boiler).state,id(t_set).state);
+        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.1f bar  %.1f°/%.0f°",id(ch_pressure).state,id(t_boiler).state,id(t_set).state);
       } else if (id(ch_active).state) {
         // Riscaldamento acceso
         it.print(128, 32,id(md_state_icons),TextAlign::BOTTOM_RIGHT,"\U000F0438");
         it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.1f°/%.0f°",id(t_boiler).state,id(t_set).state);
-        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.2f bar",id(ch_pressure).state);
+        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.1f bar r:%.1f°",id(ch_pressure).state,id(t_ret).state);
       } else {
-        it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.2f bar  %.1f°",id(ch_pressure).state,id(t_boiler).state);
+        it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.1f bar",id(ch_pressure).state);
+        it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.1f°",id(t_boiler).state);
       }
 
       if (id(flame_on).state) {
@@ -422,12 +457,12 @@ display:
         it.print(128, 0,id(md_state_icons),TextAlign::TOP_RIGHT,"\U000F0238");
       }
 
-      if (id(dwh_enable).state) {
+      if ((id(dhw_enable).state) || (id(sm_active).state)) {
         // Acqua calda abilitata
         it.print(0, 0,id(md_state_icons),TextAlign::TOP_LEFT,"\U000F1B29");
       }
 
-      if (id(ch_enable).state) {
+      if ((id(ch_enable).state) && (id(sm_active).state))  {
         // Riscaldamento abilitato
         it.print(0, 32,id(md_state_icons),TextAlign::BOTTOM_LEFT,"\U000F0AD7");
       }
