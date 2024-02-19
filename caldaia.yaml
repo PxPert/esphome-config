@@ -1,6 +1,9 @@
 esphome:
   name: caldaia
   friendly_name: Caldaia
+  project:
+    name: Riello.Residence
+    version: "1.0"
   platformio_options:
     board_build.ldscript: eagle.flash.4m.ld
     lib_deps:  # required by freebear-nc/esphome-opentherm
@@ -25,24 +28,24 @@ esp8266:
 logger:
   level: INFO
 
+preferences:
+  flash_write_interval: 6h
+
+mdns:
+  disabled: True
+
 # Enable Home Assistant API
 api:
   encryption:
-    key: "ONGndsPBLTrbez58HKlf3fimMXhxqqtfkBjO2FkuWV0="
+    key: !secret api_key
 
 ota:
   password: "c1f93a6277d0b91935a9544e92682365"
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  use_address: 192.168.1.104
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Caldaia Fallback Hotspot"
-    password: "RCLZpxy2TsrH"
-
-captive_portal:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.13
 
 external_components:
   - source: github://PxPert/esphome-opentherm
@@ -144,7 +147,7 @@ switch:
     ch_enable:
       id: ch_enable
       name: "Riscaldamento"
-      mode: start_off
+      mode: restore_default_off
     dhw_enable:
       id: dhw_enable
       name: "Acqua calda"
@@ -199,7 +202,7 @@ binary_sensor:
       then:
         - lambda: |-
             if (id(ch_enable).state) {
-              if ( (id(dhw_enable).state) && (id(sm_active).state)) {
+              if ( (id(dhw_enable).state) && (! id(sm_active).state)) {
                 id(sm_active).toggle();
                 id(dhw_enable).toggle();
               } else if (id(dhw_enable).state) {
@@ -208,6 +211,7 @@ binary_sensor:
                 id(dhw_enable).toggle();
               }
             } else {
+              id(sm_active).turn_on();
               id(dhw_enable).toggle();
             }
         - component.update: lcd_display
@@ -411,6 +415,7 @@ font:
     size: 16
     glyphs:
       - "\U000F0AD7" # radiator-disabled
+      - "\U000F0AD8" # radiator-off
       - "\U000F1B29" # faucet (rubinetto)
       - "\U000F0238" # flame
       - "\U000F1A85" # water-thermometer
@@ -457,12 +462,15 @@ display:
         it.print(128, 0,id(md_state_icons),TextAlign::TOP_RIGHT,"\U000F0238");
       }
 
-      if ((id(dhw_enable).state) || (id(sm_active).state)) {
+      if ((id(dhw_enable).state) || (! id(sm_active).state)) {
         // Acqua calda abilitata
         it.print(0, 0,id(md_state_icons),TextAlign::TOP_LEFT,"\U000F1B29");
       }
 
-      if ((id(ch_enable).state) && (id(sm_active).state))  {
+      if (! id(ch_enable).state) {
+        // Riscaldamento disabilitato
+        it.print(0, 32,id(md_state_icons),TextAlign::BOTTOM_LEFT,"\U000F0AD8");
+      } else if (! id(sm_active).state)  {
         // Riscaldamento abilitato
         it.print(0, 32,id(md_state_icons),TextAlign::BOTTOM_LEFT,"\U000F0AD7");
       }
