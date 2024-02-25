@@ -90,6 +90,10 @@ globals:
     type: const char*
     initial_value: 'NULL'
     restore_value: no
+  - id: display_on
+    type: bool
+    initial_value: 'false'
+    restore_value: no
 #  - id: test_float
 #    type: float
 #    initial_value: '0'
@@ -114,6 +118,7 @@ number:
     id: t_set_template
     restore_value: true
     min_value: 0
+    # minimo effettivo 40
     max_value: 75
     mode: slider
     device_class: temperature
@@ -129,8 +134,8 @@ number:
     name: "Temperatura acqua"
     id: t_dwh_set_template
     restore_value: true
-    min_value: 0
-    max_value: 65
+    min_value: 37
+    max_value: 60
     device_class: temperature
     unit_of_measurement: "°C"
     initial_value: 40
@@ -187,6 +192,15 @@ switch:
 #          id(error_text) = id(test_2).state?"Test2":NULL;
 #      - component.update: lcd_display
 
+script:
+  - id: delay_reset_display
+    mode: restart
+    then:
+      - delay: 60s
+      - globals.set:
+          id: display_on
+          value: 'false'
+      - component.update: lcd_display
 
 binary_sensor:
   - platform: gpio
@@ -200,22 +214,33 @@ binary_sensor:
       - delayed_on: 10ms
     on_press:
       then:
-        - lambda: |-
-            if (id(ch_enable).state) {
-              if ( (id(dhw_enable).state) && (! id(sm_active).state)) {
-                id(sm_active).toggle();
-                id(dhw_enable).toggle();
-              } else if (id(dhw_enable).state) {
-                id(sm_active).toggle();
-              } else {
-                id(dhw_enable).toggle();
-              }
-            } else {
-              id(sm_active).turn_on();
-              id(dhw_enable).toggle();
-            }
+        - if:
+            condition:
+              lambda: 'return id(display_on);'
+            then:
+              - lambda: |-
+                  if (id(ch_enable).state) {
+                    if ( (id(dhw_enable).state) && (! id(sm_active).state)) {
+                      id(sm_active).toggle();
+                      id(dhw_enable).toggle();
+                    } else if (id(dhw_enable).state) {
+                      id(sm_active).toggle();
+                    } else {
+                      id(dhw_enable).toggle();
+                    }
+                  } else {
+                    id(sm_active).turn_on();
+                    id(dhw_enable).toggle();
+                  }
+              - globals.set:
+                  id: display_on
+                  value: 'true'
+            else:
+              - globals.set:
+                  id: display_on
+                  value: 'true'
         - component.update: lcd_display
-
+        - script.execute: delay_reset_display
   - platform: opentherm
     ch_active:
       id: ch_active
@@ -335,23 +360,23 @@ sensor:
       id: oem_diagnostic_code
       name: "OEM diagnostic code"
 
-    # 60°
-    t_dhw_set_ub:
-      name: "Upper bound for adjustment of DHW setpoint (°C)"
-    # 37°
-    t_dhw_set_lb:
-      name: "Lower bound for adjustment of DHW setpoint (°C)"
-
-    # 80°
-    max_t_set_ub:
-      name: "Upper bound for adjustment of max CH setpoint (°C)"
-    # 40°
-    max_t_set_lb:
-      name: "Lower bound for adjustment of max CH setpoint (°C)"
-
-    # Fisso 80°
-    max_t_set:
-      name: "Maximum allowable CH water setpoint (°C)"
+#    # 60°
+#    t_dhw_set_ub:
+#      name: "Upper bound for adjustment of DHW setpoint (°C)"
+#    # 37°
+#    t_dhw_set_lb:
+#      name: "Lower bound for adjustment of DHW setpoint (°C)"
+#
+#    # 80°
+#    max_t_set_ub:
+#      name: "Upper bound for adjustment of max CH setpoint (°C)"
+#    # 40°
+#    max_t_set_lb:
+#      name: "Lower bound for adjustment of max CH setpoint (°C)"
+#
+#    # Fisso 80°
+#    max_t_set:
+#      name: "Maximum allowable CH water setpoint (°C)"
 
 
 # Letture non disponibili
@@ -435,6 +460,10 @@ display:
     address: 0x3C
 #    invert: True
     lambda: |-
+      if ( ! ( (id(display_on)) || (id(error_text))) ) {
+        return;
+      }
+
       if (id(error_text)) {
         // Errore
         it.printf(14,16,id(md_big_icons),TextAlign::CENTER_LEFT,"\U000F0026");
@@ -455,6 +484,10 @@ display:
       } else {
         it.printf(64,0,id(font_big),TextAlign::TOP_CENTER,"%.1f bar",id(ch_pressure).state);
         it.printf(64,32,id(font_small),TextAlign::BOTTOM_CENTER,"%.1f°",id(t_boiler).state);
+      }
+
+      if ( ! id(display_on) ) {
+        return;
       }
 
       if (id(flame_on).state) {
