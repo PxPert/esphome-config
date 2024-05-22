@@ -50,6 +50,7 @@ wifi:
     # Set this to the IP of the ESP
     static_ip: 192.168.1.122
     gateway: 192.168.1.2
+    dns1: 192.168.1.2
     # The subnet of the network. 255.255.255.0 works for most home networks.
     subnet: 255.255.255.0
 
