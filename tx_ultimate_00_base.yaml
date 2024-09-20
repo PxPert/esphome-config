@@ -1,4 +1,5 @@
 substitutions:
+# these are Mandatory settings
   name: "txultimate-base-settings"
   friendly_name: "TxUltimateBaseCfg"
 
@@ -6,8 +7,86 @@ substitutions:
   wifi_password: !secret wifi_dmz_password
 
 packages:
-  # Configurazione di base
+  # Base package (Mandatory)
   device_base: !include includes/tx_ultimate_base.yaml
 
-  # Configurazione leds
-  leds: !include includes/tx_ultimate_leds_1_zone.yaml
+  # MQTT Client support (Optional). Remember to set the following secrets in your yaml: mqtt_server - mqtt_user - !secret mqtt_pwd
+  mqtt_client: !include includes/mqtt_client.yaml
+
+  # Include the specific tx_ultimate_leds_X_zone yaml file based on the number of virtual buttons you want to have on your TX Ultimate (Mandatory, exactly one yaml file)
+  leds: !include includes/tx_ultimate_leds_3_zone.yaml
+
+  # Voice Assistant support (Optional). Remember to specify the correct GPIO Ports where you've connected your MEMS microphone
+  va: !include
+    file: includes/tx_ultimate_voice_assistant.yaml
+    vars:
+      mic_lrclk_pin: GPIO1
+      mic_bclk_pin: GPIO3
+      mic_sdata_pin: GPIO0
+      
+  # Assign an internal Relay to a light Entity (Optional, you can repeat this section for each light you want to configure)
+  light_X: !include
+    file: includes/tx_ultimate_light.yaml # Yaml file
+    vars:
+      id: relay_1 # Unique ID
+      relay_index: 0 # Index corrisponding to the virtual button (From left to right, starting from 0. Use -1 or leave empty if you don't want to bind a virtual button to the relay
+      name: "Luce" # Name of the entity
+      pin: ${relay_1_pin} # Corrisponding Sonoff TX PIN Relay Index, use relay_X_pin where X is the ID of the relay starting from 1
+
+  # Assign an internal Relay to a switch Entity (Optional, you can repeat this section for each switch you want to configure)
+  switch_X: !include
+    file: includes/tx_ultimate_relay.yaml # Yaml file
+    vars:
+      id: relay_2 # Unique ID
+      relay_index: 1 # Index corrisponding to the virtual button (From left to right, starting from 0. Use -1 or leave empty if you don't want to bind a virtual button to the relay
+      name: "Switch" # Name of the entity
+      pin: ${relay_2_pin} # Corrisponding Sonoff TX PIN Relay Index, use relay_X_pin where X is the ID of the relay starting from 1
+
+  # Create a virtual MQTT relay (Optional, you can repeat this section for each virtual entity you want to configure).
+  # This is useful to integrate with remote relays like Sonoff Minis devices. You need to include includes/mqtt_client.yaml for this to Work
+  light_x: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_3 # Unique ID
+      relay_index: 2 # Index corrisponding to the virtual button (From left to right, starting from 0. Use -1 or leave empty if you don't want to bind a virtual button to the relay
+      subscribe_topic: "interruttore-soggiorno-corr/light/soggiorno_destra/state" # Topic to listen to for MQTT Entity state
+      value_on: "ON" # Value corresponding to ON
+      mqtt_json_key: "state" # JSON Key in case the value is in JSON Format
+      command_topic: "interruttore-soggiorno-corr/light/soggiorno_destra/command" # Toggle command topic
+      command_toggle: "{ \"state\": \"TOGGLE\" }" # Toggle command value
+
+
+
+script:
+  # Extend on_release script to implement actions based on user press/release. index is a value between 0 and the number of zones -1, starting from left
+  - id: !extend on_release
+    then:
+      - if:
+          condition:
+            lambda: "return index == 0;"
+          then:
+            - light.toggle: relay_1
+          else:
+            - if:
+                condition:
+                  lambda: "return index == 1;"
+                then:
+                  - light.toggle: relay_2
+                else:
+                  - script.execute: mqtt_toggle_relay_3
+
+  # Extend on_swipe_right script to implement action based on user swipe to the right
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_tx_03/cmnd/ShutterStopOpen
+          payload: ""
+  # Extend on_swipe_left script to implement action based on user swipe to the left
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_tx_03/cmnd/ShutterStopClose
+          payload: ""
+
+
+# Write here any other customizations
