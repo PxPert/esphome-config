@@ -1,0 +1,94 @@
+## BASIC CONFIGURATION
+esphome:
+  name: condizionatori
+  friendly_name: Condizionatori
+
+# Select chipset and board configuration - in this case M5STACK
+esp32:
+  board: m5stack-atom
+
+# [Optional] - Create web interface where you can control the AC from your web browser (without Home Assistant)
+web_server:
+  port: 80
+
+# Enable logging
+logger:
+  level: INFO
+  logs:
+    component: ERROR # Remove the "Your component takes to long to respond warning"
+
+# Enable native API for communication with Home Assistant, this can be removed if you do not plan to use it with Home Assistant
+api:
+  encryption:
+    key: !secret api_key
+
+# Enable OTA firmware update, you will be able to upload the firmware over WiFi without connecting the device by cables
+ota:
+  password: !secret ota_pwd_sec
+
+# Setup your WiFi password
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.14
+
+captive_portal:
+
+# Specify pins used by the board to comunicate with RS485 board - in this case M5STACK
+uart:
+  tx_pin: GPIO19   # Use GPIO26 for ATOM Tail485
+  rx_pin: GPIO22   # Use GPIO32 for ATOM Tail485
+  # For older devices it could also be 2400. But you should start with 9600.
+  baud_rate: 9600
+  parity: EVEN
+
+## SAMSUNG AC CONFIGURATION
+
+# Import custom component from GitHub
+external_components:
+  - source: github://lanwin/esphome_samsung_ac@main # use @main if you want the latest development (possibly unstable?)
+    components: [samsung_ac]
+
+# Configuration of AC component
+samsung_ac:
+
+  # For NonNASA devices the following option can be enabled to prevent the device from sleeping when idle. This allows
+  # values like internal and external temperature to continue to be tracked when the device isn't in use.
+  non_nasa_keepalive: true
+
+  # Capabilities configure the features alle devices of your AC system have (all parts of this section are optional).
+  # All capabilities are off by default, you need to enable only those your devices have.
+  # You can override or configure them also on a per devices basis (look below for that).
+  capabilities:
+    vertical_swing: true
+    horizontal_swing: true
+    # Presets define special AC modes like Windfree and so on.
+    # The following modes are available: sleep, quiet, fast, longreach, windfree
+    presets:
+      # short version
+      quiet: true
+      windfree: true
+      sleep: true
+      fast: true
+
+  devices:
+    - address: "10.00.00" # Outdoor device address
+      outdoor_temperature: # Should be used with outdoor device address
+        name: "Temperatura esterna"
+
+    - address: "20.00.00" # Indoor device address
+      climate:
+        name: "Condizionatore mansarda"
+      room_humidity:
+        name: "Umidità mansarda"
+
+    - address: "20.00.01" # Indoor device address
+      climate:
+        name: "Condizionatore soggiorno"
+      # If your AC sits near or inside the ceiling, the reported room temperature is often a little bit heigher then whats 
+      # measured below. This property can be used to correct that value.
+      # room_temperature_offset: -1.4
+
+      room_humidity:
+        name: "Umidità soggiorno"
+

@@ -65,6 +65,10 @@ esp32:
   framework:
     type: esp-idf
 #    type: arduino
+#    sdkconfig_options:
+#      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+#      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+#      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
 
 external_components:
   - source: /config/components
@@ -73,6 +77,10 @@ external_components:
     components:
       - esp_adf
     refresh: 0s
+#  - source: /config/components/esp_adf/esphome/components
+#    components:
+#      - esp_adf
+#    refresh: 0s
 
 logger:
 #  hardware_uart: UART2
@@ -84,6 +92,7 @@ api:
     key: !secret api_key
 
 ota:
+  platform: esphome
   password: !secret ota_pwd
 
 wifi:

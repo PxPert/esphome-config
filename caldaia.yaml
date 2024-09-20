@@ -40,7 +40,7 @@ api:
     key: !secret api_key
 
 ota:
-  password: "c1f93a6277d0b91935a9544e92682365"
+  password: !secret ota_pwd_sec
 
 wifi:
   ssid: !secret wifi_dmz_ssid
