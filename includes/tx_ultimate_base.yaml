@@ -70,6 +70,11 @@ esp32:
 #      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
 #      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
 
+
+psram:
+  mode: octal
+  speed: 40MHz
+
 external_components:
   - source: /config/components
     components: [tx_ultimate_touch]

@@ -8,6 +8,7 @@ light:
     rgb_order: GRB
     chipset: ws2812
     rmt_channel: 1
+    use_psram: false
 
     pin: ${led_pin}
     num_leds: 32
