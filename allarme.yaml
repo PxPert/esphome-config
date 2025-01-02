@@ -1,0 +1,294 @@
+esphome:
+  name: allarme
+  friendly_name: Allarme
+
+substitutions:
+  rtttl_arm: "arm:d=8,o=5,b=1200:16c,16e,a,p,a,p,a"
+  rtttl_disarm: "disarm:d=8,o=5,b=1200:16a,16e,c,p,c,p,c"
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+  level: INFO
+
+preferences:
+  flash_write_interval: 6h
+
+mdns:
+  disabled: True
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+  actions:
+    - action: play_rtttl
+      variables:
+        song_str: string
+      then:
+        - rtttl.play:
+            rtttl: !lambda 'return song_str;'
+
+ota:
+  platform: esphome
+  password: !secret ota_pwd_sec
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.16
+
+#web_server:
+#  port: 80
+#  version: 3
+
+globals:
+  - id: light_active
+    type: bool
+  - id: speaker_active
+    type: bool
+  - id: arm
+    type: bool
+  - id: triggered
+    type: bool
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO14
+      mode:
+        input: true
+        pullup: true
+    name: "Siren Removed"
+    id: siren_removed_sensor
+    filters:
+      - invert:
+    on_press:
+      then:
+        - script.execute: refresh_state
+
+  - platform: gpio
+    pin:
+      number: GPIO16
+      mode:
+        input: true
+        pulldown: true
+    name: "Charger"
+    id: charger_sensor
+    on_release:
+      then:
+        - script.execute: refresh_state
+sensor:
+  - platform: adc
+    pin: A0
+    name: "Battery Voltage"
+    update_interval: 30s
+    filters:
+      - multiply: 5.6
+
+output:
+  - platform: esp8266_pwm
+    id: rtttl_out
+    pin: GPIO12
+#    max_power: 0.05
+#  - platform: esp8266_pwm
+#    id: test_pwm
+#    pin: GPIO5
+#    max_power: 0.01
+  - platform: esp8266_pwm
+    id: light_out
+    pin: GPIO13
+
+rtttl:
+  output: rtttl_out
+  id: my_rtttl
+  gain: 0.01
+
+switch:
+  - platform: gpio
+    pin: GPIO5
+    internal: True
+    name: "Second Siren"
+    id: second_siren
+#  - platform: output
+#    internal: True
+#    output: test_pwm
+#    name: "Second Siren"
+#    id: second_siren
+
+  - platform: template
+    name: "Light"
+    id: light_switch
+    restore_mode: RESTORE_DEFAULT_ON
+    lambda: |-
+      return id(light_active);
+    turn_on_action:
+      - globals.set:
+          id: light_active
+          value: "true"
+      - script.execute: refresh_state
+    turn_off_action:
+      - globals.set:
+          id: light_active
+          value: "false"
+      - script.execute: refresh_state
+
+  - platform: template
+    name: "Speaker"
+    id: silent_switch
+    restore_mode: RESTORE_DEFAULT_ON
+    lambda: |-
+      return id(speaker_active);
+    turn_on_action:
+      - globals.set:
+          id: speaker_active
+          value: "true"
+      - script.execute: refresh_state
+    turn_off_action:
+      - globals.set:
+          id: speaker_active
+          value: "false"
+      - script.execute: refresh_state
+
+  - platform: template
+    name: "Armed"
+    id: armed_switch
+    restore_mode: RESTORE_DEFAULT_OFF
+    lambda: |-
+      return id(arm);
+    turn_on_action:
+      - globals.set:
+          id: arm
+          value: "true"
+      - script.execute:
+          id: play_rtttl
+          tone: ${rtttl_arm}
+      - script.execute: refresh_state
+    turn_off_action:
+      - globals.set:
+          id: arm
+          value: "false"
+      - script.execute:
+          id: play_rtttl
+          tone: ${rtttl_disarm}
+      - script.execute: refresh_state
+
+  - platform: template
+    id: triggered_switch
+    name: "Triggered"
+    restore_mode: ALWAYS_OFF
+    lambda: |-
+      return id(triggered);
+    turn_on_action:
+      - globals.set:
+          id: triggered
+          value: "true"
+      - script.execute: alarm_on
+    turn_off_action:
+      - globals.set:
+          id: triggered
+          value: "false"
+      - script.execute: alarm_off
+
+
+light:
+  - platform: monochromatic
+    name: "Alarm Light"
+    internal: True
+    output: light_out
+    id: alarm_light
+    restore_mode: ALWAYS_OFF
+    effects:
+      - pulse:
+          name: "Alarm Pulse"
+          transition_length: 0.3s
+          update_interval: 0.3s
+          min_brightness: 0%
+          max_brightness: 100%
+      - lambda:
+          name: "Idle Pulse"
+          update_interval: 500ms
+          lambda: |-
+            static int state = 0;
+            auto call = id(alarm_light).turn_on();
+            // Transition of 1000ms = 1s
+            call.set_transition_length(500);
+            if (state == 1) {
+              call.set_brightness(0.01);
+            } else if (state == 20) {
+              call.set_brightness(1.0);
+            }
+            call.perform();
+            if (state == 20) {
+              state = 1;
+            } else {
+              state++;
+            }
+
+script:
+  - id: set_light
+    parameters:
+      effect: string
+    then:
+    - if:
+        condition:
+          - lambda: "return id(light_active);"
+        then:
+        - light.turn_on:
+            id: alarm_light
+            effect: !lambda return effect;
+        else:
+        - light.turn_off: alarm_light
+
+  - id: play_rtttl
+    parameters:
+      tone: string
+    then:
+    - if:
+        condition:
+          - lambda: "return id(speaker_active);"
+        then:
+          - rtttl.play: !lambda return tone;
+
+  - id: refresh_state
+  
+    then:
+    - if:
+        condition:
+          - and:
+            - lambda: "return id(arm);"
+            - or:
+              - binary_sensor.is_on: siren_removed_sensor
+              - binary_sensor.is_off: charger_sensor
+        then:
+          - switch.turn_on: triggered_switch
+        else:
+          - switch.turn_off: triggered_switch
+
+  - id: alarm_on
+    mode: restart
+    then:
+    - switch.turn_off: second_siren
+    - script.execute:
+        id: set_light
+        effect: "Alarm Pulse"
+    - while:
+        condition:
+          - and:
+            - lambda: "return id(speaker_active);"
+            - lambda: "return id(triggered);"
+        then:
+        - switch.turn_on: second_siren
+        - delay: 30s
+        - switch.turn_off: second_siren
+        - delay: 30s
+
+  - id: alarm_off
+    then:
+    - script.stop: alarm_on
+    - switch.turn_off: second_siren
+    - script.execute:
+        id: set_light
+        effect: "Idle Pulse"

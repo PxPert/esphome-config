@@ -1,0 +1,152 @@
+substitutions:
+  name: atomecho01
+  friendly_name: Atom Echo
+  static_ip: 192.168.2.186
+  micro_wake_word_model: okay_nabu  # alexa, hey_jarvis, hey_mycroft are also supported
+
+
+
+esphome:
+  name: "${name}"
+  friendly_name: "${friendly_name}"
+  name_add_mac_suffix: false
+  project:
+    name: m5stack.atom-echo-voice-assistant
+    version: "1.0"
+  min_version: 2024.6.0
+  includes:
+    - timer_finished.h
+    - wake_word_triggered.h
+
+esp32:
+  board: esp32dev # m5stack-atom
+  framework:
+    type: esp-idf
+    version: 4.4.8
+    platform_version: 5.4.0
+
+logger:
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+    password: !secret ota_pwd_sec
+#  - platform: http_request
+#    id: ota_http_request
+#
+#update:
+#  - platform: http_request
+#    id: update_http_request
+#    name: Firmware
+#    source: https://firmware.esphome.io/wake-word-voice-assistant/m5stack-atom-echo/manifest.json
+
+# dashboard_import:
+#   package_import_url: github://esphome/firmware/voice-assistant/m5stack-atom-echo.yaml@main
+
+wifi:
+  networks:
+  - ssid: !secret wifi_dmz_ssid
+    password: !secret wifi_dmz_password
+  use_address: 192.168.2.186
+
+  #manual_ip:
+  #  static_ip: ${static_ip}
+  #  gateway: 192.xxxxxxxxx
+  #  subnet: 255.255.255.0
+binary_sensor:
+  # button does the following:
+  # short click - stop a timer
+  # if no timer then restart either microwakeword or voice assistant continuous
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+    name: Button
+    disabled_by_default: true
+    entity_category: diagnostic
+    id: echo_button
+    on_press:
+      then:
+        - script.execute: sound_wake_word_triggered
+        - script.execute: sound_timer_finished
+button:
+  - platform: template
+    name: Test speaker
+    id: test_speaker
+    entity_category: config
+    on_press:
+#      - lambda: id(echo_speaker).play(id(timer_finished_wave_file), sizeof(id(timer_finished_wave_file)));
+      - script.execute: sound_timer_finished
+      - script.execute: sound_wake_word_triggered
+
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
+  - platform: restart
+    name: "${friendly_name} Restart"
+
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO19
+
+
+speaker:
+  - platform: i2s_audio
+    id: echo_speaker
+    i2s_dout_pin: GPIO22
+    dac_type: external
+    channel: mono
+#    buffer_duration: 1500ms
+    timeout: 1000ms
+#    sample_rate: 32000
+
+
+microphone:
+  - platform: i2s_audio
+    id: echo_microphone
+    i2s_din_pin: GPIO23
+    adc_type: external
+    pdm: true
+
+
+
+switch:
+  - platform: template
+    id: timer_ringing
+    optimistic: true
+    internal: true
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - delay: 15min
+      - switch.turn_off: timer_ringing
+
+
+external_components:
+  - source: github://pr#5230
+    components:
+      - esp_adf
+    refresh: 0s
+
+esp_adf:
+
+script:
+  - id: sound_timer_finished
+    then:
+#      - lambda: id(echo_speaker).start();
+#      - delay: 50ms
+      - lambda: id(echo_speaker).play(timer_finished, timer_finished_len);
+      - wait_until:
+          not:
+            speaker.is_playing
+  - id: sound_wake_word_triggered
+    then:
+      - lambda: id(echo_speaker).start();
+      - delay: 50ms
+      - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
+      - wait_until:
+          not:
+            speaker.is_playing

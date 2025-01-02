@@ -25,6 +25,7 @@ api:
 # Enable OTA firmware update, you will be able to upload the firmware over WiFi without connecting the device by cables
 ota:
   password: !secret ota_pwd_sec
+  platform: esphome
 
 # Setup your WiFi password
 wifi:
@@ -46,7 +47,8 @@ uart:
 
 # Import custom component from GitHub
 external_components:
-  - source: github://lanwin/esphome_samsung_ac@main # use @main if you want the latest development (possibly unstable?)
+##  - source: github://lanwin/esphome_samsung_ac@main # use @main if you want the latest development (possibly unstable?)
+  - source: github://omerfaruk-aran/esphome_samsung_hvac_bus@main # Use @stable if you want a more stable experience, but note a lot of this example code breaks.
     components: [samsung_ac]
 
 # Configuration of AC component
@@ -54,7 +56,7 @@ samsung_ac:
 
   # For NonNASA devices the following option can be enabled to prevent the device from sleeping when idle. This allows
   # values like internal and external temperature to continue to be tracked when the device isn't in use.
-  non_nasa_keepalive: true
+  # non_nasa_keepalive: true
 
   # Capabilities configure the features alle devices of your AC system have (all parts of this section are optional).
   # All capabilities are off by default, you need to enable only those your devices have.
@@ -76,11 +78,34 @@ samsung_ac:
       outdoor_temperature: # Should be used with outdoor device address
         name: "Temperatura esterna"
 
+      error_code:
+        name: "Codice errore"
+
+      outdoor_instantaneous_power:
+        name: "Assorbimento istantaneo"
+
+      # This sensor records the cumulative energy consumption of the outdoor unit in kWh.
+      # It calculates the total energy consumed over time, allowing users to monitor and analyze energy efficiency.
+      outdoor_cumulative_energy:
+        name: "Energia cumulativa consumata"
+
+      # This sensor measures the current drawn by the outdoor unit in Amperes.
+      # Monitoring current values helps identify electrical irregularities and ensure safe power levels in the system.
+      outdoor_current:
+        name: "Consumo corrente"
+
+      # This sensor tracks the voltage supplied to the outdoor unit in Volts.
+      # Consistent voltage readings indicate stable power delivery, while deviations can help detect electrical issues in the system.
+      outdoor_voltage:
+        name: "Voltaggio"
+
     - address: "20.00.00" # Indoor device address
       climate:
         name: "Condizionatore mansarda"
       room_humidity:
         name: "Umidità mansarda"
+      automatic_cleaning:
+        name: "Pulizia automatica condizionatore mansarda"
 
     - address: "20.00.01" # Indoor device address
       climate:
@@ -88,7 +113,8 @@ samsung_ac:
       # If your AC sits near or inside the ceiling, the reported room temperature is often a little bit heigher then whats 
       # measured below. This property can be used to correct that value.
       # room_temperature_offset: -1.4
-
       room_humidity:
         name: "Umidità soggiorno"
+      automatic_cleaning:
+        name: "Pulizia automatica condizionatore soggiorno"
 

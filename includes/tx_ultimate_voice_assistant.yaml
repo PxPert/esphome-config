@@ -15,8 +15,8 @@ substitutions:
 micro_wake_word:
 #  model: okay_nabu
   models:
-#    - model: github://esphome/micro-wake-word-models/models/v2/okay_nabu.json
-    - model: github://esphome/micro-wake-word-models/models/v2/alexa.json
+    - model: github://esphome/micro-wake-word-models/models/v2/okay_nabu.json
+#    - model: github://esphome/micro-wake-word-models/models/v2/alexa.json
 #  probability_cutoff: 0.4
 #
   on_wake_word_detected:

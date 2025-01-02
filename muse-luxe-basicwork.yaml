@@ -11,12 +11,12 @@ esphome:
   on_boot:
     then:
 #      - output.turn_on: dac_mute
-#      - light.turn_on:
-#          id: top_led
-#          effect: slow_pulse
-#          red: 100%
-#          green: 60%
-#          blue: 0%
+      - light.turn_on:
+          id: top_led
+          effect: slow_pulse
+          red: 100%
+          green: 60%
+          blue: 0%
 
 mdns:
   disabled: True
@@ -25,48 +25,7 @@ esp32:
   board: esp-wrover-kit
   framework:
     type: esp-idf
-    sdkconfig_options:
-      CONFIG_ESP32_DEFAULT_CPU_FREQ_240: "y"
-#      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
-#      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
-#      CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB: "y"
-      CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY: "y"
 
-      CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: "y"
-
-      # Settings based on https://github.com/espressif/esp-adf/issues/297#issuecomment-783811702
-      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "16"
-      CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM: "512"
-      CONFIG_ESP32_WIFI_STATIC_TX_BUFFER: "y"
-      CONFIG_ESP32_WIFI_TX_BUFFER_TYPE: "0"
-      CONFIG_ESP32_WIFI_STATIC_TX_BUFFER_NUM: "8"
-      CONFIG_ESP32_WIFI_CACHE_TX_BUFFER_NUM: "32"
-      CONFIG_ESP32_WIFI_AMPDU_TX_ENABLED: "y"
-      CONFIG_ESP32_WIFI_TX_BA_WIN: "16"
-      CONFIG_ESP32_WIFI_AMPDU_RX_ENABLED: "y"
-      CONFIG_ESP32_WIFI_RX_BA_WIN: "32"
-      CONFIG_LWIP_MAX_ACTIVE_TCP: "16"
-      CONFIG_LWIP_MAX_LISTENING_TCP: "16"
-      CONFIG_TCP_MAXRTX: "12"
-      CONFIG_TCP_SYNMAXRTX: "6"
-      CONFIG_TCP_MSS: "1436"
-      CONFIG_TCP_MSL: "60000"
-      CONFIG_TCP_SND_BUF_DEFAULT: "65535"
-      CONFIG_TCP_WND_DEFAULT: "65535"  # Adjusted from linked settings to avoid compilation error
-      CONFIG_TCP_RECVMBOX_SIZE: "512"
-      CONFIG_TCP_QUEUE_OOSEQ: "y"
-      CONFIG_TCP_OVERSIZE_MSS: "y"
-      CONFIG_LWIP_WND_SCALE: "y"
-      CONFIG_TCP_RCV_SCALE: "3"
-      CONFIG_LWIP_TCPIP_RECVMBOX_SIZE: "512"
-
-      CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST: "y"
-      CONFIG_BT_BLE_DYNAMIC_ENV_MEMORY: "y"
-
-      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: "y"
-# psram:
-#   mode: octal
-#   speed: 80MHz
 logger:
   
 api:
@@ -110,39 +69,8 @@ external_components:
   - source: github://pr#3552 # DAC support https://github.com/esphome/esphome/pull/3552
     components: [es8388]
     refresh: 0s
-  - source: github://jesserockz/esphome-components
-    components: [file]
-  - source: github://pr#7672
-    components:
-      - audio
-      - speaker
-      - i2s_audio
-      - speaker
-    refresh: 0s
-  - source: github://pr#5230
-    components:
-      - esp_adf
-    refresh: 0s
-#  - source:
-#      type: git
-#      url: https://github.com/esphome/home-assistant-voice-pe
-#      ref: dev
-#    components:
-#      - audio_dac
-#      - media_player
-##      - micro_wake_word
-##      - microphone
-#      - nabu
-##      - nabu_microphone
-##      - voice_assistant
-##      - voice_kit
-#    refresh: 0s
-
-#https://github.com/esphome/home-assistant-voice-pe/blob/cb68c5da171d68017afd60ad41a5f8f76c812d3f/home-assistant-voice.yaml
 
 es8388:
-
-esp_adf:
 
 globals:
   - id: wifi_connected
@@ -162,14 +90,14 @@ interval:
             - globals.set:
                 id: wifi_connected
                 value: "true"
-#            - light.turn_on:
-#                id: top_led
-#                effect: pulse
-#                red: 0%
-#                green: 100%
-#                blue: 0%
-#            - delay: 1s
-#            - light.turn_off: top_led
+            - light.turn_on:
+                id: top_led
+                effect: pulse
+                red: 0%
+                green: 100%
+                blue: 0%
+            - delay: 1s
+            - light.turn_off: top_led
 #
 #output:
 #  - platform: gpio
@@ -178,128 +106,61 @@ interval:
 #    inverted: true
 #
 i2s_audio:
-  - id: i2s_mic
-    i2s_lrclk_pin: 
-      number: GPIO25
-#      allow_other_uses: true
-    i2s_bclk_pin: 
-      number: GPIO5
-#      allow_other_uses: true
-
-#  - id: i2s_spk
-#    i2s_lrclk_pin: 
-#      number: GPIO25
-#      allow_other_uses: true
-#    i2s_bclk_pin: 
-#      number: GPIO5
-#      allow_other_uses: true
+  - i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO5
 
 speaker:
   - platform: i2s_audio
-#    i2s_audio_id: i2s_spk
     id: board_external_speakers
     dac_type: external
     i2s_dout_pin: GPIO26
-    channel: mono
-    sample_rate: 44100
+    channel: stereo
 #    mute_pin:
 #      number: GPIO21
 #      inverted: true
 
-#microphone:
-#  - platform: nabu_microphone
-#    id: master_microphone
-#    i2s_din_pin: GPIO35
-#    adc_type: external
-#    pdm: false
-#    channel_0:
-#      id: luxe_microphone
-#      amplify_shift: 0
-
 microphone:
   - platform: i2s_audio
-#    i2s_audio_id: i2s_mic
     id: luxe_microphone
     i2s_din_pin: GPIO35
     adc_type: external
     pdm: false
 
-media_player:
-  - platform: speaker
-    id: nabu_media_player
-    name: Media Player
-    internal: false
-    speaker: board_external_speakers
-    sample_rate: 44100
-    volume_increment: 0.05
-    volume_min: 0.4
-    volume_max: 0.85
-
-#media_player:
-#  - platform: nabu
-#    id: nabu_media_player
-#    name: Media Player
-#    internal: false
-#    speaker: board_external_speakers
-#    sample_rate: 48000
-#    volume_increment: 0.05
-#    volume_min: 0.4
-#    volume_max: 0.85
-
-micro_wake_word:
-  id: mww
-  models:
-    - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241205.4/okay_nabu.json
-#      id: okay_nabu
-#    - model: https://github.com/kahrendt/microWakeWord/releases/download/stop/stop.json
-#      id: stop
-#      internal: true
-#  vad:
-  microphone: luxe_microphone
-  on_wake_word_detected:
-    # If the wake word is detected when the device is muted (Possible with the software mute switch): Do nothing
-    - voice_assistant.start:
-        wake_word: !lambda return wake_word;
-
-
 voice_assistant:
   id: va
   microphone: luxe_microphone
-  media_player: nabu_media_player
-  # speaker: board_external_speakers
-#  micro_wake_word: mww
-  use_wake_word: false
-  noise_suppression_level: 0
-  auto_gain: 0 dbfs
-  volume_multiplier: 1
+  speaker: board_external_speakers
+  use_wake_word: true
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
 #  on_wake_word_detected:
 #    - microphone.stop_capture
 #    - media_player.play_media: 'http://172.16.0.5:8123/local/sounds/beep-01.mp3'
 #    - microphone.capture
-
-#  on_listening:
-#    - light.turn_on:
-#        id: top_led
-#        blue: 100%
-#        red: 0%
-#        green: 0%
-#        brightness: 100%
-#        effect: pulse
-#  on_tts_start:
-#    - light.turn_on:
-#        id: top_led
-#        blue: 60%
-#        red: 20%
-#        green: 20%
-#        effect: none
-#  on_tts_end:
-##    - media_player.play_media: !lambda return x;
-#    - light.turn_on:
-#        id: top_led
-#        blue: 60%
-#        red: 20%
-#        green: 20%
-#        effect: pulse
+  on_listening:
+    - light.turn_on:
+        id: top_led
+        blue: 100%
+        red: 0%
+        green: 0%
+        brightness: 100%
+        effect: pulse
+  on_tts_start:
+    - light.turn_on:
+        id: top_led
+        blue: 60%
+        red: 20%
+        green: 20%
+        effect: none
+  on_tts_end:
+#    - media_player.play_media: !lambda return x;
+    - light.turn_on:
+        id: top_led
+        blue: 60%
+        red: 20%
+        green: 20%
+        effect: pulse
     # This is useful when you want to stream the response on another media_player
     # - homeassistant.service:
     #     service: media_player.play_media
@@ -308,48 +169,97 @@ voice_assistant:
     #       media_content_id: !lambda 'return x;'
     #       media_content_type: music
     #       announce: "true"
-#  on_client_connected:
-#    - micro_wake_word.start
+  on_client_connected:
+    - if:
+        condition:
+          - switch.is_on: use_wake_word
+        then:
+          - voice_assistant.start_continuous:
   on_client_disconnected:
-    - voice_assistant.stop:
+    - if:
+        condition:
+          - switch.is_on: use_wake_word
+        then:
+          - voice_assistant.stop:
   on_end:
     - delay: 100ms
 #    - wait_until:
 #        not:
 #          media_player.is_playing: luxe_out
-#    - script.execute: reset_led
-#  on_error:
-#    - light.turn_on:
-#        id: top_led
-#        blue: 0%
-#        red: 100%
-#        green: 0%
-#        effect: none
-#    - delay: 1s
-#    - script.execute: reset_led
-#    - script.wait: reset_led
-#sensor:
-#  - platform: adc
-#    pin: GPIO33
-#    name: Battery voltage
-#    device_class: voltage
-#    unit_of_measurement: "V"
-#    accuracy_decimals: 2
-#    state_class: measurement
-#    entity_category: diagnostic
-#    update_interval: 15s
-#    attenuation: auto
-#    filters:
-#      - multiply: 2 # https://forum.raspiaudio.com/t/esp-muse-luxe-bluetooth-speaker/294/12
-#      - exponential_moving_average:
-#          alpha: 0.2
-#          send_every: 2
-#      - delta: 0.002
-#    on_value:
-#      then:
-#        - sensor.template.publish:
-#            id: battery_percent
-#            state: !lambda "return x;"
+    - script.execute: reset_led
+  on_error:
+    - light.turn_on:
+        id: top_led
+        blue: 0%
+        red: 100%
+        green: 0%
+        effect: none
+    - delay: 1s
+    - script.execute: reset_led
+    - script.wait: reset_led
+    - lambda: |-
+        if (code == "wake-provider-missing" || code == "wake-engine-missing") {
+          id(use_wake_word).turn_off();
+        }
+sensor:
+  - platform: adc
+    pin: GPIO33
+    name: Battery voltage
+    device_class: voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    state_class: measurement
+    entity_category: diagnostic
+    update_interval: 15s
+    attenuation: auto
+    filters:
+      - multiply: 2 # https://forum.raspiaudio.com/t/esp-muse-luxe-bluetooth-speaker/294/12
+      - exponential_moving_average:
+          alpha: 0.2
+          send_every: 2
+      - delta: 0.002
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: battery_percent
+            state: !lambda "return x;"
+
+  - platform: template
+    name: Battery
+    id: battery_percent
+    device_class: battery
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    state_class: measurement
+    entity_category: diagnostic
+    update_interval: 15s
+    filters:
+      - calibrate_polynomial:
+          degree: 3
+          datapoints:
+            - 4.58 -> 100.0
+            - 4.5 -> 97.1
+            - 4.47 -> 94.2
+            - 4.44 -> 88.4
+            - 4.42 -> 82.7
+            - 4.41 -> 76.9
+            - 4.41 -> 71.1
+            - 4.37 -> 65.3
+            - 4.35 -> 59.5
+            - 4.31 -> 53.8
+            - 4.28 -> 48.0
+            - 4.26 -> 42.2
+            - 4.23 -> 36.4
+            - 4.21 -> 30.6
+            - 4.19 -> 24.9
+            - 4.16 -> 19.1
+            - 4.1 -> 13.3
+            - 4.07 -> 10.4
+            - 4.03 -> 7.5
+            - 3.97 -> 4.6
+            - 3.82 -> 1.7
+            - 3.27 -> 0.0
+      - lambda: return clamp(x, 0.0f, 100.0f);
 
 binary_sensor:
   - platform: gpio
@@ -1402,69 +1312,70 @@ binary_sensor:
 
           ]
 #      - media_player.volume_down: luxe_out
-#   - platform: gpio
-#     pin:
-#       number: GPIO12
-#       inverted: true
-#       mode:
-#         input: true
-#         pullup: true
-#     name: Action
-#     on_click:
-#       - if:
-#           condition:
-#             switch.is_off: use_wake_word
-#           then:
-#             - if:
-#                 condition: voice_assistant.is_running
-#                 then:
-#                   - voice_assistant.stop:
-# #                  - script.execute: reset_led
-#                 else:
-#                   - voice_assistant.start:
-#           else:
-#             - voice_assistant.stop
-#             - delay: 1s
-# #            - script.execute: reset_led
-# #            - script.wait: reset_led
-#
-#light:
-#  - platform: esp32_rmt_led_strip
-#    name: None
-#    id: top_led
-#    pin: GPIO22
-#    chipset: SK6812
-#    num_leds: 1
-#    rgb_order: grb
-#    rmt_channel: 0
-#    default_transition_length: 0s
-#    gamma_correct: 2.8
-#    effects:
-#      - pulse:
-#          name: pulse
-#          transition_length: 250ms
-#          update_interval: 250ms
-#      - pulse:
-#          name: slow_pulse
-#          transition_length: 1s
-#          update_interval: 2s
-#
-# script:
-#   - id: reset_led
-#     then:
-#       - if:
-#           condition:
-#             switch.is_on: use_wake_word
-#           then:
-#             - light.turn_on:
-#                 id: top_led
-#                 blue: 100%
-#                 red: 100%
-#                 green: 0%
-#                 brightness: 100%
-#                 effect: none
-#           else:
-#             - light.turn_off: top_led
+  - platform: gpio
+    pin:
+      number: GPIO12
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Action
+    on_click:
+      - if:
+          condition:
+            switch.is_off: use_wake_word
+          then:
+            - if:
+                condition: voice_assistant.is_running
+                then:
+                  - voice_assistant.stop:
+                  - script.execute: reset_led
+                else:
+                  - voice_assistant.start:
+          else:
+            - voice_assistant.stop
+            - delay: 1s
+            - script.execute: reset_led
+            - script.wait: reset_led
+            - voice_assistant.start_continuous:
+
+light:
+  - platform: esp32_rmt_led_strip
+    name: None
+    id: top_led
+    pin: GPIO22
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    rmt_channel: 0
+    default_transition_length: 0s
+    gamma_correct: 2.8
+    effects:
+      - pulse:
+          name: pulse
+          transition_length: 250ms
+          update_interval: 250ms
+      - pulse:
+          name: slow_pulse
+          transition_length: 1s
+          update_interval: 2s
+
+script:
+  - id: reset_led
+    then:
+      - if:
+          condition:
+            switch.is_on: use_wake_word
+          then:
+            - light.turn_on:
+                id: top_led
+                blue: 100%
+                red: 100%
+                green: 0%
+                brightness: 100%
+                effect: none
+          else:
+            - light.turn_off: top_led
 
 switch:
   - id: mute_switch
@@ -1472,12 +1383,21 @@ switch:
     pin: GPIO21
     inverted: True
 
-#  - platform: template
-#    name: Use Wake Word
-#    id: use_wake_word
-#    optimistic: true
-#    restore_mode: RESTORE_DEFAULT_ON
-#    on_turn_on:
-#      - micro_wake_word.start
-#    on_turn_off:
-#      - micro_wake_word.stop
+  - platform: template
+    name: Use Wake Word
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - lambda: id(va).set_use_wake_word(true);
+      - if:
+          condition:
+            not:
+              - voice_assistant.is_running
+          then:
+            - voice_assistant.start_continuous
+      - script.execute: reset_led
+    on_turn_off:
+      - voice_assistant.stop
+      - lambda: id(va).set_use_wake_word(false);
+      - script.execute: reset_led

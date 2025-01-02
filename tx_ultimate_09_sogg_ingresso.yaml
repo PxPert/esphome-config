@@ -26,13 +26,21 @@ packages:
   multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
 
   # Relè e luci locali
-  light_1: !include
+  light_ing: !include
     file: includes/tx_ultimate_light.yaml
+    vars:
+      id: relay_ing
+      name: "Relay luci esterne ingresso"
+      pin: ${relay_1_pin}
+  light_1: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
     vars:
       id: relay_1
       relay_index: 0
-      name: "Luci esterne ingresso"
-      pin: ${relay_1_pin}
+      subscribe_topic: "LUCI/luci_esterne"
+      value_on: "ON"
+      command_topic: "LUCI_SWITCH/luci_esterne"
+      command_toggle: "2"
   light_2: !include
     file: includes/tx_ultimate_mqtt_relay.yaml
     vars:
@@ -71,7 +79,7 @@ script:
           condition:
             lambda: "return index == 0;"
           then:
-            - light.toggle: relay_1
+            - script.execute: mqtt_toggle_relay_1
           else:
             - if:
                 condition:
@@ -130,3 +138,19 @@ button:
     platform: output
     output: campanello_gpio
     duration: 200ms
+
+mqtt: 
+  on_message: 
+    - topic: "interruttore-sogg-ingresso/light/relay_luci_esterne_ingresso/command"
+      payload: "ON"
+      then: 
+        light.turn_on: relay_ing
+    - topic: "interruttore-sogg-ingresso/light/relay_luci_esterne_ingresso/command"
+      payload: "OFF"
+      then: 
+        light.turn_off: relay_ing
+    - topic: "interruttore-sogg-ingresso/light/relay_luci_esterne_ingresso/command"
+      payload: "TOGGLE"
+      then: 
+        light.toggle: relay_ing
+

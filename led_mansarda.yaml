@@ -1,0 +1,49 @@
+esphome:
+  name: led_mansarda
+  friendly_name: Led mansarda
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+  level: INFO
+
+preferences:
+  flash_write_interval: 6h
+
+mdns:
+  disabled: True
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_pwd_sec
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.15
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO1
+    frequency: 1000 Hz
+    id: 'output_cold_white'
+  - platform: esp8266_pwm
+    pin: GPIO2
+    frequency: 1000 Hz
+    id: 'output_warm_white'
+
+light:
+  - platform: cwww
+    name: "Led Mansarda"
+    cold_white: output_cold_white
+    warm_white: output_warm_white
+    cold_white_color_temperature: 6536 K
+    warm_white_color_temperature: 2000 K
+    constant_brightness: true
