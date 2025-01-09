@@ -101,9 +101,21 @@ button:
     entity_category: config
     on_press:
       then:
+      - if:
+          condition:
+            micro_wake_word.is_running
+          then:
+            - micro_wake_word.stop
+            - wait_until:
+                not:
+                  micro_wake_word.is_running
       - lambda: id(echo_speaker).start();
       - delay: 25ms
       - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
+      - wait_until:
+          not:
+            speaker.is_playing
+      - script.execute: restore_wake_word
 
   - platform: template
     name: Stop timer
