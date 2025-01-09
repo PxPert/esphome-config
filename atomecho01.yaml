@@ -15,11 +15,11 @@ esphome:
     version: "1.0"
   min_version: 2024.6.0
   includes:
-    - timer_finished.h
-    - wake_word_triggered.h
+    - audio/timer_finished.h
+    - audio/wake_word_triggered.h
 
 esp32:
-  board: esp32dev # m5stack-atom
+  board: m5stack-atom
   framework:
     type: esp-idf
     version: 4.4.8
@@ -56,6 +56,13 @@ wifi:
   #  static_ip: ${static_ip}
   #  gateway: 192.xxxxxxxxx
   #  subnet: 255.255.255.0
+
+globals:
+  - id: va_state
+    type: bool
+    initial_value: 'false'
+    restore_value: yes
+
 binary_sensor:
   # button does the following:
   # short click - stop a timer
@@ -70,23 +77,59 @@ binary_sensor:
     id: echo_button
     on_press:
       then:
-        - script.execute: sound_wake_word_triggered
-        - script.execute: sound_timer_finished
+        - if:
+            condition:
+              voice_assistant.is_running
+            then:
+              - voice_assistant.stop
+              - script.execute: refresh_led_default
+              - script.execute: restore_wake_word
+
+            else:
+              - if:
+                  condition:
+                    switch.is_on: timer_ringing
+                  then:
+                    - switch.turn_off: timer_ringing
+                  else:
+                    - script.execute: start_assistant
+
 button:
   - platform: template
     name: Test speaker
     id: test_speaker
     entity_category: config
     on_press:
-#      - lambda: id(echo_speaker).play(id(timer_finished_wave_file), sizeof(id(timer_finished_wave_file)));
-      - script.execute: sound_timer_finished
-      - script.execute: sound_wake_word_triggered
+      then:
+      - lambda: id(echo_speaker).start();
+      - delay: 25ms
+      - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
+
+  - platform: template
+    name: Stop timer
+    id: stop_timer
+    on_press:
+      then:
+        - switch.turn_off: timer_ringing
+
+  - platform: template
+    name: Start assistant
+    id: btn_start_assistant
+    entity_category: config
+    on_press:
+      then:
+        - if:
+            condition:
+              switch.is_off: timer_ringing
+            then:
+              - script.execute: start_assistant
 
   - platform: factory_reset
     id: factory_reset_btn
     name: Factory reset
   - platform: restart
     name: "${friendly_name} Restart"
+
 
 i2s_audio:
   - id: i2s_audio_bus
@@ -101,8 +144,9 @@ speaker:
     dac_type: external
     channel: mono
 #    buffer_duration: 1500ms
-    timeout: 1000ms
-#    sample_rate: 32000
+    timeout: 100ms
+    bits_per_sample: 16bit
+    sample_rate: 8000
 
 
 microphone:
@@ -112,7 +156,20 @@ microphone:
     adc_type: external
     pdm: true
 
-
+number:
+  - name: Speaker Volume
+    id: volume
+    platform: template
+    entity_category: config
+    min_value: 0
+    max_value: 1.0
+    step: 0.05
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    on_value:
+      - lambda: id(echo_speaker).set_volume(x);
 
 switch:
   - platform: template
@@ -121,9 +178,24 @@ switch:
     internal: true
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - delay: 15min
-      - switch.turn_off: timer_ringing
+      - script.execute: timer_start_ringing
+    on_turn_off: 
+      then:
+        - script.stop: timer_start_ringing
+        - script.execute: restore_wake_word
 
+  - platform: template
+    name: Use wake word
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    on_turn_on:
+      - micro_wake_word.start
+      - script.execute: refresh_led_default
+    on_turn_off:
+      - micro_wake_word.stop
+      - script.execute: refresh_led_default
 
 external_components:
   - source: github://pr#5230
@@ -134,19 +206,225 @@ external_components:
 esp_adf:
 
 script:
-  - id: sound_timer_finished
+
+  - id: restore_wake_word
     then:
-#      - lambda: id(echo_speaker).start();
-#      - delay: 50ms
-      - lambda: id(echo_speaker).play(timer_finished, timer_finished_len);
+      - script.execute: refresh_led_default
+      - if:
+          condition:
+            switch.is_on: use_wake_word
+          then:
+            - delay: 100ms
+            - wait_until:
+                not:
+                  speaker.is_playing
+            - micro_wake_word.start
+
+
+  - id: start_assistant
+    then:
+      - if:
+          condition:
+            micro_wake_word.is_running
+          then:
+            - micro_wake_word.stop
+            - wait_until:
+                not:
+                  micro_wake_word.is_running
+      - voice_assistant.start
+      - light.turn_on:
+          id: led
+          red: 0
+          green: 0
+          blue: 1
+          brightness: 1
+
+  - id: refresh_led_default
+    mode: restart
+    then:
+      - if:
+          condition:
+            switch.is_on: timer_ringing
+          then:
+            - light.turn_on:
+                id: led
+                red: 0%
+                green: 100%
+                blue: 0%
+                brightness: 100%
+                effect: "Fast Pulse"
+          else:
+            - if:
+                condition:
+                  lambda: return id(va)->get_timers().size() > 0;
+                then:
+                  - light.turn_on:
+                      id: led
+                      red: 0%
+                      green: 100%
+                      blue: 100%
+                      brightness: 100%
+                      effect: "Very Slow Pulse"
+                else:
+                  - if:
+                      condition:
+                        switch.is_on: use_wake_word
+                      then:
+                        - light.turn_on:
+                            id: led
+                            red: 0%
+                            green: 0%
+                            blue: 100%
+                            brightness: 100%
+                            effect: none
+                      else:
+                        - light.turn_off: led
+
+  - id: timer_start_ringing
+    then:
+      - script.execute: timer_perform_ringing
+      - delay: 1min
+      - switch.turn_off: timer_ringing
+
+  - id: timer_perform_ringing
+    then:
+      - script.execute: refresh_led_default
+      - voice_assistant.stop:
+      - micro_wake_word.stop:
       - wait_until:
           not:
-            speaker.is_playing
-  - id: sound_wake_word_triggered
-    then:
-      - lambda: id(echo_speaker).start();
+            microphone.is_capturing:
+      - delay: 100ms
+      - lambda: |- 
+          id(echo_speaker).set_timeout(1200);
+          id(echo_speaker).start();
       - delay: 50ms
-      - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
+      - while:
+          condition:
+            switch.is_on: timer_ringing
+          then:
+  #          - lambda: id(echo_speaker).play(id(timer_finished_wave_file), sizeof(id(timer_finished_wave_file)));
+            - lambda: id(echo_speaker).play(timer_finished, timer_finished_len);
+#            - wait_until:
+#                not:
+#                  speaker.is_playing
+            - delay: 924ms # 500ms + 424ms audio file duration
       - wait_until:
           not:
-            speaker.is_playing
+            speaker.is_playing:
+
+voice_assistant:
+  id: va
+  microphone: echo_microphone
+  speaker: echo_speaker
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 10.0
+  vad_threshold: 3
+  on_wake_word_detected:
+    - microphone.stop_capture:
+    - wait_until:
+        not:
+          microphone.is_capturing:
+#    - lambda: id(echo_speaker).play(id(ok_sound), sizeof(id(ok_sound)));
+  on_listening:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: "Slow Pulse"
+  on_stt_vad_end:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: "Fast Pulse"
+  on_tts_start:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        brightness: 100%
+        effect: none
+  on_tts_stream_end: 
+    then:
+      - script.execute: restore_wake_word
+#  on_end:
+  on_error:
+    - light.turn_on:
+        id: led
+        red: 100%
+        green: 0%
+        blue: 0%
+        brightness: 100%
+        effect: none
+    - script.execute: restore_wake_word
+    - delay: 1s
+    - script.execute: refresh_led_default
+  on_client_connected:
+    - delay: 2s  # Give the api server time to settle
+    - script.execute: restore_wake_word
+#    - micro_wake_word.start:
+  on_client_disconnected:
+    - voice_assistant.stop:
+    - micro_wake_word.stop:
+  on_timer_finished:
+    - switch.turn_on: timer_ringing
+
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: led
+    name: None
+    disabled_by_default: true
+    entity_category: config
+    pin: GPIO27
+    default_transition_length: 250ms
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    rmt_channel: 0
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Very Slow Pulse"
+          transition_length: 2000ms
+          update_interval: 3000ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
+
+micro_wake_word:
+#  model: okay_nabu
+  id: mww
+  models:
+    - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241205.4/okay_nabu.json
+#      id: okay_nabu
+#    - model: https://github.com/kahrendt/microWakeWord/releases/download/stop/stop.json
+#      id: stop
+#      internal: true
+#  vad:
+#    model: https://github.com/kahrendt/microWakeWord/releases/download/v2.1_models/vad.json
+  microphone: echo_microphone
+  on_wake_word_detected:
+    - lambda: id(echo_speaker).start();
+    - delay: 50ms
+    - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
+    - wait_until:
+        not:
+          speaker.is_playing
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
