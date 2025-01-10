@@ -75,24 +75,24 @@ binary_sensor:
     disabled_by_default: true
     entity_category: diagnostic
     id: echo_button
-    on_press:
+
+    on_multi_click:
+    - timing:
+        - ON for at least 1001ms
       then:
         - if:
             condition:
-              voice_assistant.is_running
+              or:
+                - switch.is_on: timer_ringing
+                - voice_assistant.is_running
             then:
-              - voice_assistant.stop
-              - script.execute: refresh_led_default
-              - script.execute: restore_wake_word
-
+              - script.execute: handle_generic_click
             else:
-              - if:
-                  condition:
-                    switch.is_on: timer_ringing
-                  then:
-                    - switch.turn_off: timer_ringing
-                  else:
-                    - script.execute: start_assistant
+              - switch.toggle: use_wake_word
+    - timing:
+        - ON for at most 1000ms
+      then:
+        - script.execute: handle_generic_click
 
 button:
   - platform: template
@@ -158,7 +158,7 @@ speaker:
 #    buffer_duration: 1500ms
     timeout: 100ms
     bits_per_sample: 16bit
-    sample_rate: 8000
+    sample_rate: 16000
 
 
 microphone:
@@ -215,10 +215,27 @@ external_components:
       - esp_adf
     refresh: 0s
 
-esp_adf:
+# esp_adf:
 
 script:
+  - id: handle_generic_click
+    then:
+      - if:
+          condition:
+            voice_assistant.is_running
+          then:
+            - voice_assistant.stop
+            - script.execute: refresh_led_default
+            - script.execute: restore_wake_word
 
+          else:
+            - if:
+                condition:
+                  switch.is_on: timer_ringing
+                then:
+                  - switch.turn_off: timer_ringing
+                else:
+                  - script.execute: start_assistant
   - id: restore_wake_word
     then:
       - script.execute: refresh_led_default
@@ -270,13 +287,25 @@ script:
                 condition:
                   lambda: return id(va)->get_timers().size() > 0;
                 then:
-                  - light.turn_on:
-                      id: led
-                      red: 0%
-                      green: 100%
-                      blue: 100%
-                      brightness: 100%
-                      effect: "Very Slow Pulse"
+                  - if:
+                      condition:
+                        switch.is_on: use_wake_word
+                      then:
+                        - light.turn_on:
+                            id: led
+                            red: 100%
+                            green: 90%
+                            blue: 0%
+                            brightness: 100%
+                            effect: "Yellow Cyan Strobe"
+                      else:
+                        - light.turn_on:
+                            id: led
+                            red: 100%
+                            green: 90%
+                            blue: 0%
+                            brightness: 100%
+                            effect: "Very Slow Pulse"
                 else:
                   - if:
                       condition:
@@ -332,7 +361,7 @@ voice_assistant:
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 10.0
-  vad_threshold: 3
+#  vad_threshold: 3
   on_wake_word_detected:
     - microphone.stop_capture:
     - wait_until:
@@ -400,6 +429,23 @@ light:
     rgb_order: grb
     rmt_channel: 0
     effects:
+      - strobe:
+          name: "Yellow Cyan Strobe"
+          colors:
+            - state: true
+              brightness: 100%
+              red: 100%
+              green: 90%
+              blue: 0%
+              duration: 2000ms
+              transition_length: 2000ms
+            - state: true
+              brightness: 100%
+              red: 0%
+              green: 0%
+              blue: 100%
+              duration: 2000ms
+              transition_length: 2000ms
       - pulse:
           name: "Slow Pulse"
           transition_length: 250ms
