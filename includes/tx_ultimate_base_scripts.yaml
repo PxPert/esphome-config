@@ -38,56 +38,6 @@ script:
                 state: OFF
       - script.execute: refresh_led_default
 
-  - id: refresh_led_full_off_default
-    mode: restart
-    then:
-      - light.turn_off:
-          id: leds
-          transition_length: ${transition_length}
-      - delay: ${transition_length}
-      - script.execute: refresh_led_default
-
-  - id: refresh_led_default
-    mode: restart
-    then:
-      - lambda: |-
-          if (id(suspend_refresh))
-            return;
-          for (int i = 0; i < id(relay_count); i++) {
-            light::AddressableLightState* led_to_toggle = id(leds_list)[i];
-            if ( (i == 0) && (id(led_with_va_on)) && ( id(va_state))) {
-              led_to_toggle = id(led_with_va_on);
-            }
-            if ( (id(relay_states)[i]) && (id(relays_light).state)) {
-              auto toggle_settings = led_to_toggle->turn_on();
-              toggle_settings.set_rgb(id(button_color)[0]/100.0, id(button_color)[1]/100.0, id(button_color)[2]/100.0);
-              toggle_settings.set_brightness(id(button_color)[3]/100.0);
-              toggle_settings.set_effect("None");
-              toggle_settings.perform();
-            } else {
-              if (id(night_light_active).state) {
-                auto toggle_settings = led_to_toggle->turn_on();
-                toggle_settings.set_rgb(id(nightlight_color)[0]/100.0, id(nightlight_color)[1]/100.0, id(nightlight_color)[2]/100.0);
-                toggle_settings.set_brightness(id(nightlight_color)[3]/100.0);
-                toggle_settings.set_effect("None");
-                toggle_settings.perform();
-              } else {
-                led_to_toggle->turn_off().perform();
-              }
-            }
-          }
-          if (id(va_state)) {
-            auto toggle_settings = id(leds_wakeword)->turn_on();
-            toggle_settings.set_rgb(id(va_color)[0]/100.0, id(va_color)[1]/100.0, id(va_color)[2]/100.0);
-            toggle_settings.set_brightness(id(va_color)[3]/100.0);
-            toggle_settings.set_effect("None");
-            toggle_settings.perform();
-          } else {
-            if ((! id(relay_states)[0]) && (! id(night_light_active).state)) {
-              id(leds_wakeword)->turn_off().perform();
-            }
-          }
-
   - id: handle_touch
     mode: restart
     parameters:
@@ -96,20 +46,9 @@ script:
       - script.execute:
           id: on_touch
           index: !lambda return index;
-      - if:
-          condition:
-            switch.is_on: relays_light
-          then:
-            - lambda: |-
-                light::AddressableLightState* led_to_toggle = id(leds_list)[index];
-                if ( (index == 0) && (id(led_with_va_on)) && ( id(va_state)))
-                  { led_to_toggle = id(led_with_va_on); }
-                auto toggle_settings = led_to_toggle->turn_on();
-                toggle_settings.set_rgb(id(touch_color)[0]/100.0, id(touch_color)[1]/100.0, id(touch_color)[2]/100.0);
-                toggle_settings.set_brightness(id(touch_color)[3]/100.0);
-                toggle_settings.set_transition_length(0);
-                toggle_settings.perform();
-
+      - script.execute:
+          id: touch_led_feedback
+          index: !lambda return index;
       - sensor.template.publish:
           id: touch_press
           state: !lambda return index;
@@ -144,12 +83,9 @@ script:
           red: !lambda "return id(swipe_left_color)[0]/100.0;"
           green: !lambda "return id(swipe_left_color)[1]/100.0;"
           blue:  !lambda "return id(swipe_left_color)[2]/100.0;"
-          transition_length: 0ms
-      - light.turn_on:
-          id: leds
           effect: ${swipe_left_effect}
       - delay: 2s
-      - script.execute: refresh_led_full_off_default
+      - script.execute: refresh_led_default
 
   - id: handle_swipe_right
     mode: restart
@@ -165,12 +101,9 @@ script:
           red: !lambda "return id(swipe_right_color)[0]/100.0;"
           green: !lambda "return id(swipe_right_color)[1]/100.0;"
           blue:  !lambda "return id(swipe_right_color)[2]/100.0;"
-          transition_length: 0ms
-      - light.turn_on:
-          id: leds
           effect: ${swipe_right_effect}
       - delay: 2s
-      - script.execute: refresh_led_full_off_default
+      - script.execute: refresh_led_default
 
 
   - id: handle_full_touch
@@ -197,10 +130,10 @@ script:
             auto led_color = id(button_color);
             template_::TemplateSwitch* switch_to_toggle = NULL;
             id(suspend_refresh) = true;
-            if (x < ( (id(led_with_va_on))?4:6)) {
+            if (x < ( (id(ww_switch))?4:6)) {
                 // Button lights
                 switch_to_toggle = id(relays_light);
-            } else if (x > ( (id(led_with_va_on))?6:4)) {
+            } else if (x > ( (id(ww_switch))?6:4)) {
                 // Night lights
                 led_color = id(nightlight_color);
                 switch_to_toggle = id(night_light);
@@ -221,4 +154,4 @@ script:
       - globals.set:
           id: suspend_refresh
           value: "false"
-      - script.execute: refresh_led_full_off_default
+      - script.execute: refresh_led_default

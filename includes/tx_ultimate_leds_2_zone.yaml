@@ -1,56 +1,7 @@
-light:
-  - platform: partition
-    name: "LEDs Wakeword"
-    default_transition_length: ${transition_length}
-    id: leds_wakeword
-    internal: true
-    segments:
-      - id: leds
-        from: 24
-        to: 25
-  - platform: partition
-    name: "LEDs Wakeword Excluded"
-    default_transition_length: ${transition_length}
-    id: leds_wakeword_excluded
-    internal: true
-    segments:
-      - id: leds
-        from: 0
-        to: 3
-      - id: leds
-        from: 20
-        to: 23
-      - id: leds
-        from: 26
-        to: 31
-  - platform: partition
-    name: "LEDs Left"
-    default_transition_length: ${transition_length}
-    id: leds_left
-    internal: true
-    segments:
-      - id: leds
-        from: 0
-        to: 3
-      - id: leds
-        from: 20
-        to: 31
-  - platform: partition
-    name: "LEDs Right"
-    default_transition_length: ${transition_length}
-    id: leds_right
-    internal: true
-    segments:
-      - id: leds
-        from: 4
-        to: 19
-
 globals:
-  - id: !extend led_with_va_on
-    initial_value: leds_wakeword_excluded
-  - id: !extend leds_list
-    type: light::AddressableLightState*[2]
-    initial_value: '{leds_left, leds_right}'
+  - id: leds_array
+    type: std::array<std::vector<int>, 2>
+    initial_value: '{std::vector<int>{0,1,2,3,20,21,22,23,24,25,26,27,28,29,30,31},std::vector<int>{4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19}}'
   - id: !extend relay_states
     type: bool[2]
     initial_value: '{false,false}'

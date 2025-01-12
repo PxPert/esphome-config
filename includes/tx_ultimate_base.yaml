@@ -9,8 +9,8 @@ substitutions:
 
   transition_length: 500ms
 
-  nightlight_color: "{80,70,0,20}"
-  button_color: "{33,100,56,100}"
+  nightlight_color: "{80,70,0,40}"
+  button_color: "{33,100,56,80}"
   touch_color: "{0,100,100,100}"
   va_color: "{0,0,100,75}"
 
@@ -53,9 +53,13 @@ esphome:
   project:
     name: Sonoff.TxUltimate
     version: "1.0"
+  on_boot:
+    priority: -100.0
+    then:
+      - script.execute: refresh_led_default
+      
 preferences:
   flash_write_interval: 6h
-
 mdns:
   disabled: True
 
@@ -80,10 +84,10 @@ psram:
 external_components:
   - source: /config/components
     components: [tx_ultimate_touch]
-  - source: github://pr#5230
-    components:
-      - esp_adf
-    refresh: 0s
+#  - source: github://pr#5230
+#    components:
+#      - esp_adf
+#    refresh: 0s
 #  - source: /config/components/esp_adf/esphome/components
 #    components:
 #      - esp_adf
@@ -127,10 +131,7 @@ sun:
       - script.execute: check_night_light
 
 globals:
-  - id: suspend_refresh
-    type: bool
-    initial_value: 'false'
-    restore_value: no
+
 
   - id: leds_list
     type: light::AddressableLightState*[1]
@@ -145,14 +146,10 @@ globals:
     initial_value: '1'
     restore_value: no
 
-  - id: va_state
+  - id: wakeword_enabled
     type: bool
     initial_value: 'false'
     restore_value: yes
-  - id: led_with_va_on
-    type: light::AddressableLightState*
-    initial_value: 'NULL'
-    restore_value: no
   - id: ww_switch
     type: template_::TemplateSwitch*
     initial_value: 'NULL'

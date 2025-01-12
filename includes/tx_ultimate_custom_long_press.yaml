@@ -33,8 +33,8 @@ script:
           state: !lambda return index;
       - lambda: |-
           light::AddressableLightState* led_to_toggle = id(leds_list)[index];
-          if ( (index == 0) && (id(led_with_va_on)) && ( id(va_state)))
-            { led_to_toggle = id(led_with_va_on); }
+          if ( (index == 0) && (id(left_leds_no_wakeword)) && ( id(wakeword_enabled)))
+            { led_to_toggle = id(left_leds_no_wakeword); }
           auto toggle_settings = led_to_toggle->turn_on();
           toggle_settings.set_rgb(id(long_press_color)[0]/100.0, id(long_press_color)[1]/100.0, id(long_press_color)[2]/100.0);
           toggle_settings.set_brightness(id(long_press_color)[3]/100.0);

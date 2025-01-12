@@ -57,12 +57,6 @@ wifi:
   #  gateway: 192.xxxxxxxxx
   #  subnet: 255.255.255.0
 
-globals:
-  - id: va_state
-    type: bool
-    initial_value: 'false'
-    restore_value: yes
-
 binary_sensor:
   # button does the following:
   # short click - stop a timer
@@ -209,11 +203,11 @@ switch:
       - micro_wake_word.stop
       - script.execute: refresh_led_default
 
-external_components:
-  - source: github://pr#5230
-    components:
-      - esp_adf
-    refresh: 0s
+#external_components:
+#  - source: github://pr#5230
+#    components:
+#      - esp_adf
+#    refresh: 0s
 
 # esp_adf:
 

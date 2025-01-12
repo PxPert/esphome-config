@@ -1,3 +1,12 @@
+globals:  
+  - id: wakeword_leds_array
+    type: std::vector<int>
+    initial_value: 'std::vector<int>{24,25}'
+  - id: suspend_refresh
+    type: bool
+    initial_value: 'false'
+    restore_value: no
+    
 light:
 #  - platform: neopixelbus
 #    variant: WS2811
@@ -36,110 +45,106 @@ light:
           name: "Scan"
           move_interval: 100ms
           scan_width: 3
-#      - lambda:
-#          name: My Custom Effect
-#          update_interval: 1s
-#          lambda: |-
-#            static int state = 0;
-#            auto call = id(my_light).turn_on();
-#            // Transition of 1000ms = 1s
-#            call.set_transition_length(1000);
-#            if (state == 0) {
-#              call.set_rgb(1.0, 1.0, 1.0);
-#            } else if (state == 1) {
-#              call.set_rgb(1.0, 0.0, 1.0);
-#            } else if (state == 2) {
-#              call.set_rgb(0.0, 0.0, 1.0);
-#            } else {
-#              call.set_rgb(1.0, 0.0, 0.0);
-#            }
-#            call.perform();
-#            state += 1;
-#            if (state == 4)
-#              state = 0;
-#  - platform: fastled_clockless
-#    rgb_order: GRB
-#    chipset: WS2811
-#    pin: ${led_pin}
-#    num_leds: 32
-#    name: "NeoPixel Light"
-#    id: leds
-#    default_transition_length: 0s
-##    method:
-##      type: esp32_rmt
-#    effects:
-#      - addressable_rainbow:
-#          name: "Rainbow"
-#          speed: 30
-#          width: 8
-#      - pulse:
-#          name: "Pulse"
-#          transition_length: 1.4s
-#          update_interval: 1s
 
-#   - platform: partition
-#     name: "LEDs Top"
-#     id: leds_top
-# #    internal: true
-#     segments:
-#       - id: leds
-#         from: 31
-#         to: 31
-#       - id: leds
-#         from: 0
-#         to: 8
-#     effects:
-#       - addressable_scan:
-#           name: "Scan"
-#       - addressable_rainbow:
-#           name: "Rainbow"
-#           speed: 10
-#           width: 20
-#
-#   - platform: partition
-#     name: "LEDs Right"
-#     id: leds_right
-# #    internal: true
-#     segments:
-#       - id: leds
-#         from: 9
-#         to: 14
-#     effects:
-#       - addressable_scan:
-#           name: "Scan"
-#       - addressable_rainbow:
-#           name: "Rainbow"
-#           speed: 10
-#           width: 20
-#
-#   - platform: partition
-#     name: "LEDs Bottom"
-#     id: leds_bottom
-# #    internal: true
-#     segments:
-#       - id: leds
-#         from: 15
-#         to: 24
-#     effects:
-#       - addressable_scan:
-#           name: "Scan"
-#       - addressable_rainbow:
-#           name: "Rainbow"
-#           speed: 10
-#           width: 20
-#
-#   - platform: partition
-#     name: "LEDs Left"
-#     id: leds_left
-# #    internal: true
-#     segments:
-#       - id: leds
-#         from: 25
-#         to: 30
-#     effects:
-#       - addressable_scan:
-#           name: "Scan"
-#       - addressable_rainbow:
-#           name: "Rainbow"
-#           speed: 10
-#           width: 20
+script:
+  - id: touch_led_feedback
+    parameters:
+      index: int
+    then:
+      - if:
+          condition:
+            switch.is_on: relays_light
+          then:
+            - lambda: |-
+                auto light = ((AddressableLight*)id(leds).get_output());
+                Color c(
+                  (id(touch_color)[0] / 100.0) * ((id(touch_color)[3] / 100.0)  * 255), 
+                  (id(touch_color)[1] / 100.0) * ((id(touch_color)[3] / 100.0)  * 255), 
+                  (id(touch_color)[2] / 100.0) * ((id(touch_color)[3] / 100.0)  * 255)
+                );
+
+                for (int &l : id(leds_array)[index])
+                {
+                  light->get(l).set(c);
+                }
+                light->schedule_show();
+
+  - id: refresh_led_default
+    mode: restart
+    then:
+      - if:
+          condition:
+            not:
+              lambda: return id(suspend_refresh);
+          then:
+            - if:
+                condition:
+                  and:
+                    - light.is_on: leds
+                    - lambda: return (id(leds)->get_effect_name() != "None");
+                then:
+                  - light.turn_on:
+                      id: leds
+                      effect: "None"
+#                  - light.turn_on:
+#                      id: leds
+                      brightness: 1%
+                  - delay: ${transition_length}
+                  - wait_until:
+                      condition:
+                        lambda: return ((id(leds)->get_effect_name() == "None") && (! id(leds)->is_transformer_active()));
+                      timeout: 1s
+#                  - light.turn_on:
+#                      id: leds
+#                      # transition_length: 0ms
+#                      effect: "None"
+#                      brightness: 50%
+            - lambda: |-
+                ESP_LOGI("custom", "Refreshing leds");
+                auto light = ((AddressableLight*)id(leds).get_output());
+
+                for (int i = 0; i < id(relay_count); i++) {
+                  Color c(0,0,0);
+
+                  if ( (id(relay_states)[i]) && (id(relays_light).state)) {
+                    /* Relay on feedback */
+                    c = Color(
+                      (id(button_color)[0] / 100.0) * ((id(button_color)[3] / 100.0)  * 255), 
+                      (id(button_color)[1] / 100.0) * ((id(button_color)[3] / 100.0)  * 255), 
+                      (id(button_color)[2] / 100.0) * ((id(button_color)[3] / 100.0)  * 255)
+                      );
+
+                  } else {
+                    
+                    if (id(night_light_active).state) {
+                      /* Night light active */
+                      c = Color(
+                        (id(nightlight_color)[0]) / 100.0 * ((id(nightlight_color)[3] / 100.0)  * 255), 
+                        (id(nightlight_color)[1]) / 100.0 * ((id(nightlight_color)[3] / 100.0)  * 255), 
+                        (id(nightlight_color)[2]) / 100.0 * ((id(nightlight_color)[3] / 100.0)  * 255)
+                      );
+                    }
+                  }
+
+                  ESP_LOGI("custom", "Settings %d/%d/%d for leds of %d", c.red,c.green,c.blue, i);
+                  for (int &l : id(leds_array)[i])
+                  {
+                    light->get(l).set(c);
+                  }
+                }
+                if (id(wakeword_enabled)) {
+                  /* Wakeword led */
+                  Color c(
+                    (id(va_color)[0] / 100.0) * ((id(va_color)[3] / 100.0)  * 255), 
+                    (id(va_color)[1] / 100.0) * ((id(va_color)[3] / 100.0)  * 255), 
+                    (id(va_color)[2] / 100.0) * ((id(va_color)[3] / 100.0)  * 255)
+                  );
+                  ESP_LOGI("custom", "Settings %d/%d/%d for leds for wakeword", c.red,c.green,c.blue);
+
+                  for (int &l : id(wakeword_leds_array))
+                  {
+                    light->get(l).set(c);
+                  }
+                }
+
+                light->schedule_show();
