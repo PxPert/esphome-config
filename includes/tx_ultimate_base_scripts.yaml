@@ -43,31 +43,39 @@ script:
     parameters:
       index: int
     then:
-      - script.execute:
-          id: on_touch
-          index: !lambda return index;
-      - script.execute:
-          id: touch_led_feedback
-          index: !lambda return index;
-      - sensor.template.publish:
-          id: touch_press
-          state: !lambda return index;
+      - if:
+          condition:
+            lambda: "return (! ( (id(timer_ringing)) && (id(timer_ringing)->state) ) );"
+          then:
+            - script.execute:
+                id: on_touch
+                index: !lambda return index;
+            - script.execute:
+                id: touch_led_feedback
+                index: !lambda return index;
+            - sensor.template.publish:
+                id: touch_press
+                state: !lambda return index;
 
   - id: handle_release
     mode: restart
     parameters:
       index: int
     then:
-      - script.execute:
-          id: on_release
-          index: !lambda return index;
-      - sensor.template.publish:
-          id: touch_release
-          state: !lambda return index;
-      - delay: ${transition_length}
-      - script.execute: refresh_led_default
-
-
+      - if:
+          condition:
+            lambda: "return (! ( (id(timer_ringing)) && (id(timer_ringing)->state) ) );"
+          then:
+            - script.execute:
+                id: on_release
+                index: !lambda return index;
+            - sensor.template.publish:
+                id: touch_release
+                state: !lambda return index;
+            - delay: ${transition_length}
+            - script.execute: refresh_led_default
+          else:
+            - lambda: id(timer_ringing)->turn_off();
 
   - id: handle_swipe_left
     mode: restart
@@ -113,8 +121,13 @@ script:
           condition:
             lambda: "return id(start_assistant_button);"
           then:
-            - lambda: |-
-                id(start_assistant_button)->press();
+            - if:
+                condition:
+                  lambda: "return ( ( (id(timer_ringing)) && (id(timer_ringing)->state) ) );"
+                then:
+                  - lambda: id(timer_ringing)->turn_off();
+                else:
+                  - lambda: id(start_assistant_button)->press();
           else:
             - script.execute: refresh_led_default
 
@@ -124,34 +137,38 @@ script:
       index: int
       x: int
     then:
-      - lambda: |-
-            auto toggle_settings = id(leds)->turn_on();
-            toggle_settings.set_brightness(1);
-            auto led_color = id(button_color);
-            template_::TemplateSwitch* switch_to_toggle = NULL;
-            id(suspend_refresh) = true;
-            if (x < ( (id(ww_switch))?4:6)) {
-                // Button lights
-                switch_to_toggle = id(relays_light);
-            } else if (x > ( (id(ww_switch))?6:4)) {
-                // Night lights
-                led_color = id(nightlight_color);
-                switch_to_toggle = id(night_light);
-            } else {
-                // Voice Assistant
-                led_color = id(va_color);
-                switch_to_toggle = id(ww_switch);
-            }
-            if(id(ww_switch)) {
-                switch_to_toggle->toggle();
-            }
-            toggle_settings.set_rgb(led_color[0]/100.0, led_color[1]/100.0, led_color[2]/100.0);
-            bool newstate = switch_to_toggle->state;
-            toggle_settings.set_effect(newstate?"${activate_effect}":"${deactivate_effect}");
-            toggle_settings.set_transition_length(${de_activate_transition_ms});
-            toggle_settings.perform();
-      - delay: ${de_activate_transition_ms}ms
-      - globals.set:
-          id: suspend_refresh
-          value: "false"
-      - script.execute: refresh_led_default
+      - if:
+          condition:
+            lambda: "return (! ( (id(timer_ringing)) && (id(timer_ringing)->state) ) );"
+          then:
+            - lambda: |-
+                  auto toggle_settings = id(leds)->turn_on();
+                  toggle_settings.set_brightness(1);
+                  auto led_color = id(button_color);
+                  template_::TemplateSwitch* switch_to_toggle = NULL;
+                  id(suspend_refresh) = true;
+                  if (x < ( (id(ww_switch))?4:6)) {
+                      // Button lights
+                      switch_to_toggle = id(relays_light);
+                  } else if (x > ( (id(ww_switch))?6:5)) {
+                      // Night lights
+                      led_color = id(nightlight_color);
+                      switch_to_toggle = id(night_light);
+                  } else {
+                      // Voice Assistant
+                      led_color = id(va_color);
+                      switch_to_toggle = id(ww_switch);
+                  }
+                  switch_to_toggle->toggle();
+                  toggle_settings.set_rgb(led_color[0]/100.0, led_color[1]/100.0, led_color[2]/100.0);
+                  bool newstate = switch_to_toggle->state;
+                  toggle_settings.set_effect(newstate?"${activate_effect}":"${deactivate_effect}");
+                  toggle_settings.set_transition_length(${de_activate_transition_ms});
+                  toggle_settings.perform();
+            - delay: ${de_activate_transition_ms}ms
+            - globals.set:
+                id: suspend_refresh
+                value: "false"
+            - script.execute: refresh_led_default
+          else:
+            - lambda: id(timer_ringing)->turn_off();

@@ -2,6 +2,9 @@ globals:
   - id: wakeword_leds_array
     type: std::vector<int>
     initial_value: 'std::vector<int>{24,25}'
+  - id: timer_leds_array
+    type: std::vector<int>
+    initial_value: 'std::vector<int>{14,15}'
   - id: suspend_refresh
     type: bool
     initial_value: 'false'
@@ -147,4 +150,26 @@ script:
                   }
                 }
 
+                #ifdef USE_VOICE_ASSISTANT
+                
+                if (va->get_timers().size() > 0) {
+                  /* One or more Timers schedulated */
+                  Color c(
+                    (id(timer_active_color)[0] / 100.0) * ((id(timer_active_color)[3] / 100.0)  * 255), 
+                    (id(timer_active_color)[1] / 100.0) * ((id(timer_active_color)[3] / 100.0)  * 255), 
+                    (id(timer_active_color)[2] / 100.0) * ((id(timer_active_color)[3] / 100.0)  * 255)
+                  );
+                  ESP_LOGI("custom", "Settings %d/%d/%d for leds for timer", c.red,c.green,c.blue);
+
+                  for (int &l : id(timer_leds_array))
+                  {
+                    light->get(l).set(c);
+                  }
+
+                }
+
+                #endif
+
                 light->schedule_show();
+          else:
+            - lambda: ESP_LOGI("custom", "Leds refresh disabled");

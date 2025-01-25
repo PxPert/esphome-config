@@ -33,27 +33,32 @@ micro_wake_word:
   id: mww
   models:
     - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241205.4/okay_nabu.json
-#      id: okay_nabu
 #    - model: https://github.com/kahrendt/microWakeWord/releases/download/stop/stop.json
-#      id: stop
-#      internal: true
-#  vad:
-#    model: https://github.com/kahrendt/microWakeWord/releases/download/v2.1_models/vad.json
   microphone: asr_mic
   on_wake_word_detected:
-    - script.execute: sound_beep
-#    - micro_wake_word.stop
-    - voice_assistant.start:
-        wake_word: !lambda return wake_word;
-    - light.turn_on:
-        id: leds
-        red: 0
-        green: 0
-        blue: 1
-        brightness: 1
-#        effect: "Scan"
-#  vad:
-#    model: https://github.com/esphome/micro-wake-word-models/raw/main/models/v2/vad.json
+    - lambda: 'ESP_LOGI("custom", "Wake word detected: %s", wake_word.c_str());'
+    - if:
+        condition:
+          switch.is_on: timer_ringing_int
+        then:
+          - switch.turn_off: timer_ringing_int
+        else:
+          - if:
+              condition:
+                lambda: return (wake_word != "Stop");
+              then:
+                - script.execute: sound_beep
+            #    - micro_wake_word.stop
+                - voice_assistant.start:
+                    wake_word: !lambda return wake_word;
+                - light.turn_on:
+                    id: leds
+                    red: 0
+                    green: 0
+                    blue: 1
+                    brightness: 1
+              else:
+                - script.execute: restore_wake_word
 
 button:
   - id: vibra_intent
@@ -68,25 +73,33 @@ button:
     internal: true
 
   - platform: template
-    name: Start assistant
+    name: Start/Stop assistant
     id: start_assistant
     entity_category: config
     on_press:
       - if:
           condition:
-            micro_wake_word.is_running
+            voice_assistant.is_running
           then:
-            - micro_wake_word.stop
-            - wait_until:
-                not:
+            - voice_assistant.stop
+            - script.execute: refresh_led_default
+            - script.execute: restore_wake_word
+          else:
+            - if:
+                condition:
                   micro_wake_word.is_running
-      - voice_assistant.start
-      - light.turn_on:
-          id: leds
-          red: 0
-          green: 0
-          blue: 1
-          brightness: 1
+                then:
+                  - micro_wake_word.stop
+                  - wait_until:
+                      not:
+                        micro_wake_word.is_running
+            - voice_assistant.start
+            - light.turn_on:
+                id: leds
+                red: 0
+                green: 0
+                blue: 1
+                brightness: 1
 #          effect: "Scan"
 #      - if:
 #          condition:
@@ -110,10 +123,22 @@ globals:
   - id: !extend ww_switch
     initial_value: use_wake_word
     restore_value: no
+  
+#  - id: !extend va_glob
+#    initial_value: va
+#    restore_value: no
+
   - id: !extend start_assistant_button
     type: template_::TemplateButton*
     initial_value: start_assistant
     restore_value: no
+
+  - id: !extend timer_ringing
+    type: template_::TemplateSwitch*
+    initial_value: timer_ringing_int
+    restore_value: no
+
+    
 
 switch:
   - platform: template
@@ -138,6 +163,23 @@ switch:
       - delay: 250ms
       - script.execute: refresh_led_default
 
+  - platform: template
+    id: timer_ringing_int
+    name: "Ring timer"
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - globals.set:
+          id: suspend_refresh
+          value: "true"
+      - script.execute: timer_start_ringing
+    on_turn_off: 
+      then:
+        - globals.set:
+            id: suspend_refresh
+            value: "false"
+        - script.stop: timer_start_ringing
+        - script.execute: restore_wake_word
 
 i2s_audio:
   - id: audio_mic_i2s
@@ -171,7 +213,7 @@ number:
     update_interval: never
     optimistic: true
     restore_value: true
-    initial_value: 0.85
+    initial_value: 1
     on_value:
       - lambda: id(audio_out).set_volume(x);
 
@@ -199,10 +241,21 @@ voice_assistant:
     - light.turn_on:
         id: leds
         red: 0
+        green: 0
+        blue: 1
+        brightness: 1
+        effect: "Scan"
+  on_stt_vad_end:
+    - globals.set:
+        id: suspend_refresh
+        value: "true"
+    - light.turn_on:
+        id: leds
+        red: 0
         green: 1
         blue: 0
         brightness: 1
-#        effect: "Scan"
+        effect: "Scan"
   on_client_connected:
     then:
       - script.execute: restore_wake_word
@@ -229,13 +282,13 @@ voice_assistant:
               green: 1
               blue: 0
               brightness: 1
-#  on_tts_stream_end:
-#    - globals.set:
-#        id: suspend_refresh
-#        value: "false"
-#    - script.execute: refresh_led_default
+  on_tts_stream_end:
+    - globals.set:
+        id: suspend_refresh
+        value: "false"
+    - script.execute: restore_wake_word
 
-  on_end:
+  on_idle:
     - globals.set:
         id: suspend_refresh
         value: "false"
@@ -246,6 +299,8 @@ voice_assistant:
         id: suspend_refresh
         value: "false"
     - script.execute: restore_wake_word
+  on_timer_finished:
+    - switch.turn_on: timer_ringing_int
 
 script:
   - id: restore_wake_word
@@ -272,4 +327,36 @@ script:
             - delay: 50ms
             - lambda: id(audio_out).play(wake_word_triggered, wake_word_triggered_len);
 
+  - id: timer_start_ringing
+    then:
+      - light.turn_on:
+          id: leds
+          brightness: !lambda "return id(timer_ringing_color)[3]/100.0;"
+          red: !lambda "return id(timer_ringing_color)[0]/100.0;"
+          green: !lambda "return id(timer_ringing_color)[1]/100.0;"
+          blue:  !lambda "return id(timer_ringing_color)[2]/100.0;"
+          effect: ${timer_ringing_effect}
+      - script.execute: timer_perform_ringing
+      - delay: 1min
+      - switch.turn_off: timer_ringing_int
 
+  - id: timer_perform_ringing
+    then:
+      - script.execute: refresh_led_default
+      - voice_assistant.stop:
+      - delay: 100ms
+      - lambda: |- 
+          id(audio_out).set_timeout(1200);
+          id(audio_out).start();
+      - delay: 50ms
+      - while:
+          condition:
+            switch.is_on: timer_ringing_int
+          then:
+            - lambda: |-
+                ESP_LOGI("custom", "Playing timer audio file");
+                id(audio_out).play(timer_finished, timer_finished_len);
+            - delay: 924ms # 500ms + 424ms audio file duration
+      - wait_until:
+          not:
+            speaker.is_playing:

@@ -13,6 +13,9 @@ substitutions:
   button_color: "{33,100,56,80}"
   touch_color: "{0,100,100,100}"
   va_color: "{0,0,100,75}"
+  timer_active_color: "{100,20,20,70}"
+  timer_ringing_color: "{100,100,100,100}"
+  timer_ringing_effect: "Pulse"
 
   activate_effect: "Pulse-Fast"
   deactivate_effect: "Pulse-Slow"
@@ -52,11 +55,11 @@ esphome:
   friendly_name: ${friendly_name}
   project:
     name: Sonoff.TxUltimate
-    version: "1.0"
+    version: "2.0"
   on_boot:
-    priority: -100.0
-    then:
-      - script.execute: refresh_led_default
+    - priority: -100.0
+      then:
+        - script.execute: refresh_led_default
       
 preferences:
   flash_write_interval: 6h
@@ -154,6 +157,16 @@ globals:
     type: template_::TemplateSwitch*
     initial_value: 'NULL'
     restore_value: no
+  - id: timer_ringing
+    type: template_::TemplateSwitch*
+    initial_value: 'NULL'
+    restore_value: no
+    
+#  - id: va_glob
+#    type: voice_assistant::VoiceAssistant*
+#    initial_value: 'NULL'
+#    restore_value: no
+
   - id: start_assistant_button
     type: template_::TemplateButton*
     initial_value: 'NULL'
@@ -171,6 +184,14 @@ globals:
     type: int [4]
     restore_value: no
     initial_value: ${va_color}
+  - id: timer_active_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${timer_active_color}
+  - id: timer_ringing_color
+    type: int [4]
+    restore_value: no
+    initial_value: ${timer_ringing_color}
   - id: swipe_left_color
     type: int [4]
     restore_value: no
