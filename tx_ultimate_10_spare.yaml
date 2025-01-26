@@ -1,0 +1,53 @@
+substitutions:
+  name: "tx-ultimate-10"
+  friendly_name: "Sonoff TX 10"
+
+  use_ip_address: 192.168.2.150 # Usato da esphome per monitor e upload
+
+  wifi_ssid: !secret wifi_dmz_ssid
+  wifi_password: !secret wifi_dmz_password
+
+#esp32_ble_tracker:
+#  scan_parameters:
+#    active: True
+#    continuous: false
+
+packages:
+  # Connessione MQTT
+  mqtt_client: !include includes/mqtt_client.yaml
+
+  # Configurazione di base
+  device_base: !include includes/tx_ultimate_base.yaml
+
+  # Configurazione leds
+  leds: !include includes/tx_ultimate_leds_4_zone.yaml
+
+  # Configurazione Custom multitouch
+  multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
+
+  # Relè e luci locali
+  light_ing: !include
+    file: includes/tx_ultimate_light.yaml
+    vars:
+      id: relay_ing
+      name: "Relay luci esterne ingresso"
+      pin: ${relay_1_pin}
+
+script:
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_4ch_02/cmnd/ShutterStopOpen2
+          payload: ""
+      - mqtt.publish:
+          topic: sonoff_4ch_03/cmnd/ShutterStopOpen2
+          payload: ""
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_4ch_02/cmnd/ShutterStopClose2
+          payload: ""
+      - mqtt.publish:
+          topic: sonoff_4ch_03/cmnd/ShutterStopClose2
+          payload: ""
+

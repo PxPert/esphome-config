@@ -50,10 +50,11 @@ packages:
     vars:
       id: relay_3
       relay_index: 2
-      subscribe_topic: "sonoff_tx_03/stat/POWER1"
+      subscribe_topic: "interruttore-ingresso-mansarda/light/ingresso_mansarda/state"
       value_on: "ON"
-      command_topic: "sonoff_tx_03/cmnd/Power1"
-      command_toggle: "TOGGLE"
+      mqtt_json_key: "state"
+      command_topic: "interruttore-ingresso-mansarda/light/ingresso_mansarda/command"
+      command_toggle: "{ \"state\": \"TOGGLE\" }"
 
 
 script:
@@ -76,13 +77,13 @@ script:
   - id: !extend on_swipe_right
     then:
       - mqtt.publish:
-          topic: sonoff_tx_03/cmnd/ShutterStopOpen
-          payload: ""
+          topic: interruttore-ingresso-mansarda/vasistas/open
+          payload: "1"
   - id: !extend on_swipe_left
     then:
       - mqtt.publish:
-          topic: sonoff_tx_03/cmnd/ShutterStopClose
-          payload: ""
+          topic: interruttore-ingresso-mansarda/vasistas/open
+          payload: "0"
 
 switch:
   - platform: template

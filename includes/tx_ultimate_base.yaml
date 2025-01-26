@@ -3,7 +3,7 @@ substitutions:
   latitude: "43.5756296"
   longitude: "12.1440740"
 
-  vibra_time: 50ms
+  vibra_time: 75ms
 
   button_on_time: 500ms
 
@@ -207,6 +207,8 @@ globals:
 
 output:
   - platform: gpio
+#  - platform: ledc
+#    max_power: 0.9
     pin: ${vibra_motor_pin}
     id: vibra_output
 
