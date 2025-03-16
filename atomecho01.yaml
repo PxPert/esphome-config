@@ -14,9 +14,9 @@ esphome:
     name: m5stack.atom-echo-voice-assistant
     version: "1.0"
   min_version: 2024.6.0
-  includes:
-    - audio/timer_finished.h
-    - audio/wake_word_triggered.h
+#  includes:
+#    - audio/timer_finished.h
+#    - audio/wake_word_triggered.h
 
 esp32:
   board: m5stack-atom
@@ -56,6 +56,11 @@ wifi:
   #  static_ip: ${static_ip}
   #  gateway: 192.xxxxxxxxx
   #  subnet: 255.255.255.0
+globals:
+  - id: media_player_va_pipeline
+    type: int
+    restore_value: no
+    initial_value: '0'
 
 binary_sensor:
   # button does the following:
@@ -94,21 +99,9 @@ button:
     id: test_speaker
     entity_category: config
     on_press:
-      then:
-      - if:
-          condition:
-            micro_wake_word.is_running
-          then:
-            - micro_wake_word.stop
-            - wait_until:
-                not:
-                  micro_wake_word.is_running
-      - lambda: id(echo_speaker).start();
-      - delay: 25ms
-      - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
-      - wait_until:
-          not:
-            speaker.is_playing
+      - script.execute: sound_beep
+      - script.wait: sound_beep
+      - delay: 100ms
       - script.execute: restore_wake_word
 
   - platform: template
@@ -138,21 +131,79 @@ button:
 
 
 i2s_audio:
-  - id: i2s_audio_bus
+  - id: audio_i2s
     i2s_lrclk_pin: GPIO33
     i2s_bclk_pin: GPIO19
 
-
 speaker:
-  - platform: i2s_audio
-    id: echo_speaker
-    i2s_dout_pin: GPIO22
+  - id: audio_out
+    platform: i2s_audio
     dac_type: external
-    channel: mono
-#    buffer_duration: 1500ms
+    i2s_dout_pin: GPIO22
+    i2s_audio_id: audio_i2s
     timeout: 100ms
+    channel: right
     bits_per_sample: 16bit
-    sample_rate: 16000
+    sample_rate: 48000
+#    buffer_duration: 100ms
+    buffer_duration: 60ms
+#  - platform: mixer
+#    id: mixer_speaker_id
+#    output_speaker: audio_out
+#    source_speakers:
+#      - id: announcement_spk_mixer_input
+#      - id: media_spk_mixer_input
+
+media_player:
+  - platform: speaker
+    id: va_media_player
+    name: player
+    codec_support_enabled: false
+    buffer_size: 19200
+#    buffer_size: 25000
+    announcement_pipeline:
+      format: WAV
+#      speaker: announcement_spk_mixer_input
+      speaker: audio_out
+      num_channels: 1
+      sample_rate: 48000
+#    media_pipeline:
+#      format: WAV
+#      speaker: media_spk_mixer_input
+#      num_channels: 1
+#      sample_rate: 16000
+#    on_state:
+#      - logger.log: "State updated!"
+    on_play: &play
+      - script.execute: stop_wake_word
+      - script.wait: stop_wake_word
+      - delay: 100ms
+      - if:
+          condition:
+            lambda: 'return (id(media_player_va_pipeline) == 0);'
+          then:
+            - light.turn_on:
+                id: led
+                red: 100%
+                green: 0%
+                blue: 0%
+                brightness: 100%
+                effect: "Playing"
+    on_announcement: *play
+#      - script.execute: stop_wake_word
+#      - script.wait: stop_wake_word
+#      - delay: 100ms
+    on_idle:
+      - if:
+          condition:
+            lambda: 'return (id(media_player_va_pipeline) == 0);'
+          then:
+            - script.execute: restore_wake_word
+    files:
+      - id: wake_word_wav
+        file: audio/wake_word_triggered.wav # Placed in the yaml directory. Should be encoded with a 16000 Hz sample rate, mono or stereo audio, and 16 bits per sample.
+      - id: timer_finished_wav
+        file: audio/timer_finished.wav # Placed in the yaml directory. Should be encoded with a 16000 Hz sample rate, mono or stereo audio, and 16 bits per sample.
 
 
 microphone:
@@ -161,6 +212,7 @@ microphone:
     i2s_din_pin: GPIO23
     adc_type: external
     pdm: true
+    sample_rate: 16000
 
 number:
   - name: Speaker Volume
@@ -175,7 +227,7 @@ number:
     restore_value: true
     initial_value: 1
     on_value:
-      - lambda: id(echo_speaker).set_volume(x);
+      - lambda: id(audio_out).set_volume(x);
 
 switch:
   - platform: template
@@ -197,6 +249,9 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
     on_turn_on:
+      - wait_until:
+          media_player.is_idle:
+      - delay: 100ms
       - micro_wake_word.start
       - script.execute: refresh_led_default
     on_turn_off:
@@ -219,9 +274,7 @@ script:
             voice_assistant.is_running
           then:
             - voice_assistant.stop
-            - script.execute: refresh_led_default
             - script.execute: restore_wake_word
-
           else:
             - if:
                 condition:
@@ -230,21 +283,28 @@ script:
                   - switch.turn_off: timer_ringing
                 else:
                   - script.execute: start_assistant
+
   - id: restore_wake_word
     then:
       - script.execute: refresh_led_default
+      - logger.log: "Restore wake word"
       - if:
           condition:
             switch.is_on: use_wake_word
           then:
-            - delay: 100ms
+            - logger.log: "Waiting idle"
             - wait_until:
-                not:
-                  speaker.is_playing
-            - micro_wake_word.start
+                media_player.is_idle:
+            - globals.set:
+                id: media_player_va_pipeline
+                value: "0"
+            - wait_until:
+                speaker.is_stopped:
+            - delay: 100ms
+            - logger.log: "Start micro wake word"
+            - micro_wake_word.start:
 
-
-  - id: start_assistant
+  - id: stop_wake_word
     then:
       - if:
           condition:
@@ -254,6 +314,15 @@ script:
             - wait_until:
                 not:
                   micro_wake_word.is_running
+
+  - id: start_assistant
+    then:
+      - globals.set:
+          id: media_player_va_pipeline
+          value: "1"
+      - script.execute: stop_wake_word
+      - script.wait: stop_wake_word
+      - media_player.stop:
       - voice_assistant.start
       - light.turn_on:
           id: led
@@ -315,8 +384,31 @@ script:
                       else:
                         - light.turn_off: led
 
+  - id: sound_beep
+    then:
+      - globals.set:
+          id: media_player_va_pipeline
+          value: "1"
+      - media_player.speaker.play_on_device_media_file:
+          media_file: wake_word_wav
+          announcement: true
+      # Wait until the alarm sound starts playing
+      - wait_until:
+          media_player.is_announcing:
+      # Wait until the alarm sound stops playing
+      - wait_until:
+          not:
+            media_player.is_announcing:
+
   - id: timer_start_ringing
     then:
+      - light.turn_on:
+          id: led
+          brightness: 1
+          red: 1
+          green: 1
+          blue:  1
+          effect: Pulse
       - script.execute: timer_perform_ringing
       - delay: 1min
       - switch.turn_off: timer_ringing
@@ -330,28 +422,34 @@ script:
           not:
             microphone.is_capturing:
       - delay: 100ms
-      - lambda: |- 
-          id(echo_speaker).set_timeout(1200);
-          id(echo_speaker).start();
-      - delay: 50ms
       - while:
           condition:
             switch.is_on: timer_ringing
           then:
-  #          - lambda: id(echo_speaker).play(id(timer_finished_wave_file), sizeof(id(timer_finished_wave_file)));
-            - lambda: id(echo_speaker).play(timer_finished, timer_finished_len);
-#            - wait_until:
-#                not:
-#                  speaker.is_playing
-            - delay: 924ms # 500ms + 424ms audio file duration
+            - globals.set:
+                id: media_player_va_pipeline
+                value: "1"
+            - media_player.speaker.play_on_device_media_file:
+                media_file: timer_finished_wav
+                announcement: true
+            # Wait until the alarm sound starts playing
+            - wait_until:
+                media_player.is_announcing:
+            # Wait until the alarm sound stops playing
+            - wait_until:
+                not:
+                  media_player.is_announcing:
+            - delay: 500ms
       - wait_until:
           not:
-            speaker.is_playing:
+            media_player.is_announcing:
+
 
 voice_assistant:
   id: va
   microphone: echo_microphone
-  speaker: echo_speaker
+#  speaker: echo_speaker
+  media_player: va_media_player
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 10.0
@@ -377,6 +475,9 @@ voice_assistant:
         green: 0%
         effect: "Fast Pulse"
   on_tts_start:
+    - globals.set:
+        id: media_player_va_pipeline
+        value: "1"
     - light.turn_on:
         id: led
         blue: 100%
@@ -384,10 +485,14 @@ voice_assistant:
         green: 0%
         brightness: 100%
         effect: none
-  on_tts_stream_end: 
+  on_idle:
     then:
+      - delay: 1s
       - script.execute: restore_wake_word
-#  on_end:
+  on_end:
+    then:
+      - delay: 1s
+      - script.execute: restore_wake_word
   on_error:
     - light.turn_on:
         id: led
@@ -423,6 +528,10 @@ light:
     rgb_order: grb
     rmt_channel: 0
     effects:
+      - random:
+          name: "Playing"
+          transition_length: 3s
+          update_interval: 5s
       - strobe:
           name: "Yellow Cyan Strobe"
           colors:
@@ -440,6 +549,10 @@ light:
               blue: 100%
               duration: 2000ms
               transition_length: 2000ms
+      - pulse:
+          name: "Pulse"
+          transition_length: 500ms
+          update_interval: 500ms
       - pulse:
           name: "Slow Pulse"
           transition_length: 250ms
@@ -472,11 +585,32 @@ micro_wake_word:
 #    model: https://github.com/kahrendt/microWakeWord/releases/download/v2.1_models/vad.json
   microphone: echo_microphone
   on_wake_word_detected:
-    - lambda: id(echo_speaker).start();
-    - delay: 50ms
-    - lambda: id(echo_speaker).play(wake_word_triggered, wake_word_triggered_len);
-    - wait_until:
-        not:
-          speaker.is_playing
-    - voice_assistant.start:
-        wake_word: !lambda return wake_word;
+    - lambda: 'ESP_LOGI("custom", "Wake word detected: %s", wake_word.c_str());'
+    - if:
+        condition:
+          switch.is_on: timer_ringing
+        then:
+          - switch.turn_off: timer_ringing
+        else:
+          - if:
+              condition:
+                lambda: return (wake_word != "Stop");
+              then:
+                - wait_until:
+                    not:
+                      microphone.is_capturing:
+                - delay: 100ms
+                - script.execute: sound_beep
+                - script.wait: sound_beep
+#                - delay: 100ms
+            #    - micro_wake_word.stop
+                - voice_assistant.start:
+                    wake_word: !lambda return wake_word;
+                - light.turn_on:
+                    id: led
+                    red: 0
+                    green: 0
+                    blue: 1
+                    brightness: 1
+              else:
+                - script.execute: restore_wake_word
