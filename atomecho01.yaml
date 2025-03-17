@@ -145,8 +145,8 @@ speaker:
     channel: right
     bits_per_sample: 16bit
     sample_rate: 48000
-#    buffer_duration: 100ms
-    buffer_duration: 60ms
+    buffer_duration: 100ms
+#    buffer_duration: 60ms
 #  - platform: mixer
 #    id: mixer_speaker_id
 #    output_speaker: audio_out
