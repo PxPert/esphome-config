@@ -7,6 +7,7 @@ esp8266:
 
 # Enable logging
 logger:
+  level: DEBUG
 
 # Enable Home Assistant API
 api:
@@ -15,6 +16,7 @@ api:
 
 ota:
   password: "fbd26c949814f43813805a0a3314802a"
+  platform: esphome
 
 wifi:
   ssid: !secret wifi_dmz_ssid
@@ -26,22 +28,29 @@ wifi:
     ssid: "Dev01 Fallback Hotspot"
     password: "muu6AUZABIoq"
 
+external_components:
+  - source: /config/components/
+    components: [ atapi ]
+
 captive_portal:
     
 i2c:
   sda: GPIO5
   scl: GPIO4
-  frequency: 500kHz
 
-font:
-  - file: 'fonts/LiberationMono-Regular.ttf'
-    id: font3
-    size: 14
+atapi:
 
-display:
-  - platform: ssd1306_i2c
-    model: "SSD1306 128x32"
-    address: 0x3C
-    invert: True
-    lambda: |-
-      it.printf(0, 0,id(font3),"Numero: %d",123);
+#  frequency: 500kHz
+
+# font:
+#   - file: 'fonts/LiberationMono-Regular.ttf'
+#     id: font3
+#     size: 14
+
+# display:
+#   - platform: ssd1306_i2c
+#     model: "SSD1306 128x32"
+#     address: 0x3C
+#     invert: True
+#     lambda: |-
+#       it.printf(0, 0,id(font3),"Numero: %d",123);
