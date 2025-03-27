@@ -6,11 +6,32 @@
 namespace esphome {
 namespace atapi {
 
-class Atapi : public i2c::I2CDevice, public Component {
+class Atapi : public i2c::I2CDevice, public PollingComponent {
  public:
   void setup() override;
   void loop() override;
+  void update() override;
   void dump_config() override;
+
+  void reset_all();
+  inline bool is_device_ready() { return device_ready; }
+  // ##################################
+  // Auxiliary functions User Interface
+  // ##################################
+
+  void play();
+  void stop();
+  void eject();
+  void load();
+  void pause();
+  void resume();
+  void stop_disc();
+  inline void next() { goto_track(a_trck + 1); }
+  inline void previous(){goto_track(a_trck - 1);}
+  inline void restart_track(){goto_track(a_trck);}
+  void goto_track(uint8_t trck);
+
+
  private:
     // Program Variables
     uint8_t dataLval;                     // dataLval and dataHval hold data from/to
@@ -38,7 +59,8 @@ class Atapi : public i2c::I2CDevice, public Component {
     uint8_t asc;
     long prev_millis=0;
     long interval=100;
-    boolean toc;
+    bool toc;
+    bool device_ready;
 
     // Array containing sets of 16 byte packets corresponding to part of the CD-ROM
     // ATAPI function set. If the IDE device only supports packets with 12 byte length
@@ -63,18 +85,6 @@ class Atapi : public i2c::I2CDevice, public Component {
     void disp_cd_data();
 
     void curr_MSF();
-
-    // ##################################
-    // Auxiliary functions User Interface
-    // ##################################
-
-    void play();
-    void stop();
-    void eject();
-    void load();
-    void pause();
-    void resume();
-    void stop_disk();
 
     // ###########################
     // Auxiliary functions PCF8475

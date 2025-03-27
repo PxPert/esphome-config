@@ -7,12 +7,12 @@ DEPENDENCIES = ["i2c"]
 
 atapi_ns = cg.esphome_ns.namespace("atapi")
 Atapi = atapi_ns.class_(
-    "Atapi", cg.Component, i2c.I2CDevice
+    "Atapi", cg.PollingComponent, i2c.I2CDevice
 )
 
 CONFIG_SCHEMA = (
     cv.Schema({cv.GenerateID(): cv.declare_id(Atapi)})
-    .extend(cv.COMPONENT_SCHEMA)
+    .extend(cv.polling_component_schema("1s"))
     .extend(i2c.i2c_device_schema(0x01))
 )
 

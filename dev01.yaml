@@ -8,6 +8,7 @@ esp8266:
 # Enable logging
 logger:
   level: DEBUG
+  baud_rate: 0
 
 # Enable Home Assistant API
 api:
@@ -28,6 +29,15 @@ wifi:
     ssid: "Dev01 Fallback Hotspot"
     password: "muu6AUZABIoq"
 
+mqtt:
+  id: mqtt_client
+  broker: !secret mqtt_server
+  username: !secret mqtt_user
+  password: !secret mqtt_pwd
+  discovery: false
+  client_id: ${name}
+#  log_topic: null
+
 external_components:
   - source: /config/components/
     components: [ atapi ]
@@ -35,10 +45,25 @@ external_components:
 captive_portal:
     
 i2c:
-  sda: GPIO5
-  scl: GPIO4
+  scan: False
+  frequency: 400kHz
+#  sda: GPIO5
+#  scl: GPIO4
+
+font:
+  - file: "gfonts://Roboto"
+    id: roboto_20
+    size: 20
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    lambda: |-
+      it.print(0, 0, id(roboto_20), "Hello World!");
 
 atapi:
+  id: cd_reader
 
 #  frequency: 500kHz
 
@@ -54,3 +79,151 @@ atapi:
 #     invert: True
 #     lambda: |-
 #       it.printf(0, 0,id(font3),"Numero: %d",123);
+binary_sensor:
+  - platform: gpio
+    internal: True
+    name: "Play Pause"
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - lambda: |-
+          id(cd_reader).play();
+  - platform: gpio
+    internal: True
+    name: "Stop Eject"
+    pin:
+      number: GPIO2
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - lambda: |-
+          id(cd_reader).stop();
+  - platform: gpio
+    internal: True
+    name: "Next track"
+    pin:
+      number: GPIO12
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - lambda: |-
+          id(cd_reader).next();
+  - platform: gpio
+    internal: True
+    name: "Previous track"
+    pin:
+      number: GPIO13
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - lambda: |-
+          id(cd_reader).previous();
+
+output:
+  - platform: esp8266_pwm
+    pin: GPIO14
+    id: pwd_green
+  - platform: esp8266_pwm
+    pin: GPIO15
+    id: pwd_red
+  - platform: esp8266_pwm
+    pin: GPIO1
+    id: pwd_blue
+
+light:
+  - platform: rgb
+    name: "Device led"
+    red: pwd_red
+    green: pwd_green
+    blue: pwd_blue
+
+remote_receiver:
+  pin: 
+    number: GPIO3
+    inverted: True
+  dump: all
+
+button:
+  - platform: safe_mode
+    name: "${friendly_name} (Safe Mode)"
+  - platform: restart
+    name: "${friendly_name} Restart"
+  - platform: template
+    name: Reset IDE Device
+    id: reset_device
+    on_press:
+      - logger.log: Reset device request
+      - lambda: |-
+          id(cd_reader).reset_all();
+  - platform: template
+    name: Play
+    id: play
+    on_press:
+      - logger.log: Play request
+      - lambda: |-
+          id(cd_reader).play();
+  - platform: template
+    name: Stop
+    id: stop
+    on_press:
+      - logger.log: Stop request
+      - lambda: |-
+          id(cd_reader).stop();
+  - platform: template
+    name: Eject
+    id: eject
+    on_press:
+      - logger.log: Eject request
+      - lambda: |-
+          id(cd_reader).eject();
+  - platform: template
+    name: Load
+    id: load
+    on_press:
+      - logger.log: Load request
+      - lambda: |-
+          id(cd_reader).load();
+  - platform: template
+    name: Pause
+    id: pause_
+    on_press:
+      - logger.log: Pause request
+      - lambda: |-
+          id(cd_reader).pause();
+  - platform: template
+    name: Resume
+    id: resume
+    on_press:
+      - logger.log: Resume request
+      - lambda: |-
+          id(cd_reader).resume();
+  - platform: template
+    name: Stop Disc
+    id: stop_disc
+    on_press:
+      - logger.log: Stop disc request
+      - lambda: |-
+          id(cd_reader).stop_disc();
+  - platform: template
+    name: Next
+    id: next_track
+    on_press:
+      - logger.log: Next track request
+      - lambda: |-
+          id(cd_reader).next();
+  - platform: template
+    name: Previous
+    id: prev_track
+    on_press:
+      - logger.log: Previous track request
+      - lambda: |-
+          id(cd_reader).previous();
+  - platform: template
+    name: Restart track
+    id: restart_track
+    on_press:
+      - logger.log: Restart track request
+      - lambda: |-
+          id(cd_reader).restart_track();

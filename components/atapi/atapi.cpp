@@ -1,4 +1,6 @@
 #include "esphome/core/log.h"
+#include "esphome/components/i2c/i2c_bus.h"
+
 #include "atapi.h"
 
 namespace esphome {
@@ -41,8 +43,8 @@ static const uint8_t AStCReg = 0xEE;         // Addr. Alternate Status/Device Co
 
 
 void Atapi::setup() {
-  highZ();
-  disp_cd_data();
+  ESP_LOGCONFIG(TAG, "Empty I2C component3");
+  device_ready = false;
 
 }
 
@@ -51,16 +53,145 @@ void Atapi::loop() {
 }
 
 void Atapi::dump_config(){
-    ESP_LOGCONFIG(TAG, "Empty I2C component");
+    ESP_LOGCONFIG(TAG, "Atapi dump_config");
+//    reset_all();
 }
 
 
 
+void Atapi::update() {
+  if (! device_ready)
+  {
+    return;
+  }
+
+  ESP_LOGCONFIG(TAG, "Polling...");
+
+  read_subch_cmd();                           // current audio status and update the display
+  if(aud_stat==0x11){                         // accordingly.
+//      lcd.home();
+    ESP_LOGD(TAG, "Play");
+    curr_MSF();                               // Display pickup position
+  }
+  if(aud_stat==0x12){
+//      lcd.home();
+    ESP_LOGD(TAG, "Pause");
+    curr_MSF();
+  }
+  if((aud_stat==0x15) & !toc){                  // If stopped and TOC invalid
+    get_TOC();                                // try to read TOC
+    disp_cd_data();                           // display TOC data and set TOC valid
+    toc=true;                                 // to prevent reading over and over
+  }
+  if(aud_stat==0x00){                         // Audio status 0 covers all other posible
+//      lcd.clear();                              // states not decoded by this sketch and
+    ESP_LOGD(TAG, "No Disc");
+  }
+
+}
 
 
+void Atapi::goto_track(uint8_t trck) {
+  a_trck = trck;                               // a_track becomes next track
+  if(a_trck > e_trck){(a_trck = s_trck);}      // over last track? -> point to start track
+  get_TOC();                                   // Get MSF for a_trck
+  fnc[51] = d_trck_m;                          // Store new play start position
+  fnc[52] = d_trck_s;                          // in play packet and start play
+  fnc[53] = d_trck_f;
+  play();
+  if((aud_stat == 0x12) |                        // If paused or stopped -> pause
+      (aud_stat == 0x15))
+    {
+    pause();
+  }
+}
+
+void Atapi::reset_all() {
+  this->status_clear_error();
+  ESP_LOGCONFIG(TAG, "Setting up ports expander...");
+  highZ();
+  reset_IDE();                              // Do hard reset
+  delay(3000);                              // This delay waits for the drive to initialise
+  BSY_clear_wait();                         // The ATAPI spec. allows drives to take up to
+  DRY_set_wait();                           // 31 sec. but all tested where alright within 3s.
+  readIDE(CylLReg);                         // Check device signature for ATAPI capability
+
+  if(dataLval == 0x14){
+    readIDE(CylHReg);
+    if(dataLval == 0xEB){
+         ESP_LOGCONFIG(TAG, "Found ATAPI Dev.");
+    }
+  }else{
+         ESP_LOGCONFIG(TAG, "No ATAPI Device!");
+         this->status_set_error("No ATAPI Device!");
+         return;
+  }
+  writeIDE(HeadReg, 0x00, 0xFF);            // Set Device to Master (Device 0)
+
+  ESP_LOGCONFIG(TAG, "init_task_file... ");
+// Initialise task file
+// ####################
+  init_task_file();
+
+// Run Self Diagnostic
+// ###################
+  delay(3000);
+//  lcd.clear ();
+  ESP_LOGCONFIG(TAG, "Self Diag. ");
 
 
+  writeIDE(ComSReg, 0x90, 0xFF);            // Issue Run Self Diagnostic Command
+  readIDE(ErrFReg);
+  if(dataLval == 0x01){
+  	ESP_LOGCONFIG(TAG, "OK");
+  }else{
+    ESP_LOGE(TAG, "Self diag fail. Read value: %d",dataLval);            // Units failing this may still work fine
+    this->status_set_error("Self diag fail.");
+    return;
+  }
+  delay(3000);
+//  lcd.clear ();
+  ESP_LOGCONFIG(TAG, "ATAPI Device:");
+//  lcd.setCursor (0,1);
+// Identify Device
+// ###############
+  writeIDE (ComSReg, 0xA1, 0xFF);           // Issue Identify Device Command
+  delay(500);                               // Instead of wait for IRQ. Needed by some dev.
+//  readIDE(AStCReg); //
+  do{
+    readIDE(DataReg);
+    if (cnt == 0){                                // Get supported packet lenght
+      if(dataLval & (1<<0)){                      // contained in lower byte of first word
+        paclen = 16;                              // 1st bit set -> use 16 byte packets
+      }
+    }
+    if((cnt > 26) & (cnt < 47)){                      // Read Model
+//        lcd.write(dataHval);
+//        lcd.write(dataLval);
+        ESP_LOGCONFIG(TAG, "Data: %d-%d",dataHval,dataLval);
+//        ESP_LOGCONFIG(TAG, dataLval);
+    }
+    cnt++;
+    readIDE(ComSReg);                             // Read Status Register and check DRQ,
+  } while(dataLval & (1<<3));                     // skip rest of data until DRQ=0
+  readIDE(AStCReg);
+  DRQ_clear_wait();
 
+// Check if unit ready
+// ###################
+  unit_ready();                                   // Send packet 'test unit ready'
+  req_sense();                                    // Send packet 'Request Sense'
+  if(asc == 0x29){                                // Req. Sense returns 'HW Reset'
+    unit_ready();                                 // (ASC=29h) at first since we had one.
+    req_sense();                                  // New Req. Sense returns if media
+  }                                               // is present or not.
+  do{
+     unit_ready();                                // Wait until drive is ready.
+     req_sense();                                 // Some devices take some time
+  }while(asc == 0x04);                            // ASC=04h -> LOGICAL DRIVE NOT READY
+  ESP_LOGCONFIG(TAG, "Reset complete");
+  device_ready = true;
+}
 
 void Atapi::disp_cd_data(){                          // Used to display track range and
 #ifdef TODO
@@ -125,7 +256,7 @@ void Atapi::resume(){
      idx = 80;                                    // pointer to resume
      SendPac();
 }
-void Atapi::stop_disk(){
+void Atapi::stop_disc(){
     idx = 176;                                    // pointer to stop disk function
     SendPac();
 }
@@ -135,73 +266,122 @@ void Atapi::stop_disk(){
 // ###########################
 
 // Set to high impedance all ports of PCF8475 interfacing to IDE.
-void Atapi::highZ(){
-  #ifdef TODO
+void Atapi::highZ() {
+  static const uint8_t highv_setting = (uint8_t)255;
+  esphome::i2c::ErrorCode e;
 
-  Wire.beginTransmission(RegSel);       // address IDE Register interface
-  Wire.write((uint8_t)255);                       // queue FFh into buffer for setting all pins HIGH
-  Wire.endTransmission();               // transmit buffered data to IDE Register interface
-  Wire.beginTransmission(DataH);        // address IDE DD8-DD15
-  Wire.write((uint8_t)255);                       // as above
-  Wire.endTransmission();               //
-  Wire.beginTransmission(DataL);        // address IDE DD0-DD7
-  Wire.write((uint8_t)255);                       // as above
-  Wire.endTransmission();               //
-#endif
+//  ESP_LOGD(TAG, "highZ sending");
+  e = bus_->write(RegSel, &highv_setting, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "highZ RegSel error: %d", e);
+    this->status_set_error("highZ RegSel error");
+    return;
+  }
+  e = bus_->write(DataH, &highv_setting, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "highZ DataH error: %d", e);
+    this->status_set_error("highZ DataH error");
+    return;
+  }
+  e = bus_->write(DataL, &highv_setting, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "highZ DataL error: %d", e);
+    this->status_set_error("highZ DataL error");
+    return;
+  }
+//  ESP_LOGD(TAG, "highZ sent");
+
 }
 
 // Reset Device
 void Atapi::reset_IDE(){
-  #ifdef TODO
+  static const uint8_t bit5_low = (uint8_t)B11011111; // Bit 5 LOW to reset IDE via nRESET
+  static const uint8_t bit5_high = (uint8_t)B11111111; // Bit 5 HIGH to release reset
 
-  Wire.beginTransmission(RegSel);
-  Wire.write((uint8_t)B11011111);                // Bit 5 LOW to reset IDE via nRESET
-  Wire.endTransmission();
+  esphome::i2c::ErrorCode e = bus_->write(RegSel, &bit5_low, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "reset_IDE low error: %d", e);
+    this->status_set_error("reset_IDE low error");
+    return;
+  }
   delay(40);
-  Wire.beginTransmission(RegSel);
-  Wire.write((uint8_t)B11111111);                // Release reset
-  Wire.endTransmission();
-  delay(20);
-#endif
+  e = bus_->write(RegSel, &bit5_high, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "reset_IDE high error: %d", e);
+    this->status_set_error("reset_IDE high error");
 
+    return;
+  }
+  delay(20);
 }
 
 // Read one word from IDE register
 void Atapi::readIDE (uint8_t regval){
-  #ifdef TODO
+  uint8_t reg = regval & B01111111;     // set nDIOR bit LOW preserving register address
 
-  reg = regval & B01111111;             // set nDIOR bit LOW preserving register address
-  Wire.beginTransmission(RegSel);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission();
-  Wire.requestFrom(DataH, 1);
-  dataHval = Wire.read();
-  Wire.requestFrom(DataL, 1);
-  dataLval = Wire.read();
+  esphome::i2c::ErrorCode e = bus_->write(RegSel, &reg, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "readIDE RegSel error: %d", e);
+    this->status_set_error("readIDE RegSel error");
+    return;
+  }
+
+  e = bus_->read(DataH, &dataHval, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "readIDE DataH error: %d", e);
+    this->status_set_error("readIDE DataH error");
+
+    return;
+  }
+
+  e = bus_->read(DataL, &dataLval, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "readIDE DataL error: %d", e);
+    this->status_set_error("readIDE DataL error");
+    return;
+  }
+
   highZ();                              // set all I/O pins to HIGH -> impl. nDIOR release
-#endif
+
 }
 
 // Write one word to IDE register
 void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
-  #ifdef TODO
+  uint8_t reg = regval | B01000000;             // set nDIOW bit HIGH preserving register address
 
-  reg = regval | B01000000;             // set nDIOW bit HIGH preserving register address
-  Wire.beginTransmission(RegSel);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission();
-  Wire.beginTransmission(DataH);        // send data for IDE D8-D15
-  Wire.write((uint8_t)dataHval);
-  Wire.endTransmission();
-  Wire.beginTransmission(DataL);        // send data for IDE D0-D7
-  Wire.write((uint8_t)dataLval);
-  Wire.endTransmission();
+//  ESP_LOGD(TAG, "writeIDE %d %d %d", reg,dataHval,dataLval);
+
+  esphome::i2c::ErrorCode e = bus_->write(RegSel, &reg, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "writeIDE RegSel1 error: %d", e);
+    this->status_set_error("writeIDE RegSel1 error");
+    return;
+  }
+
+  e = bus_->write(DataH, &dataHval, 1);  // send data for IDE D8-D15
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "writeIDE DataH error: %d", e);
+    this->status_set_error("writeIDE DataH error");
+    return;
+  }
+
+  e = bus_->write(DataL, &dataLval, 1);  // send data for IDE D0-D7
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "writeIDE DataL error: %d", e);
+    this->status_set_error("writeIDE DataL error");
+    return;
+  }
+
   reg = regval & B10111111;             // set nDIOW LOW preserving register address
-  Wire.beginTransmission(RegSel);
-  Wire.write((uint8_t)reg);
-  Wire.endTransmission();
+  e = bus_->write(RegSel, &reg, 1);
+  if (e != esphome::i2c::ERROR_OK) {
+    ESP_LOGE(TAG, "writeIDE RegSel2 error: %d", e);
+    this->status_set_error("writeIDE RegSel2 error");
+    return;
+  }
+
   highZ();                              // All I/O pins to high impedance -> impl. nDIOW release
-#endif
+
 }
 
 // #################################################
@@ -210,42 +390,38 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
 
 // Wait for BSY clear
 void Atapi::BSY_clear_wait(){
-  #ifdef TODO
-
+//  ESP_LOGD(TAG, "BSY_clear_wait log start: %d", dataLval);
   do{
     readIDE(ComSReg);
+    delay(5);
+//    ESP_LOGD(TAG, "BSY_clear_wait log check: %d", dataLval);
   } while(dataLval & (1<<7));
-#endif
+//  ESP_LOGD(TAG, "BSY_clear_wait log end: %d", dataLval);
 }
 
 // Wait for DRQ clear
 void Atapi::DRQ_clear_wait(){
-  #ifdef TODO
-
+//  ESP_LOGD(TAG, "DRQ_clear_wait log start: %d", dataLval);
   do{
     readIDE(ComSReg);
+    delay(5);
   } while(dataLval & (1<<3));
-#endif
+//  ESP_LOGD(TAG, "DRQ_clear_wait log start: %d", dataLval);
+
 }
 
 // Wait for DRQ set
 void Atapi::DRQ_set_wait(){
-  #ifdef TODO
-
      do{
         readIDE(ComSReg);
      }while((dataLval & ~(1<<3)) == true);
-#endif
 }
 
 // Wait for DRY set
 void Atapi::DRY_set_wait(){
-#ifdef TODO
-
      do{
         readIDE(ComSReg);
      }while((dataLval & ~(1<<6)) == true);
-#endif
 }
 
 // ##################################
@@ -254,8 +430,6 @@ void Atapi::DRY_set_wait(){
 
 // Send a packet starting at fnc array position idx
 void Atapi::SendPac(){
-  #ifdef TODO
-
      writeIDE (AStCReg, B00001010, 0xFF);     // Set nIEN before you send the PACKET command!
      writeIDE(ComSReg, 0xA0, 0xFF);           // Write Packet Command Opcode
      delay(400);
@@ -267,23 +441,17 @@ void Atapi::SendPac(){
      readIDE(AStCReg);                         // Read alternate stat reg.
      }
      BSY_clear_wait();
-#endif
 }
 
 void Atapi::get_TOC(){
-  #ifdef TODO
-
        idx =  96;                             // Pointer to Read TOC Packet
        SendPac();                             // Send read TOC command packet
        delay(10);
        DRQ_set_wait();
        read_TOC();                            // Fetch result
-#endif
 }
 
 void Atapi::read_TOC(){
-  #ifdef TODO
-
         readIDE(DataReg);                      // TOC Data Length not needed, don't care
         readIDE(DataReg);                      // Read first and last session
         s_trck = dataLval;
@@ -315,21 +483,18 @@ void Atapi::read_TOC(){
            }
            readIDE(ComSReg);
         } while(dataLval & (1<<3));            // Read data from DataRegister until DRQ=0
-#endif
 }
 
 void Atapi::read_subch_cmd(){
-#ifdef TODO
-
         idx=144;                             // Pointer to read Subchannel Packet
         SendPac();                           // Send read Subchannel command packet
         readIDE(DataReg);                    // Get Audio Status
         if(dataHval==0x13){                  // Play operation successfully completed
           dataHval=0x15;                     // means drive is neither paused nor in play
         }                                    // so treat as stopped
-        if(dataHval==0x11|                   // playing
-           dataHval==0x12|                   // paused
-           dataHval==0x15)                   // stopped
+        if((dataHval==0x11)|                   // playing
+           (dataHval==0x12)|                   // paused
+           (dataHval==0x15))                   // stopped
            {aud_stat=dataHval;               //
         }else{
             aud_stat=0;                      // all other values will report "NO DISC"
@@ -346,12 +511,9 @@ void Atapi::read_subch_cmd(){
           readIDE(DataReg);
           readIDE(ComSReg);
         } while(dataLval & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
-#endif
 }
 
 uint8_t Atapi::chck_disk(){
-  #ifdef TODO
-
      uint8_t disk_ok = 0xFF;                        // assume no valid disk present.
      idx = 128;                                  // Send mode sense packet
      SendPac();                                  //
@@ -360,12 +522,12 @@ uint8_t Atapi::chck_disk(){
      readIDE(DataReg);                           // Read and discard Mode Sense data length
      readIDE(DataReg);                           // Get Medium Type byte
                                                  // If valid audio disk present disk_ok=0x00
-     if (dataLval == 0x02 |
-         dataLval == 0x06 |
-         dataLval == 0x12 |
-         dataLval == 0x16 |
-         dataLval == 0x22 |
-         dataLval == 0x26)
+     if ((dataLval == 0x02) |
+         (dataLval == 0x06) |
+         (dataLval == 0x12) |
+         (dataLval == 0x16) |
+         (dataLval == 0x22) |
+         (dataLval == 0x26))
          {disk_ok = 0x00;
      }
      if (dataLval == 0x71){                      // Note if door open
@@ -376,21 +538,14 @@ uint8_t Atapi::chck_disk(){
        readIDE(ComSReg);
      } while(dataLval & (1<<3));
      return(disk_ok);
-#else
-     return 0;
-#endif
 }
 
 void Atapi::unit_ready(){                                // Reuests unit to report status
-    #ifdef TODO
-        idx=112;                                  // used to check_unit_ready
-        SendPac();
-#endif
+  idx=112;                                  // used to check_unit_ready
+  SendPac();
 }
 
 void Atapi::req_sense(){                                 // Request Sense Command is used to check
-  #ifdef TODO
-
   idx=160;                                        // the result of the Unit Ready command.
   SendPac();                                      // The Additional Sense Code is used,
   delay(10);                                      // see table 71 in sff8020i documentation
@@ -405,18 +560,19 @@ void Atapi::req_sense(){                                 // Request Sense Comman
        readIDE(AStCReg);
        readIDE(ComSReg);
      } while(dataLval & (1<<3));                  // Skip rest of packet
-#endif
 }
 
 void Atapi::init_task_file(){
-  #ifdef TODO
   writeIDE(ErrFReg, 0x00, 0xFF);            // Set Feature register = 0 (no overlapping and no DMA)
+//  delay(5);
   writeIDE(CylHReg, 0x02, 0xFF);            // Set PIO buffer to max. transfer length (= 200h)
+//  delay(5);
   writeIDE(CylLReg, 0x00, 0xFF);
+//  delay(5);
   writeIDE(AStCReg, 0x02, 0xFF);            // Set nIEN, we don't care about the INTRQ signal
+//  delay(5);
   BSY_clear_wait();                         // When conditions are met then IDE bus is idle,
   DRQ_clear_wait();                         // this check may not be necessary (???)
-#endif
 }
 
 
