@@ -2,18 +2,21 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/i2c/i2c.h"
+#include <queue>
 
 namespace esphome {
 namespace atapi {
 
 class Atapi : public i2c::I2CDevice, public PollingComponent {
  public:
+  bool reset_all();
+
+
   void setup() override;
   void loop() override;
   void update() override;
   void dump_config() override;
 
-  void reset_all();
   inline bool is_device_ready() { return device_ready; }
   // ##################################
   // Auxiliary functions User Interface
@@ -33,6 +36,14 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
 
 
  private:
+    std::queue<std::function<bool()>> _loopfunctions;
+    std::function<bool()> _currentFunction;
+    unsigned long _currentFunction_call_time;
+    inline void reset_queue() {_loopfunctions = std::queue<std::function<bool()>>();}
+
+    bool async_delay(unsigned int delay);
+
+
     // Program Variables
     uint8_t dataLval;                     // dataLval and dataHval hold data from/to
     uint8_t dataHval;                     // D0-D15 of IDE
@@ -107,16 +118,20 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     // #################################################
 
     // Wait for BSY clear
-    void BSY_clear_wait();
+    bool BSY_clear_wait();
+    bool BSY_clear_wait_async();
 
     // Wait for DRQ clear
     void DRQ_clear_wait();
+    bool DRQ_clear_wait_async();
 
     // Wait for DRQ set
     void DRQ_set_wait();
+    bool DRQ_set_wait_async();
 
     // Wait for DRY set
     void DRY_set_wait();
+    bool DRY_set_wait_async();
 
     // ##################################
     // Auxiliary functions Packet related
@@ -124,14 +139,15 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
 
     // Send a packet starting at fnc array position idx
     void SendPac();
+    void enqueue_sendPac(uint8_t index /* index used as pointer within packet array */);
 
     void get_TOC();
     void read_TOC();
-    void read_subch_cmd();
+    void enqueue_read_subch_cmd();
     uint8_t chck_disk();
     void unit_ready();
     void req_sense();
-    void init_task_file();
+    void enqueue_init_task_file();
 
 };
 
