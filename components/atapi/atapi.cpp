@@ -101,9 +101,12 @@ void Atapi::update() {
       curr_MSF();
     }
     if((aud_stat==0x15) & !toc){                  // If stopped and TOC invalid
-      get_TOC();                                // try to read TOC
-      disp_cd_data();                           // display TOC data and set TOC valid
-      toc=true;                                 // to prevent reading over and over
+      enqueue_get_TOC();                          // try to read TOC
+      _loopfunctions.emplace([&]() {
+        disp_cd_data();                           // display TOC data and set TOC valid
+        toc=true;                                 // to prevent reading over and over
+        return true;
+      });
     }
     if(aud_stat==0x00){                         // Audio status 0 covers all other posible
   //      lcd.clear();                              // states not decoded by this sketch and
@@ -115,19 +118,22 @@ void Atapi::update() {
 }
 
 
-void Atapi::goto_track(uint8_t trck) {
+void Atapi::enqueue_goto_track(uint8_t trck) {
   a_trck = trck;                               // a_track becomes next track
   if(a_trck > e_trck){(a_trck = s_trck);}      // over last track? -> point to start track
-  get_TOC();                                   // Get MSF for a_trck
-  fnc[51] = d_trck_m;                          // Store new play start position
-  fnc[52] = d_trck_s;                          // in play packet and start play
-  fnc[53] = d_trck_f;
-  play();
-  if((aud_stat == 0x12) |                        // If paused or stopped -> pause
-      (aud_stat == 0x15))
-    {
-    pause();
-  }
+  enqueue_get_TOC();                                   // Get MSF for a_trck
+  _loopfunctions.emplace([&]() {
+    fnc[51] = d_trck_m;                          // Store new play start position
+    fnc[52] = d_trck_s;                          // in play packet and start play
+    fnc[53] = d_trck_f;
+    enqueue_play();
+    if((aud_stat == 0x12) |                        // If paused or stopped -> pause
+        (aud_stat == 0x15))
+      {
+      enqueue_pause();
+    }
+    return true;
+  });
 }
 
 bool Atapi::async_delay(unsigned int delay) {
@@ -140,19 +146,17 @@ bool Atapi::async_delay(unsigned int delay) {
 
 bool Atapi::reset_all() {
 
+  device_ready = false;
   this->status_clear_error();
   ESP_LOGCONFIG(TAG, "Setting up ports expander...");
   highZ();
   reset_IDE();                              // Do hard reset
-//  millis();
-//  _loopfunction. = []() { print_num(42); };
+
   _loopfunctions.emplace([&]() { return async_delay(3000); });
-  _loopfunctions.emplace([&]() { return BSY_clear_wait_async(); });
-  _loopfunctions.emplace([&]() { return DRY_set_wait_async();  });
-  _loopfunctions.emplace([&]() {
-  //  BSY_clear_wait();                         // The ATAPI spec. allows drives to take up to
-//    DRY_set_wait();                           // 31 sec. but all tested where alright within 3s.
-    readIDE(CylLReg);                         // Check device signature for ATAPI capability
+  _loopfunctions.emplace([&]() { return BSY_clear_wait_async(); }); // The ATAPI spec. allows drives to take up to
+  _loopfunctions.emplace([&]() { return DRY_set_wait_async();  });  // 31 sec. but all tested where alright within 3s.
+  _loopfunctions.emplace([&]() {                                    // Check device signature for ATAPI capability
+    readIDE(CylLReg);
 
     if(dataLval == 0x14){
       readIDE(CylHReg);
@@ -232,25 +236,34 @@ bool Atapi::reset_all() {
   });
   _loopfunctions.emplace([&]() {  return DRQ_clear_wait_async(); });
 
+  // Check if unit ready
+  // ###################
+  enqueue_unit_ready();                                   // Send packet 'test unit ready'
+  enqueue_req_sense();                                    // Send packet 'Request Sense'
   _loopfunctions.emplace([&]() {
+      if(asc == 0x29){                                    // Req. Sense returns 'HW Reset'
+        enqueue_unit_ready();                             // (ASC=29h) at first since we had one.
+        enqueue_req_sense();                              // New Req. Sense returns if media
+      }
+      enqueue_wait_drive();
+      return true;
+  });
 
-      // Check if unit ready
-      // ###################
-      unit_ready();                                   // Send packet 'test unit ready'
-      req_sense();                                    // Send packet 'Request Sense'
-      if(asc == 0x29){                                // Req. Sense returns 'HW Reset'
-        unit_ready();                                 // (ASC=29h) at first since we had one.
-        req_sense();                                  // New Req. Sense returns if media
-      }                                               // is present or not.
-      do{
-        unit_ready();                                // Wait until drive is ready.
-        req_sense();                                 // Some devices take some time
-      }while(asc == 0x04);                            // ASC=04h -> LOGICAL DRIVE NOT READY
+  return true;
+}
+
+void Atapi::enqueue_wait_drive(){
+  _loopfunctions.emplace([&]() {
+    enqueue_unit_ready();                                // Wait until drive is ready.
+    enqueue_req_sense();                                 // Some devices take some time
+    if (asc != 0x04) {
       ESP_LOGCONFIG(TAG, "Reset complete");
       device_ready = true;
       return true;
+    } else {
+      return false;
+    }
   });
-  return true;
 }
 
 void Atapi::disp_cd_data(){                          // Used to display track range and
@@ -292,27 +305,27 @@ void Atapi::curr_MSF(){                               // During PLAY or PAUSE op
 // Auxiliary functions User Interface
 // ##################################
 
-void Atapi::play(){
+void Atapi::enqueue_play(){
                                                   // pointer to play function and Play
     enqueue_sendPac(48);                          // from MSF location stored at idx=(51-56)
 }                                                 // See also doc. sff8020i table 76
 
-void Atapi::stop(){
+void Atapi::enqueue_stop(){
     enqueue_sendPac(32);                          // pointer to stop unit function
 }
-void Atapi::eject(){
+void Atapi::enqueue_eject(){
     enqueue_sendPac(0);                          // pointer to eject function
 }
-void Atapi::load(){
+void Atapi::enqueue_load(){
     enqueue_sendPac(16);                          // pointer to load
 }
-void Atapi::pause(){
+void Atapi::enqueue_pause(){
     enqueue_sendPac(64);                          // pointer to hold
 }
-void Atapi::resume(){
+void Atapi::enqueue_resume(){
     enqueue_sendPac(80);                          // pointer to resume
 }
-void Atapi::stop_disc(){
+void Atapi::enqueue_stop_disc(){
     enqueue_sendPac(176);                          // pointer to stop disk function
 }
 
@@ -444,30 +457,12 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
 // #################################################
 
 // Wait for BSY clear
-bool Atapi::BSY_clear_wait(){
-//  ESP_LOGD(TAG, "BSY_clear_wait log start: %d", dataLval);
-  readIDE(ComSReg);
-//    ESP_LOGD(TAG, "BSY_clear_wait log check: %d", dataLval);
-  return ! (dataLval & (1<<7));
-//  ESP_LOGD(TAG, "BSY_clear_wait log end: %d", dataLval);
-}
-
 bool Atapi::BSY_clear_wait_async(){
-//  ESP_LOGD(TAG, "BSY_clear_wait log start: %d", dataLval);
   readIDE(ComSReg);
   if (! (dataLval & (1<<7))) {
     ESP_LOGD(TAG,"BSY_clear_wait_async done");
   }
-//    ESP_LOGD(TAG, "BSY_clear_wait log check: %d", dataLval);
   return ! (dataLval & (1<<7));
-//  ESP_LOGD(TAG, "BSY_clear_wait log end: %d", dataLval);
-}
-
-// Wait for DRQ clear
-void Atapi::DRQ_clear_wait(){
-  do{
-    readIDE(ComSReg);
-  } while(dataLval & (1<<3));
 }
 
 // Wait for DRQ clear
@@ -477,24 +472,12 @@ bool Atapi::DRQ_clear_wait_async(){
 }
 
 // Wait for DRQ set
-void Atapi::DRQ_set_wait(){
-     do{
-        readIDE(ComSReg);
-     }while((dataLval & ~(1<<3)) == true);
-}
-// Wait for DRQ set
 bool Atapi::DRQ_set_wait_async(){
   readIDE(ComSReg);
   return ! ((dataLval & ~(1<<3)) == true);
 }
 
 // Wait for DRY set
-void Atapi::DRY_set_wait(){
-     do{
-        readIDE(ComSReg);
-     }while((dataLval & ~(1<<6)) == true);
-}
-
 bool Atapi::DRY_set_wait_async(){
   readIDE(ComSReg);
   return ! ((dataLval & ~(1<<6)) == true);
@@ -505,20 +488,6 @@ bool Atapi::DRY_set_wait_async(){
 // ##################################
 
 // Send a packet starting at fnc array position idx
-void Atapi::SendPac(){
-     writeIDE (AStCReg, B00001010, 0xFF);     // Set nIEN before you send the PACKET command!
-     writeIDE(ComSReg, 0xA0, 0xFF);           // Write Packet Command Opcode
-     delay(400);
-     for (cnt=0;cnt<paclen;cnt=cnt+2){        // Send packet with length of 'paclen'
-     dataLval = fnc[(idx + cnt)];             // to IDE Data Registeraccording to idx value
-     dataHval = fnc[(idx + cnt + 1)];
-     writeIDE(DataReg, dataLval, dataHval);
-     readIDE(AStCReg);                         // Read alternate stat reg.
-     readIDE(AStCReg);                         // Read alternate stat reg.
-     }
-     BSY_clear_wait();
-}
-
 void Atapi::enqueue_sendPac(uint8_t index /* index used as pointer within packet array */) {
   ESP_LOGD(TAG,"Enqueue pac, index: %d", index);
 
@@ -556,21 +525,20 @@ void Atapi::enqueue_sendPac(uint8_t index /* index used as pointer within packet
   _loopfunctions.emplace([&]() { return BSY_clear_wait_async();  });
 }
 
-
-void Atapi::get_TOC(){
-       idx =  96;                             // Pointer to Read TOC Packet
-       SendPac();                             // Send read TOC command packet
-       delay(10);
-       DRQ_set_wait();
-       read_TOC();                            // Fetch result
-}
-
-void Atapi::read_TOC(){
-        readIDE(DataReg);                      // TOC Data Length not needed, don't care
-        readIDE(DataReg);                      // Read first and last session
-        s_trck = dataLval;
-        e_trck = dataHval;
-        do{
+void Atapi::enqueue_get_TOC(){
+       // Pointer to Read TOC Packet
+       // Send read TOC command packet
+       enqueue_sendPac(96);
+        _loopfunctions.emplace([&]() { return async_delay(10);  });
+        _loopfunctions.emplace([&]() { return DRQ_set_wait_async();  });
+        _loopfunctions.emplace([&]() {
+          readIDE(DataReg);                      // TOC Data Length not needed, don't care
+          readIDE(DataReg);                      // Read first and last session
+          s_trck = dataLval;
+          e_trck = dataHval;
+          return true;
+        });
+        _loopfunctions.emplace([&]() {
            readIDE(DataReg);                   // Skip Session no. ADR and control fields
            readIDE(DataReg);                   // Read curent track number
            c_trck = dataLval;
@@ -596,7 +564,10 @@ void Atapi::read_TOC(){
                fnc[56] = c_trck_f;
            }
            readIDE(ComSReg);
-        } while(dataLval & (1<<3));            // Read data from DataRegister until DRQ=0
+           return ! (dataLval & (1<<3));
+        }); // Fetch result
+
+
 }
 
 void Atapi::enqueue_read_subch_cmd(){
@@ -631,7 +602,7 @@ void Atapi::enqueue_read_subch_cmd(){
     return ! (dataLval & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
   });
 }
-
+/*
 uint8_t Atapi::chck_disk(){
      uint8_t disk_ok = 0xFF;                        // assume no valid disk present.
      idx = 128;                                  // Send mode sense packet
@@ -658,40 +629,40 @@ uint8_t Atapi::chck_disk(){
      } while(dataLval & (1<<3));
      return(disk_ok);
 }
+*/
 
-void Atapi::unit_ready(){                                // Reuests unit to report status
-  idx=112;                                  // used to check_unit_ready
-  SendPac();
+void Atapi::enqueue_unit_ready(){                 // Reuests unit to report status
+  enqueue_sendPac(112);                           // used to check_unit_ready
 }
 
-void Atapi::req_sense(){                                 // Request Sense Command is used to check
-  idx=160;                                        // the result of the Unit Ready command.
-  SendPac();                                      // The Additional Sense Code is used,
-  delay(10);                                      // see table 71 in sff8020i documentation
-  DRQ_set_wait();
-  cnt=0;
-  do{
-       readIDE(DataReg);
-       if (cnt == 6){
-           asc=dataLval;                          // Store Additional Sense Code
-       }
-       cnt++;
-       readIDE(AStCReg);
-       readIDE(ComSReg);
-     } while(dataLval & (1<<3));                  // Skip rest of packet
+void Atapi::enqueue_req_sense(){                  // Request Sense Command is used to check
+  enqueue_sendPac(160);                           // used to check_unit_ready
+                                                  // the result of the Unit Ready command.
+                                                  // The Additional Sense Code is used,
+                                                  // see table 71 in sff8020i documentation
+  _loopfunctions.emplace([&]() { return async_delay(10);  });
+  _loopfunctions.emplace([&]() { return DRQ_set_wait_async();  });
+  _loopfunctions.emplace([&]() { cnt=0; return true;  });
+  _loopfunctions.emplace([&]() {
+    readIDE(DataReg);
+    if (cnt == 6){
+        asc=dataLval;                          // Store Additional Sense Code
+    }
+    cnt++;
+    readIDE(AStCReg);
+    readIDE(ComSReg);
+    return ! (dataLval & (1<<3));                  // Skip rest of packet
+  });
+
 }
 
 
 void Atapi::enqueue_init_task_file(){
   _loopfunctions.emplace([&]() {
     writeIDE(ErrFReg, 0x00, 0xFF);            // Set Feature register = 0 (no overlapping and no DMA)
-  //  delay(5);
     writeIDE(CylHReg, 0x02, 0xFF);            // Set PIO buffer to max. transfer length (= 200h)
-  //  delay(5);
     writeIDE(CylLReg, 0x00, 0xFF);
-  //  delay(5);
     writeIDE(AStCReg, 0x02, 0xFF);            // Set nIEN, we don't care about the INTRQ signal
-  //  delay(5);
     return true;
   });
   _loopfunctions.emplace([&]() { return BSY_clear_wait_async();});                         // When conditions are met then IDE bus is idle,

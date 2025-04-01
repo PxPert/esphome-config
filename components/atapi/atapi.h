@@ -22,17 +22,17 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   // Auxiliary functions User Interface
   // ##################################
 
-  void play();
-  void stop();
-  void eject();
-  void load();
-  void pause();
-  void resume();
-  void stop_disc();
-  inline void next() { goto_track(a_trck + 1); }
-  inline void previous(){goto_track(a_trck - 1);}
-  inline void restart_track(){goto_track(a_trck);}
-  void goto_track(uint8_t trck);
+  void enqueue_play();
+  void enqueue_stop();
+  void enqueue_eject();
+  void enqueue_load();
+  void enqueue_pause();
+  void enqueue_resume();
+  void enqueue_stop_disc();
+  inline void enqueue_next() { enqueue_goto_track(a_trck + 1); }
+  inline void enqueue_previous(){enqueue_goto_track(a_trck - 1);}
+  inline void enqueue_restart_track(){enqueue_goto_track(a_trck);}
+  void enqueue_goto_track(uint8_t trck);
 
 
  private:
@@ -118,19 +118,15 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     // #################################################
 
     // Wait for BSY clear
-    bool BSY_clear_wait();
     bool BSY_clear_wait_async();
 
     // Wait for DRQ clear
-    void DRQ_clear_wait();
     bool DRQ_clear_wait_async();
 
     // Wait for DRQ set
-    void DRQ_set_wait();
     bool DRQ_set_wait_async();
 
     // Wait for DRY set
-    void DRY_set_wait();
     bool DRY_set_wait_async();
 
     // ##################################
@@ -138,15 +134,13 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     // ##################################
 
     // Send a packet starting at fnc array position idx
-    void SendPac();
     void enqueue_sendPac(uint8_t index /* index used as pointer within packet array */);
-
-    void get_TOC();
-    void read_TOC();
+    void enqueue_get_TOC();
     void enqueue_read_subch_cmd();
-    uint8_t chck_disk();
-    void unit_ready();
-    void req_sense();
+//    uint8_t chck_disk();
+    void enqueue_unit_ready();
+    void enqueue_wait_drive();
+    void enqueue_req_sense();
     void enqueue_init_task_file();
 
 };
