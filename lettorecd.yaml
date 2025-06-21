@@ -1,6 +1,6 @@
 esphome:
-  name: dev01
-  friendly_name: Dev01
+  name: lettorecd
+  friendly_name: Lettore CD
 
 esp8266:
   board: esp12e
@@ -13,21 +13,17 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    key: "Ki7BHPj/MK59/Kr0zSKb+AO6tfnzoTVnKOsPPHps0K8="
+    key: !secret api_key
 
 ota:
-  password: "fbd26c949814f43813805a0a3314802a"
+  password: !secret ota_pwd
+  id: my_ota
   platform: esphome
 
 wifi:
   ssid: !secret wifi_dmz_ssid
   password: !secret wifi_dmz_password
-  use_address: 192.168.2.104
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Dev01 Fallback Hotspot"
-    password: "muu6AUZABIoq"
+  use_address: 192.168.2.17
 
 mqtt:
   id: mqtt_client
@@ -62,7 +58,7 @@ display:
     # show_test_card: true
     lambda: |-
       it.print(0, 0, id(roboto_20), "Hello World!");
-      it.filled_rectangle(0, 0, 128, 64);
+#      it.filled_rectangle(0, 0, 128, 64);
 
 atapi:
   id: cd_reader
@@ -106,7 +102,7 @@ binary_sensor:
     internal: True
     name: "Next track"
     pin:
-      number: GPIO12
+      number: GPIO3
       mode: INPUT_PULLUP
       inverted: true
     on_press:
@@ -116,7 +112,7 @@ binary_sensor:
     internal: True
     name: "Previous track"
     pin:
-      number: GPIO13
+      number: GPIO14
       mode: INPUT_PULLUP
       inverted: true
     on_press:
@@ -125,25 +121,37 @@ binary_sensor:
 
 output:
   - platform: esp8266_pwm
-    pin: GPIO14
-    id: pwd_green
-  - platform: esp8266_pwm
-    pin: GPIO15
-    id: pwd_red
-  - platform: esp8266_pwm
-    pin: GPIO1
-    id: pwd_blue
+    pin: GPIO13
+    id: pwm_led
 
 light:
-  - platform: rgb
+  - platform: monochromatic
     name: "Device led"
-    red: pwd_red
-    green: pwd_green
-    blue: pwd_blue
+    output: pwm_led
+    id: light_led
+    effects:
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.1s
+          update_interval: 0.1s
+          min_brightness: 0%
+          max_brightness: 70%
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 5s
+          update_interval: 5s
+          min_brightness: 20%
+          max_brightness: 50%
+      - pulse:
+          name: "Blink"
+          transition_length: 0s
+          update_interval: 0.3s
+          min_brightness: 0%
+          max_brightness: 100%
 
 remote_receiver:
   pin: 
-    number: GPIO3
+    number: GPIO12
     inverted: True
   dump: all
 

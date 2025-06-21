@@ -4,3 +4,4 @@
 /.esphome/
 /trash/
 /secrets.yaml
+*.pyc

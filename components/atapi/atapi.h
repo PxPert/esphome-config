@@ -11,6 +11,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
  public:
   bool reset_all();
 
+  void add_on_state_callback(std::function<void(bool)> &&callback) {}
 
   void setup() override;
   void loop() override;
