@@ -1,7 +1,7 @@
 esphome:
   name: lettorecd
   friendly_name: Lettore CD
-
+  
 esp8266:
   board: esp12e
 
@@ -128,7 +128,9 @@ light:
   - platform: monochromatic
     name: "Device led"
     output: pwm_led
+    internal: True
     id: light_led
+    restore_mode: ALWAYS_ON
     effects:
       - pulse:
           name: "Fast Pulse"
@@ -157,9 +159,9 @@ remote_receiver:
 
 button:
   - platform: safe_mode
-    name: "${friendly_name} (Safe Mode)"
+    name: "Restart (Safe Mode)"
   - platform: restart
-    name: "${friendly_name} Restart"
+    name: "Restart"
   - platform: template
     name: Reset IDE Device
     id: reset_device
