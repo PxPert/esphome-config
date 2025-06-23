@@ -41,8 +41,10 @@ static const uint8_t ComSReg = 0xF7;         // Addr. Command/Status (wr/rd) reg
 static const uint8_t AStCReg = 0xEE;         // Addr. Alternate Status/Device Control (rd/wr) register of IDE device.
 
 
+static Atapi* atapi_ = nullptr;
 
 void Atapi::setup() {
+  atapi_ = this;
   ESP_LOGCONFIG(TAG, "Empty I2C component3");
   device_ready = false;
 
@@ -51,15 +53,24 @@ void Atapi::setup() {
 void Atapi::loop() {
 
   if (_currentFunction) {
-    if (_currentFunction()) {
-      ESP_LOGD(TAG, "Function completed in %d msecs. Processing next loop function. %d still in queue", millis() - _currentFunction_call_time, _loopfunctions.size());
+//    ESP_LOGD(TAG,"Executing function START");
+    std::function<bool()> f = _currentFunction->second;
+    if (f) {
+//      ESP_LOGD(TAG,"Function set");
+      if (f()) {
+        // ESP_LOGD(TAG, "Function completed in %d msecs. Processing next loop function. %d still in queue", millis() - _currentFunction_call_time, _loopfunctions.size());
+        _currentFunction = nullptr;
+      }
+    } else {
+      ESP_LOGE(TAG,"Function NOT set");
       _currentFunction = nullptr;
     }
     return;
   }
 
   if (! _loopfunctions.empty()) {
-    _currentFunction = _loopfunctions.front();
+    _currentFunction = &_loopfunctions.front();
+    ESP_LOGD(TAG,"Setting next function to %s", _currentFunction->first);
     _loopfunctions.pop();
     _currentFunction_call_time = millis();
     return;
@@ -87,42 +98,56 @@ void Atapi::update() {
   }
 
   ESP_LOGCONFIG(TAG, "Polling...");
-  enqueue_read_subch_cmd();
-  _loopfunctions.emplace([&]() {
-                            // current audio status and update the display
-    if(aud_stat==0x11){                         // accordingly.
-  //      lcd.home();
+  // enqueue_read_subch_cmd();
+  enqueue_check_disk();
+
+  _loopfunctions.emplace(AsyncFunction( "update_1",  [&]() {
+    state_callback_.call(get_status());
+
+    if(aud_stat==0x11){ // Playing
       ESP_LOGD(TAG, "Play");
-      curr_MSF();                               // Display pickup position
+      ESP_LOGD(TAG, "Current track: %d - Time: %d:%d",a_trck,MFS_M - fnc[51],MFS_S - fnc[52]);            // Units failing this may still work fine
+      update_callback_.call();
     }
-    if(aud_stat==0x12){
-  //      lcd.home();
+
+    if(aud_stat==0x12){ // Paused
       ESP_LOGD(TAG, "Pause");
-      curr_MSF();
     }
-    if((aud_stat==0x15) & !toc){                  // If stopped and TOC invalid
-      enqueue_get_TOC();                          // try to read TOC
-      _loopfunctions.emplace([&]() {
-        disp_cd_data();                           // display TOC data and set TOC valid
-        toc=true;                                 // to prevent reading over and over
-        return true;
-      });
+
+    if(aud_stat==0x15){ // Stopped
+      ESP_LOGI(TAG, "Stopped. TOC: %d", toc );
+      if (!toc) {
+        enqueue_get_TOC(); // try to read TOC
+        _loopfunctions.emplace(AsyncFunction( "update_2",  [&]() {
+          ESP_LOGI(TAG, "TOC read");
+          toc=true;
+          ESP_LOGI(TAG, "Tracks: %d/%d - Time: %d:%d",s_trck,e_trck,fnc[54],fnc[55]);            // Units failing this may still work fine
+          toc_callback_.call();
+          return true;
+        }));
+
+      }
     }
+
     if(aud_stat==0x00){                         // Audio status 0 covers all other posible
-  //      lcd.clear();                              // states not decoded by this sketch and
       ESP_LOGD(TAG, "No Disc");
+      toc = false;
     }
+
     return true;
-  });
+
+  }));
 
 }
 
 
 void Atapi::enqueue_goto_track(uint8_t trck) {
-  a_trck = trck;                               // a_track becomes next track
+  a_trck = trck;
   if(a_trck > e_trck){(a_trck = s_trck);}      // over last track? -> point to start track
+  ESP_LOGI(TAG,"Requested track: %d - going to: %d/%d", trck, a_trck, e_trck);
+  reset_queue();
   enqueue_get_TOC();                                   // Get MSF for a_trck
-  _loopfunctions.emplace([&]() {
+  _loopfunctions.emplace(AsyncFunction( "enqueue_goto_track",[&]() {
     fnc[51] = d_trck_m;                          // Store new play start position
     fnc[52] = d_trck_s;                          // in play packet and start play
     fnc[53] = d_trck_f;
@@ -133,12 +158,12 @@ void Atapi::enqueue_goto_track(uint8_t trck) {
       enqueue_pause();
     }
     return true;
-  });
+  }));
 }
 
 bool Atapi::async_delay(unsigned int delay) {
   if (millis() - _currentFunction_call_time > delay) {
-    ESP_LOGI(TAG,"async_delay done");
+    ESP_LOGD(TAG,"async_delay done");
   }
   return  (millis() - _currentFunction_call_time > delay);
 }
@@ -148,14 +173,16 @@ bool Atapi::reset_all() {
 
   device_ready = false;
   this->status_clear_error();
+  error_callback_.call(0);
+
   ESP_LOGCONFIG(TAG, "Setting up ports expander...");
   highZ();
   reset_IDE();                              // Do hard reset
 
-  _loopfunctions.emplace([&]() { return async_delay(3000); });
-  _loopfunctions.emplace([&]() { return BSY_clear_wait_async(); }); // The ATAPI spec. allows drives to take up to
-  _loopfunctions.emplace([&]() { return DRY_set_wait_async();  });  // 31 sec. but all tested where alright within 3s.
-  _loopfunctions.emplace([&]() {                                    // Check device signature for ATAPI capability
+  _loopfunctions.emplace(AsyncFunction( "reset_all_1",[&]() { return async_delay(3000); }));
+  _loopfunctions.emplace(AsyncFunction( "reset_all_2",[&]() { return BSY_clear_wait_async(); })); // The ATAPI spec. allows drives to take up to
+  _loopfunctions.emplace(AsyncFunction( "reset_all_3",[&]() { return DRY_set_wait_async();  }));  // 31 sec. but all tested where alright within 3s.
+  _loopfunctions.emplace(AsyncFunction( "reset_all_4",[&]() {                                    // Check device signature for ATAPI capability
     readIDE(CylLReg);
 
     if(dataLval == 0x14){
@@ -167,25 +194,23 @@ bool Atapi::reset_all() {
           ESP_LOGCONFIG(TAG, "No ATAPI Device!");
           this->status_set_error("No ATAPI Device!");
           reset_queue();
+          error_callback_.call(255);
           return true;
 
     }
     writeIDE(HeadReg, 0x00, 0xFF);            // Set Device to Master (Device 0)
     return true;
 
-  });
+  }));
 
   // Initialise task file
   // ####################
     ESP_LOGCONFIG(TAG, "init_task_file... ");
     enqueue_init_task_file();
 
-  _loopfunctions.emplace([&]() {return async_delay(3000); });
+  _loopfunctions.emplace(AsyncFunction( "reset_all_5",[&]() {return async_delay(3000); }));
 
-  _loopfunctions.emplace([&]() {
-      // Run Self Diagnostic
-      // ###################
-      //  lcd.clear ();
+  _loopfunctions.emplace(AsyncFunction( "reset_all_6",[&]() {
       ESP_LOGCONFIG(TAG, "Self Diag. ");
 
 
@@ -196,25 +221,23 @@ bool Atapi::reset_all() {
       }else{
         ESP_LOGE(TAG, "Self diag fail. Read value: %d",dataLval);            // Units failing this may still work fine
         this->status_set_error("Self diag fail.");
+        error_callback_.call(1);
         reset_queue();
       }
       return true;
-    });
+    }));
 
-  _loopfunctions.emplace([&]() { return async_delay(3000); });
+  _loopfunctions.emplace(AsyncFunction( "reset_all_7",[&]() { return async_delay(3000); }));
 
-  _loopfunctions.emplace([&]() {
-  //  lcd.clear ();
+  _loopfunctions.emplace(AsyncFunction( "reset_all_8",[&]() {
     ESP_LOGCONFIG(TAG, "ATAPI Device:");
-  //  lcd.setCursor (0,1);
-  // Identify Device
-  // ###############
+
     writeIDE (ComSReg, 0xA1, 0xFF);           // Issue Identify Device Command
     return true;
-  });
-  _loopfunctions.emplace([&]() {return async_delay(500); });
-  _loopfunctions.emplace([&]() {
-  //  readIDE(AStCReg); //
+  }));
+  _loopfunctions.emplace(AsyncFunction( "reset_all_9",[&]() {return async_delay(500); }));
+  _loopfunctions.emplace(AsyncFunction( "reset_all_10",[&]() {
+
     do{
       readIDE(DataReg);
       if (cnt == 0){                                // Get supported packet lenght
@@ -223,109 +246,85 @@ bool Atapi::reset_all() {
         }
       }
       if((cnt > 26) & (cnt < 47)){                      // Read Model
-  //        lcd.write(dataHval);
-  //        lcd.write(dataLval);
-          ESP_LOGCONFIG(TAG, "Data: %d-%d",dataHval,dataLval);
-  //        ESP_LOGCONFIG(TAG, dataLval);
+        ESP_LOGI(TAG, "Model: %d-%d",dataHval,dataLval);
       }
       cnt++;
       readIDE(ComSReg);                             // Read Status Register and check DRQ,
     } while(dataLval & (1<<3));                     // skip rest of data until DRQ=0
     readIDE(AStCReg);
     return true;
-  });
-  _loopfunctions.emplace([&]() {  return DRQ_clear_wait_async(); });
+  }));
+  _loopfunctions.emplace(AsyncFunction( "reset_all_11",[&]() {  return DRQ_clear_wait_async(); }));
 
-  // Check if unit ready
-  // ###################
   enqueue_unit_ready();                                   // Send packet 'test unit ready'
   enqueue_req_sense();                                    // Send packet 'Request Sense'
-  _loopfunctions.emplace([&]() {
+  _loopfunctions.emplace(AsyncFunction( "reset_all_12",[&]() {
       if(asc == 0x29){                                    // Req. Sense returns 'HW Reset'
+        ESP_LOGI(TAG, "ASC 0x29");
         enqueue_unit_ready();                             // (ASC=29h) at first since we had one.
         enqueue_req_sense();                              // New Req. Sense returns if media
       }
+
       enqueue_wait_drive();
       return true;
-  });
+  }));
 
   return true;
 }
 
 void Atapi::enqueue_wait_drive(){
-  _loopfunctions.emplace([&]() {
-    enqueue_unit_ready();                                // Wait until drive is ready.
-    enqueue_req_sense();                                 // Some devices take some time
+
+  _loopfunctions.emplace(AsyncFunction( "enqueue_wait_drive_msg",[&]() {
+    ESP_LOGI(TAG, "Waiting the drive to be ready");
+    return true;
+  }));
+
+  enqueue_unit_ready();                                // Wait until drive is ready.
+  enqueue_req_sense();                                 // Some devices take some time
+  _loopfunctions.emplace(AsyncFunction( "enqueue_wait_drive",[&]() {
     if (asc != 0x04) {
       ESP_LOGCONFIG(TAG, "Reset complete");
       device_ready = true;
-      return true;
     } else {
-      return false;
+      ESP_LOGI(TAG, "Still resetting");
+      enqueue_wait_drive();
     }
-  });
+    return true;
+  }));
 }
 
-void Atapi::disp_cd_data(){                          // Used to display track range and
-#ifdef TODO
-//     lcd.clear();                              // Total playing time as recovered
-     Serial.print("Tracks  ");                    // from reading the TOC
-     Serial.print(s_trck, DEC);
-     Serial.print("-");
-     Serial.println(e_trck, DEC);
-//     lcd.setCursor (0,1);
-     Serial.print("Time   ");
-     Serial.print(fnc[54], DEC);
-     Serial.print(":");
-      if(fnc[55] < 10)
-      {
-        Serial.print("0");                         // Print a leading 0 for seconds when below 10
-      }
-      Serial.println(fnc[55], DEC);
-#endif
- }
-
-void Atapi::curr_MSF(){                               // During PLAY or PAUSE operation show the pickup
-#ifdef TODO
-
-//      lcd.setCursor (2,1);                     // position as absolute playing time
-      Serial.print(a_trck, DEC);
-      Serial.print(" - ");
-//      lcd.setCursor (11,1);
-      Serial.print(MFS_M,DEC);
-      Serial.print(":");
-      if(MFS_S < 10)
-      {
-        Serial.print("0");                         // Print a leading 0 for seconds when below 10
-      }
-      Serial.println(MFS_S,DEC);
-#endif
-}
 // ##################################
 // Auxiliary functions User Interface
 // ##################################
 
 void Atapi::enqueue_play(){
+    reset_queue();
                                                   // pointer to play function and Play
     enqueue_sendPac(48);                          // from MSF location stored at idx=(51-56)
 }                                                 // See also doc. sff8020i table 76
 
 void Atapi::enqueue_stop(){
+    reset_queue();
     enqueue_sendPac(32);                          // pointer to stop unit function
 }
 void Atapi::enqueue_eject(){
+    reset_queue();
     enqueue_sendPac(0);                          // pointer to eject function
 }
 void Atapi::enqueue_load(){
+    reset_queue();
     enqueue_sendPac(16);                          // pointer to load
 }
 void Atapi::enqueue_pause(){
+    reset_queue();
     enqueue_sendPac(64);                          // pointer to hold
 }
 void Atapi::enqueue_resume(){
+    reset_queue();
     enqueue_sendPac(80);                          // pointer to resume
 }
 void Atapi::enqueue_stop_disc(){
+    reset_queue();
     enqueue_sendPac(176);                          // pointer to stop disk function
 }
 
@@ -343,18 +342,21 @@ void Atapi::highZ() {
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "highZ RegSel error: %d", e);
     this->status_set_error("highZ RegSel error");
+    error_callback_.call(2);
     return;
   }
   e = bus_->write(DataH, &highv_setting, 1);
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "highZ DataH error: %d", e);
     this->status_set_error("highZ DataH error");
+    error_callback_.call(3);
     return;
   }
   e = bus_->write(DataL, &highv_setting, 1);
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "highZ DataL error: %d", e);
     this->status_set_error("highZ DataL error");
+    error_callback_.call(4);
     return;
   }
 //  ESP_LOGD(TAG, "highZ sent");
@@ -370,6 +372,7 @@ void Atapi::reset_IDE(){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "reset_IDE low error: %d", e);
     this->status_set_error("reset_IDE low error");
+    error_callback_.call(5);
     return;
   }
   delay(40);
@@ -377,6 +380,7 @@ void Atapi::reset_IDE(){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "reset_IDE high error: %d", e);
     this->status_set_error("reset_IDE high error");
+    error_callback_.call(6);
 
     return;
   }
@@ -391,6 +395,7 @@ void Atapi::readIDE (uint8_t regval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "readIDE RegSel error: %d", e);
     this->status_set_error("readIDE RegSel error");
+    error_callback_.call(7);
     return;
   }
 
@@ -398,7 +403,7 @@ void Atapi::readIDE (uint8_t regval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "readIDE DataH error: %d", e);
     this->status_set_error("readIDE DataH error");
-
+    error_callback_.call(8);
     return;
   }
 
@@ -406,6 +411,7 @@ void Atapi::readIDE (uint8_t regval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "readIDE DataL error: %d", e);
     this->status_set_error("readIDE DataL error");
+    error_callback_.call(9);
     return;
   }
 
@@ -423,6 +429,7 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "writeIDE RegSel1 error: %d", e);
     this->status_set_error("writeIDE RegSel1 error");
+    error_callback_.call(10);
     return;
   }
 
@@ -430,6 +437,7 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "writeIDE DataH error: %d", e);
     this->status_set_error("writeIDE DataH error");
+    error_callback_.call(11);
     return;
   }
 
@@ -437,6 +445,7 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "writeIDE DataL error: %d", e);
     this->status_set_error("writeIDE DataL error");
+    error_callback_.call(12);
     return;
   }
 
@@ -445,6 +454,7 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "writeIDE RegSel2 error: %d", e);
     this->status_set_error("writeIDE RegSel2 error");
+    error_callback_.call(13);
     return;
   }
 
@@ -489,90 +499,82 @@ bool Atapi::DRY_set_wait_async(){
 
 // Send a packet starting at fnc array position idx
 void Atapi::enqueue_sendPac(uint8_t index /* index used as pointer within packet array */) {
-  ESP_LOGD(TAG,"Enqueue pac, index: %d", index);
-
-  _loopfunctions.emplace([&]() {
+//  ESP_LOGD(TAG,"Enqueue pac, index: %d", index);
+  uint8_t* indexPtr = new uint8_t(index);
+  ESP_LOGD(TAG,"Send pac PRE index: %d - pointer val: %d, pointer: %d",index, *indexPtr, indexPtr);
+  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_1",[&]() {
      writeIDE (AStCReg, B00001010, 0xFF);     // Set nIEN before you send the PACKET command!
      writeIDE(ComSReg, 0xA0, 0xFF);           // Write Packet Command Opcode
      return true;
-  });
-  _loopfunctions.emplace([&]() { return async_delay(400); });
-  _loopfunctions.emplace(std::bind([&](uint8_t lambda_index) {
-     ESP_LOGD(TAG,"Send pac, index: %d", lambda_index);
-     for (cnt=0;cnt<paclen;cnt=cnt+2){        // Send packet with length of 'paclen'
-        dataLval = fnc[(lambda_index + cnt)];             // to IDE Data Registeraccording to idx value
-        dataHval = fnc[(lambda_index + cnt + 1)];
-        writeIDE(DataReg, dataLval, dataHval);
-        readIDE(AStCReg);                         // Read alternate stat reg.
-        readIDE(AStCReg);                         // Read alternate stat reg.
-     }
-     return true;
-  },index));
+  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_2",[&]() { return async_delay(400); }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_3",std::bind([](uint8_t* lambda_index) {
+     ESP_LOGD(TAG,"Send pac before for, index: %d - pointer: %d, max: %d", *lambda_index, lambda_index);
+     ESP_LOGD(TAG,"Send pac before for, index: %d - cur: %d, max: %d", *lambda_index, atapi_->cnt, atapi_->paclen);
+     for (atapi_->cnt=0;atapi_->cnt<atapi_->paclen;atapi_->cnt=atapi_->cnt+2){        // Send packet with length of 'paclen'
+//       ESP_LOGD(TAG,"Send pac, index: %d - cur: %d, max: %d", *lambda_index, atapi_->cnt, atapi_->paclen);
 
-    /*
-  _loopfunctions.emplace([&]() {
-     ESP_LOGD(TAG,"Send pac, index: %d - cur_idx: %d", index, cur_idx);
-     for (cnt=0;cnt<paclen;cnt=cnt+2){        // Send packet with length of 'paclen'
-        dataLval = fnc[(cur_idx + cnt)];             // to IDE Data Registeraccording to idx value
-        dataHval = fnc[(cur_idx + cnt + 1)];
-        writeIDE(DataReg, dataLval, dataHval);
-        readIDE(AStCReg);                         // Read alternate stat reg.
-        readIDE(AStCReg);                         // Read alternate stat reg.
+        atapi_->dataLval = atapi_->fnc[(*lambda_index + atapi_->cnt)];             // to IDE Data Registeraccording to idx value
+        atapi_->dataHval = atapi_->fnc[(*lambda_index + atapi_->cnt + 1)];
+        atapi_->writeIDE(DataReg, atapi_->dataLval, atapi_->dataHval);
+        atapi_->readIDE(AStCReg);                         // Read alternate stat reg.
+        atapi_->readIDE(AStCReg);                         // Read alternate stat reg.
      }
+     delete(lambda_index);
      return true;
-  });
-  */
-  _loopfunctions.emplace([&]() { return BSY_clear_wait_async();  });
+  },indexPtr)));
+
+  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_4",[&]() { return BSY_clear_wait_async();  }));
 }
 
 void Atapi::enqueue_get_TOC(){
-       // Pointer to Read TOC Packet
-       // Send read TOC command packet
-       enqueue_sendPac(96);
-        _loopfunctions.emplace([&]() { return async_delay(10);  });
-        _loopfunctions.emplace([&]() { return DRQ_set_wait_async();  });
-        _loopfunctions.emplace([&]() {
-          readIDE(DataReg);                      // TOC Data Length not needed, don't care
-          readIDE(DataReg);                      // Read first and last session
-          s_trck = dataLval;
-          e_trck = dataHval;
-          return true;
-        });
-        _loopfunctions.emplace([&]() {
-           readIDE(DataReg);                   // Skip Session no. ADR and control fields
-           readIDE(DataReg);                   // Read curent track number
-           c_trck = dataLval;
-           readIDE(DataReg);                   // Read M
-           c_trck_m = dataHval;                // Store M of curent track
-           readIDE(DataReg);                   // Read S and F
-           c_trck_s = dataLval;                // Store S of current track
-           c_trck_f = dataHval;                // Store F of current track
+  // Pointer to Read TOC Packet
+  // Send read TOC command packet
+  enqueue_sendPac(96);
+  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_1",[&]() { return async_delay(10);  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_2",[&]() { return DRQ_set_wait_async();  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_3",[&]() {
+    readIDE(DataReg);                      // TOC Data Length not needed, don't care
+    readIDE(DataReg);                      // Read first and last session
+    s_trck = dataLval;
+    e_trck = dataHval;
+    return true;
+  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_4",[&]() {
+      readIDE(DataReg);                   // Skip Session no. ADR and control fields
+      readIDE(DataReg);                   // Read curent track number
+      c_trck = dataLval;
+      readIDE(DataReg);                   // Read M
+      c_trck_m = dataHval;                // Store M of curent track
+      readIDE(DataReg);                   // Read S and F
+      c_trck_s = dataLval;                // Store S of current track
+      c_trck_f = dataHval;                // Store F of current track
 
-           if (c_trck == s_trck){              // Store MSF of first track
-               fnc[51] = c_trck_m;             //
-               fnc[52] = c_trck_s;
-               fnc[53] = c_trck_f;
-           }
-           if (c_trck == a_trck){              // Store MSF of actual track
-               d_trck_m = c_trck_m;            //
-               d_trck_s = c_trck_s;
-               d_trck_f = c_trck_f;
-           }
-           if (c_trck == 0xAA){                // Store MSF of end position
-               fnc[54] = c_trck_m;
-               fnc[55] = c_trck_s;
-               fnc[56] = c_trck_f;
-           }
-           readIDE(ComSReg);
-           return ! (dataLval & (1<<3));
-        }); // Fetch result
+      if (c_trck == s_trck){              // Store MSF of first track
+          fnc[51] = c_trck_m;             //
+          fnc[52] = c_trck_s;
+          fnc[53] = c_trck_f;
+      }
+      if (c_trck == a_trck){              // Store MSF of actual track
+          d_trck_m = c_trck_m;            //
+          d_trck_s = c_trck_s;
+          d_trck_f = c_trck_f;
+      }
+      if (c_trck == 0xAA){                // Store MSF of end position
+          fnc[54] = c_trck_m;
+          fnc[55] = c_trck_s;
+          fnc[56] = c_trck_f;
+      }
+      readIDE(ComSReg);
+      return ! (dataLval & (1<<3));
+  })); // Fetch result
 
 
 }
 
 void Atapi::enqueue_read_subch_cmd(){
   enqueue_sendPac(144); // Pointer to read Subchannel Packet, Send read Subchannel command packet
-  _loopfunctions.emplace([&]() {
+  _loopfunctions.emplace(AsyncFunction( "enqueue_read_subch_cmd_1",[&]() {
     readIDE(DataReg);                    // Get Audio Status
     if(dataHval==0x13){                  // Play operation successfully completed
       dataHval=0x15;                     // means drive is neither paused nor in play
@@ -595,41 +597,58 @@ void Atapi::enqueue_read_subch_cmd(){
     readIDE(DataReg);                    // get S and F fields
     MFS_S = dataLval;                    // Store S value
     return true;
-  });
-  _loopfunctions.emplace([&]() {
+  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_read_subch_cmd_2",[&]() {
     readIDE(DataReg);
     readIDE(ComSReg);
     return ! (dataLval & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
-  });
+  }));
 }
-/*
-uint8_t Atapi::chck_disk(){
-     uint8_t disk_ok = 0xFF;                        // assume no valid disk present.
-     idx = 128;                                  // Send mode sense packet
-     SendPac();                                  //
-     delay(10);
-     DRQ_set_wait();                             // Wait for data ready to read.
-     readIDE(DataReg);                           // Read and discard Mode Sense data length
-     readIDE(DataReg);                           // Get Medium Type byte
-                                                 // If valid audio disk present disk_ok=0x00
-     if ((dataLval == 0x02) |
-         (dataLval == 0x06) |
-         (dataLval == 0x12) |
-         (dataLval == 0x16) |
-         (dataLval == 0x22) |
-         (dataLval == 0x26))
-         {disk_ok = 0x00;
-     }
-     if (dataLval == 0x71){                      // Note if door open
-        disk_ok = 0x71;
-     }
-     do{                                         // Skip rest of packet
-       readIDE(DataReg);
-       readIDE(ComSReg);
-     } while(dataLval & (1<<3));
-     return(disk_ok);
+
+void Atapi::enqueue_check_disk(){
+  enqueue_sendPac(128); // Send mode sense packet
+  _loopfunctions.emplace(AsyncFunction( "enqueue_check_disk_1",[&]() { return async_delay(10);  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_check_disk_2",[&]() { return DRQ_set_wait_async();  }));
+
+  _loopfunctions.emplace(AsyncFunction("enqueue_check_disk_3",[&]() {
+    uint8_t new_disc_state = 0;
+    readIDE(DataReg);                           // Read and discard Mode Sense data length
+    readIDE(DataReg);                           // Get Medium Type byte
+                                                  // If valid audio disk present disk_ok=0x00
+    if ((dataLval == 0x02) |
+      (dataLval == 0x06) |
+      (dataLval == 0x12) |
+      (dataLval == 0x16) |
+      (dataLval == 0x22) |
+      (dataLval == 0x26))
+    {
+      ESP_LOGD(TAG, "Disc present");
+      new_disc_state = 1;
+    } else if (dataLval == 0x71){                      // Note if door open
+      ESP_LOGD(TAG, "Door open");
+      new_disc_state = 2;
+    } else {
+      ESP_LOGD(TAG, "No disc");
+    }
+
+    if (new_disc_state != disc_state) {
+      disc_state = new_disc_state;
+    }
+    if (disc_state == 1) { // Disc inserted, read TOC
+      enqueue_read_subch_cmd();
+    }
+
+    return true;
+  }));
+
+  _loopfunctions.emplace(AsyncFunction( "enqueue_check_disk_4",[&]() {
+    readIDE(DataReg);
+    readIDE(ComSReg);
+    return ! (dataLval & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
+  }));
+
 }
-*/
+
 
 void Atapi::enqueue_unit_ready(){                 // Reuests unit to report status
   enqueue_sendPac(112);                           // used to check_unit_ready
@@ -640,10 +659,10 @@ void Atapi::enqueue_req_sense(){                  // Request Sense Command is us
                                                   // the result of the Unit Ready command.
                                                   // The Additional Sense Code is used,
                                                   // see table 71 in sff8020i documentation
-  _loopfunctions.emplace([&]() { return async_delay(10);  });
-  _loopfunctions.emplace([&]() { return DRQ_set_wait_async();  });
-  _loopfunctions.emplace([&]() { cnt=0; return true;  });
-  _loopfunctions.emplace([&]() {
+  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_1",[&]() { return async_delay(10);  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_2",[&]() { return DRQ_set_wait_async();  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_3",[&]() { cnt=0; return true;  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_4",[&]() {
     readIDE(DataReg);
     if (cnt == 6){
         asc=dataLval;                          // Store Additional Sense Code
@@ -652,21 +671,21 @@ void Atapi::enqueue_req_sense(){                  // Request Sense Command is us
     readIDE(AStCReg);
     readIDE(ComSReg);
     return ! (dataLval & (1<<3));                  // Skip rest of packet
-  });
+  }));
 
 }
 
 
 void Atapi::enqueue_init_task_file(){
-  _loopfunctions.emplace([&]() {
+  _loopfunctions.emplace(AsyncFunction( "enqueue_init_task_file_1",[&]() {
     writeIDE(ErrFReg, 0x00, 0xFF);            // Set Feature register = 0 (no overlapping and no DMA)
     writeIDE(CylHReg, 0x02, 0xFF);            // Set PIO buffer to max. transfer length (= 200h)
     writeIDE(CylLReg, 0x00, 0xFF);
     writeIDE(AStCReg, 0x02, 0xFF);            // Set nIEN, we don't care about the INTRQ signal
     return true;
-  });
-  _loopfunctions.emplace([&]() { return BSY_clear_wait_async();});                         // When conditions are met then IDE bus is idle,
-  _loopfunctions.emplace([&]() { return DRQ_clear_wait_async(); });                         // this check may not be necessary (???)
+  }));
+  _loopfunctions.emplace(AsyncFunction( "enqueue_init_task_file_2",[&]() { return BSY_clear_wait_async();}));                         // When conditions are met then IDE bus is idle,
+  _loopfunctions.emplace(AsyncFunction( "enqueue_init_task_file_3",[&]() { return DRQ_clear_wait_async(); }));                         // this check may not be necessary (???)
 
 }
 

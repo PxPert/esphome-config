@@ -12,24 +12,58 @@
 namespace esphome {
 namespace atapi {
 
-class ClickTrigger : public Trigger<> {
+class StateTrigger : public Trigger<int> {
  public:
-  explicit ClickTrigger(Atapi *parent, uint32_t min_length, uint32_t max_length)
-      : min_length_(min_length), max_length_(max_length) {
-    parent->add_on_state_callback([this](bool state) {
-      if (state) {
-        this->start_time_ = millis();
-      } else {
-        const uint32_t length = millis() - this->start_time_;
-        this->trigger();
+  explicit StateTrigger(Atapi *parent) {
+    last_state = -1; // Unset
+
+    parent->add_on_state_callback([this](int val) {
+      if (last_state != val) {
+        last_state = val;
+        this->trigger(val);
       }
     });
-  }
 
+  }
  protected:
-  uint32_t start_time_{0};  /// The millis() time when the click started.
-  uint32_t min_length_;     /// Minimum length of click. 0 means no minimum.
-  uint32_t max_length_;     /// Maximum length of click. 0 means no maximum.
+   int last_state;
+
+};
+
+class UpdateTrigger : public Trigger<> {
+ public:
+  explicit UpdateTrigger(Atapi *parent) {
+    parent->add_on_update_callback([this]() {
+        this->trigger();
+    });
+  }
+};
+
+class TocTrigger : public Trigger<> {
+ public:
+  explicit TocTrigger(Atapi *parent) {
+    parent->add_on_toc_callback([this]() {
+        this->trigger();
+    });
+  }
+};
+
+class LockTrigger : public Trigger<bool> {
+ public:
+  explicit LockTrigger(Atapi *parent) {
+    parent->add_on_lock_callback([this](bool val) {
+        this->trigger(val);
+    });
+  }
+};
+
+class ErrorTrigger : public Trigger<int> {
+ public:
+  explicit ErrorTrigger(Atapi *parent) {
+    parent->add_on_error_callback([this](int val) {
+        this->trigger(val);
+    });
+  }
 };
 
 }

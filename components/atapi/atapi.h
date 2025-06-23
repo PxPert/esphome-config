@@ -6,12 +6,11 @@
 
 namespace esphome {
 namespace atapi {
+typedef std::pair<const char*, std::function<bool()> > AsyncFunction;
 
 class Atapi : public i2c::I2CDevice, public PollingComponent {
  public:
   bool reset_all();
-
-  void add_on_state_callback(std::function<void(bool)> &&callback) {}
 
   void setup() override;
   void loop() override;
@@ -30,20 +29,85 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   void enqueue_pause();
   void enqueue_resume();
   void enqueue_stop_disc();
+
   inline void enqueue_next() { enqueue_goto_track(a_trck + 1); }
   inline void enqueue_previous(){enqueue_goto_track(a_trck - 1);}
   inline void enqueue_restart_track(){enqueue_goto_track(a_trck);}
   void enqueue_goto_track(uint8_t trck);
 
+  void add_on_state_callback(std::function<void(int)> &&callback){
+    this->state_callback_.add(std::move(callback));
+  }
+  void add_on_update_callback(std::function<void()> &&callback){
+    this->update_callback_.add(std::move(callback));
+  }
+  void add_on_toc_callback(std::function<void()> &&callback){
+    this->toc_callback_.add(std::move(callback));
+  }
+  void add_on_lock_callback(std::function<void(bool)> &&callback){
+    this->lock_callback_.add(std::move(callback));
+  }
+  void add_on_error_callback(std::function<void(int)> &&callback){
+    this->error_callback_.add(std::move(callback));
+  }
+
+  uint8_t get_tracks() {
+    return e_trck;
+  }
+
+  uint8_t get_current_track() {
+    return a_trck;
+  }
+
+  uint16_t get_total_time() {
+    return (fnc[54] * 60) + fnc[55];
+  }
+
+  uint16_t get_current_time() {
+    return (MFS_M * 60) + MFS_S;
+  }
+
+  uint16_t get_current_track_time() {
+    return get_current_time() - ((fnc[51] * 60) + fnc[52]);
+  }
+
+  uint8_t get_disc_state() {
+    return disc_state;
+  }
+
+  uint8_t get_status() {
+    switch (aud_stat) {
+      case 0x00: // No disc
+        return 0;
+      case 0x15: // Stopped
+        return 1;
+      case 0x11: // Playing
+        return 2;
+      case 0x12: // Paused
+        return 3;
+    }
+    return 0;
+  }
+
+
+
+ protected:
+  CallbackManager<void(int)> state_callback_{};
+  CallbackManager<void()> update_callback_{};
+  CallbackManager<void()> toc_callback_{};
+  CallbackManager<void(bool)> lock_callback_{};
+  CallbackManager<void(int)> error_callback_{};
 
  private:
-    std::queue<std::function<bool()>> _loopfunctions;
-    std::function<bool()> _currentFunction;
+
+    std::queue<AsyncFunction> _loopfunctions;
+    AsyncFunction* _currentFunction;
     unsigned long _currentFunction_call_time;
-    inline void reset_queue() {_loopfunctions = std::queue<std::function<bool()>>();}
+    inline void reset_queue() {_loopfunctions = std::queue<AsyncFunction>();}
 
     bool async_delay(unsigned int delay);
 
+    uint8_t disc_state;
 
     // Program Variables
     uint8_t dataLval;                     // dataLval and dataHval hold data from/to
@@ -138,11 +202,11 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     void enqueue_sendPac(uint8_t index /* index used as pointer within packet array */);
     void enqueue_get_TOC();
     void enqueue_read_subch_cmd();
-//    uint8_t chck_disk();
     void enqueue_unit_ready();
     void enqueue_wait_drive();
     void enqueue_req_sense();
     void enqueue_init_task_file();
+    void enqueue_check_disk();
 
 };
 

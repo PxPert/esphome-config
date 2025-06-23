@@ -8,7 +8,7 @@ esp8266:
 # Enable logging
 logger:
   level: DEBUG
-  baud_rate: 0
+  baud_rate: 115200
 
 # Enable Home Assistant API
 api:
@@ -25,14 +25,14 @@ wifi:
   password: !secret wifi_dmz_password
   use_address: 192.168.2.17
 
-mqtt:
-  id: mqtt_client
-  broker: !secret mqtt_server
-  username: !secret mqtt_user
-  password: !secret mqtt_pwd
-  discovery: false
-  client_id: ${name}
-#  log_topic: null
+# mqtt:
+#   id: mqtt_client
+#   broker: !secret mqtt_server
+#   username: !secret mqtt_user
+#   password: !secret mqtt_pwd
+#   discovery: false
+#   client_id: ${name}
+# #  log_topic: null
 
 external_components:
   - source: /config/components/
@@ -47,42 +47,97 @@ i2c:
 #  scl: GPIO4
 
 font:
-  - file: "gfonts://Roboto"
-    id: roboto_20
-    size: 20
+#   - file: "gfonts://Roboto"
+    # id: roboto_20
+    # size: 20
+  - file: 'fonts/LiberationMono-Regular.ttf'
+    id: font_header
+    size: 14
 
+  - file: 'fonts/LiberationMono-Regular.ttf'
+    id: font_body
+    size: 24
+
+    # webfonts from https://pictogrammers.com/
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: md_state_icons
+    size: 40
+    glyphs:
+      - "\U000F01D1" # disc-alert
+      - "\U000F05EE" # disc
+      - "\U000F040A" # play
+      - "\U000F03E4" # pause
+      - "\U000F04DB" # stop
+      - "\U000F01EA" # eject
+      - "\U000F0453" # loading
+      - "\U000F0028" # alert
+#      - "\U000" # 
+    
 display:
   - platform: ssd1306_i2c
     model: "SSD1306 128x64"
     address: 0x3C
+    id: lcd_display
     # show_test_card: true
     lambda: |-
-      it.print(0, 0, id(roboto_20), "Hello World!");
-#      it.filled_rectangle(0, 0, 128, 64);
+      switch (id(cd_reader).get_disc_state()) {
+        case 0:
+          it.print(0, 0, id(font_header), "No disc");
+          break;
+        case 1:
+          it.printf(0, 0, id(font_header), "%02d:%02d",id(cd_reader).get_total_time() / 60, id(cd_reader).get_total_time() % 60 );
+          if (id(cd_reader).get_status() > 1) {
+            it.printf(it.get_width(), 0, id(font_header),TextAlign::TOP_RIGHT,"%02d:%02d",id(cd_reader).get_current_time() / 60, id(cd_reader).get_current_time() % 60);
+          }
+          break;
+        case 2:
+          it.print(0, 0, id(font_header), "Tray opened");
+          break;
+      }
+
+      it.line(0, 20, it.get_width(), 20);
+
+      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,"\U000F01D1");
+
+      if (id(cd_reader).get_disc_state() == 1) {
+        it.printf(50, 28, id(font_body), "%02d/%02d", (id(cd_reader).get_status() > 1)?id(cd_reader).get_current_track():0,id(cd_reader).get_tracks() );
+        if (id(cd_reader).get_status() > 1) {
+          it.printf(65, 48, id(font_header),TextAlign::TOP_LEFT,"%02d:%02d",id(cd_reader).get_current_track_time() / 60, id(cd_reader).get_current_track_time() % 60);
+        } else {
+          it.print(65, 48, id(font_header),TextAlign::TOP_LEFT,"00:00");
+        }
+
+      } else {
+        it.print(50, 28, id(font_body), "--/--");
+      }
+      
 
 atapi:
   id: cd_reader
-
+  on_error:
+    - component.update: lcd_display
+  on_lock:
+    - component.update: lcd_display
+  on_update:
+    - component.update: lcd_display
+  on_toc:
+    - component.update: lcd_display
+  on_state:
+    - component.update: lcd_display
+    - light.control:
+        id: light_led
+        state: !lambda |-
+          return x;
+          
 #  frequency: 500kHz
 
-# font:
-#   - file: 'fonts/LiberationMono-Regular.ttf'
-#     id: font3
-#     size: 14
 
-# display:
-#   - platform: ssd1306_i2c
-#     model: "SSD1306 128x32"
-#     address: 0x3C
-#     invert: True
-#     lambda: |-
-#       it.printf(0, 0,id(font3),"Numero: %d",123);
 binary_sensor:
   - platform: gpio
     internal: True
     name: "Play Pause"
     pin:
-      number: GPIO0
+      number: GPIO3
       mode: INPUT_PULLUP
       inverted: true
     on_press:
@@ -92,7 +147,7 @@ binary_sensor:
     internal: True
     name: "Stop Eject"
     pin:
-      number: GPIO2
+      number: GPIO0
       mode: INPUT_PULLUP
       inverted: true
     on_press:
@@ -102,7 +157,7 @@ binary_sensor:
     internal: True
     name: "Next track"
     pin:
-      number: GPIO3
+      number: GPIO14
       mode: INPUT_PULLUP
       inverted: true
     on_press:
@@ -112,7 +167,7 @@ binary_sensor:
     internal: True
     name: "Previous track"
     pin:
-      number: GPIO14
+      number: GPIO2
       mode: INPUT_PULLUP
       inverted: true
     on_press:
@@ -151,11 +206,11 @@ light:
           min_brightness: 0%
           max_brightness: 100%
 
-remote_receiver:
-  pin: 
-    number: GPIO12
-    inverted: True
-  dump: all
+# remote_receiver:
+#   pin: 
+#     number: GPIO12
+#     inverted: True
+#   dump: all
 
 button:
   - platform: safe_mode
