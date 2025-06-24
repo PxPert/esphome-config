@@ -83,7 +83,8 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   void enqueue_resume();
   void enqueue_stop_disc();
 
-  bool set_command(const char* name, AsyncAtapiCommand cmd);
+  bool enqueue_command(const char* name, AsyncAtapiCommand cmd);
+  bool dequeue_command();
   inline void enqueue_next() { enqueue_play_track(_current_track + 1); }
   inline void enqueue_previous(){enqueue_play_track(_current_track - 1);}
   inline void enqueue_restart_track(){enqueue_play_track(_current_track);}
@@ -154,10 +155,12 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
 
  private:
   AsyncAtapiCommandPair _currentCommand;
+  AsyncAtapiCommandPair _enqueuedCommand;
   uint8_t _currentCommandStep;
   unsigned long _currentFunction_call_time;
   bool _currentfunction_first_try;
   void set_next_command_step();
+
 
   bool cmd_reset(uint8_t step);
   bool cmd_check_disk(uint8_t step);

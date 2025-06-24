@@ -44,12 +44,25 @@ void Atapi::setup() {
   _device_ready = false;
 
 }
-bool Atapi::set_command(const char* name, AsyncAtapiCommand cmd) {
-  _currentCommand.first = name;
-  _currentCommand.second = cmd;
-  _currentCommandStep = 0;
-  _currentFunction_call_time = 0;
-  _currentfunction_first_try = true;
+
+bool Atapi::dequeue_command() {
+  if (_enqueuedCommand.first) {
+    _currentCommand.first = _enqueuedCommand.first;
+    _currentCommand.second = _enqueuedCommand.second;
+    _currentCommandStep = 0;
+    _currentFunction_call_time = 0;
+    _currentfunction_first_try = true;
+    _enqueuedCommand.first = nullptr;
+    return true;
+  }
+
+  // No command in queue
+  return false;
+}
+
+bool Atapi::enqueue_command(const char* name, AsyncAtapiCommand cmd) {
+  _enqueuedCommand.first = name;
+  _enqueuedCommand.second = cmd;
   return true;
 
 }
@@ -68,7 +81,10 @@ void Atapi::loop() {
       _currentCommandStep = 0;
       _currentFunction_call_time = 0;
     }
+  } else {
+    dequeue_command();
   }
+
 
 }
 
@@ -103,18 +119,20 @@ void Atapi::update() {
 
 bool Atapi::cmd_play_track(uint8_t step) {
   static uint8_t atapi_fnc_start_play[16] = {0x47, 0x00, 0x00, 0x10, 0x28, 0x05, 0x4C, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
   // Start PLAY
   // from from MSF location stored at indexes 3 to 8.
   // See also doc. sff8020i table 76
 
   if (step == 0) {
-    set_busy_status(BUSYSTATUS_PLAY);
+    set_busy_status(BUSYSTATUS_PLAY);/*
     atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
     atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
     atapi_fnc_start_play[5] = _tracks[_requested_track].frames;
     atapi_fnc_start_play[6] = _end_position.minutes;
     atapi_fnc_start_play[7] = _end_position.seconds;
     atapi_fnc_start_play[8] = _end_position.frames;
+    */
     ESP_LOGD(TAG,"Set play command to this array: %02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d",
              atapi_fnc_start_play[0],
              atapi_fnc_start_play[1],
@@ -139,6 +157,13 @@ bool Atapi::cmd_play_track(uint8_t step) {
   if (step == 1) {
     if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
       ESP_LOGD(TAG,"Play command complete");
+      set_next_command_step();
+    }
+  }
+
+  if (step == 2) {
+    if (async_delay(2000)) {
+      ESP_LOGD(TAG,"Play command delay complete");
       return true;
     }
   }
@@ -345,12 +370,12 @@ void Atapi::enqueue_play(){
 }
 
 void Atapi::enqueue_stop(){
-  set_command("stop_unit", [this](uint8_t step) {
+  enqueue_command("stop_unit", [this](uint8_t step) {
     return sendPac(atapi_fnc_stop_unit, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_eject(){
-  set_command("eject", [this](uint8_t step) {
+  enqueue_command("eject", [this](uint8_t step) {
     set_busy_status(BUSYSTATUS_EJECT);
     if (sendPac(atapi_fnc_open_tray, _currentfunction_first_try)) {
       return true;
@@ -359,7 +384,7 @@ void Atapi::enqueue_eject(){
   });
 }
 void Atapi::enqueue_load(){
-  set_command("load", [this](uint8_t step) {
+  enqueue_command("load", [this](uint8_t step) {
     set_busy_status(BUSYSTATUS_LOAD);
     if (sendPac(atapi_fnc_close_tray, _currentfunction_first_try)) {
       return true;
@@ -368,17 +393,17 @@ void Atapi::enqueue_load(){
   });
 }
 void Atapi::enqueue_pause(){
-  set_command("pause", [this](uint8_t step) {
+  enqueue_command("pause", [this](uint8_t step) {
     return sendPac(atapi_fnc_pause_play, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_resume(){
-  set_command("resume", [this](uint8_t step) {
+  enqueue_command("resume", [this](uint8_t step) {
     return sendPac(atapi_fnc_resume_play, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_stop_disc(){
-  set_command("stop_disc", [this](uint8_t step) {
+  enqueue_command("stop_disc", [this](uint8_t step) {
     return sendPac(atapi_fnc_stop_disk, _currentfunction_first_try);
   });
 }
@@ -585,11 +610,19 @@ bool Atapi::sendPac(const uint8_t* packet, bool firstCall) {
 
   if (internal_step == 2) {
     for (uint8_t i=0;i<_packet_length;i=i+2){        // Send packet with length of '_packet_length'
+      ESP_LOGD(TAG,"Write ide, %02d:%02d", packet[i], packet[i+1]);
       writeIDE(DataReg, packet[i], packet[i + 1]);
-      readIDE(AStCReg,nullptr,nullptr);                         // Read alternate stat reg.
-      readIDE(AStCReg,nullptr,nullptr);                         // Read alternate stat reg.
+      uint8_t lVal, hVal;
+      readIDE(AStCReg,&lVal,&hVal);                         // Read alternate stat reg.
+      ESP_LOGD(TAG,"RESPONSE 1, %02d:%02d", lVal,hVal);
+      readIDE(AStCReg,&lVal,&hVal);                         // Read alternate stat reg.
+      ESP_LOGD(TAG,"RESPONSE 2, %02d:%02d", lVal,hVal);
     }
-    return true;
+    internal_step++;
+  }
+
+  if (internal_step == 3) {
+    return BSY_clear_wait_async();
   }
 
 
@@ -755,7 +788,6 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
 
     if ((_audio_status==0x15) && (!_toc_read)) { // Stopped
       enqueue_get_TOC();
-      return false;
     }
 
     if ((_audio_status == 0x11) || (_busy_status != BUSYSTATUS_PLAY)) {
@@ -846,12 +878,12 @@ bool Atapi::cmd_check_disk(uint8_t step) {
         ||
         (! _toc_read)
       )) {
-      ESP_LOGD(TAG,"Replacing with enqueue_read_subch_cmd");
+      ESP_LOGD(TAG,"enqueue_read_subch_cmd");
       enqueue_read_subch_cmd();
     } else {
       set_busy_status(BUSYSTATUS_NONE);
-      return true;
     }
+    return true;
   }
 
   return false;
@@ -918,19 +950,19 @@ bool Atapi::req_sense(bool firstCall){                // Request Sense Command i
 }
 
 void Atapi::enqueue_check_disk(){
-  set_command("CheckDisk", [this](uint8_t val) { return cmd_check_disk(val); });
+  enqueue_command("CheckDisk", [this](uint8_t val) { return cmd_check_disk(val); });
 }
 
 void Atapi::enqueue_read_subch_cmd(){
-  set_command("ReadSubch", [this](uint8_t val) { return cmd_read_subch_cmd(val); });
+  enqueue_command("ReadSubch", [this](uint8_t val) { return cmd_read_subch_cmd(val); });
 }
 
 void Atapi::enqueue_reset(){
-  set_command("Reset", [this](uint8_t val) { return cmd_reset(val); });
+  enqueue_command("Reset", [this](uint8_t val) { return cmd_reset(val); });
 }
 
 void Atapi::enqueue_get_TOC(){
-  set_command("getToc", [this](uint8_t val) { return cmd_get_toc(val); });
+  enqueue_command("getToc", [this](uint8_t val) { return cmd_get_toc(val); });
 }
 
 void Atapi::enqueue_play_track(uint8_t trck) {
@@ -939,7 +971,7 @@ void Atapi::enqueue_play_track(uint8_t trck) {
 }
 
 void Atapi::enqueue_play_selected_track() {
-  set_command("play", [this](uint8_t step) { return cmd_play_track(step); });
+  enqueue_command("play", [this](uint8_t step) { return cmd_play_track(step); });
 
 }
 
