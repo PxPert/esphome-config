@@ -72,9 +72,10 @@ void Atapi::loop() {
 
 }
 
-void Atapi::set_busy(bool busy_status) {
-  if (_device_busy != busy_status) {
-    _device_busy = busy_status;
+void Atapi::set_busy_status(uint8_t busy_status) {
+  if (_busy_status != busy_status) {
+    ESP_LOGI(TAG,"Set busy status to %d", busy_status);
+    _busy_status = busy_status;
   }
 }
 
@@ -107,7 +108,7 @@ bool Atapi::cmd_play_track(uint8_t step) {
   // See also doc. sff8020i table 76
 
   if (step == 0) {
-    set_busy(true);
+    set_busy_status(BUSYSTATUS_PLAY);
     atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
     atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
     atapi_fnc_start_play[5] = _tracks[_requested_track].frames;
@@ -119,7 +120,6 @@ bool Atapi::cmd_play_track(uint8_t step) {
 
   if (step == 1) {
     if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
-      set_busy(false);
       return true;
     }
   }
@@ -148,7 +148,7 @@ void Atapi::set_next_command_step() {
 bool Atapi::cmd_reset(uint8_t step) {
   bool cmd_complete = false;
 
-  set_busy(true);
+  set_busy_status(BUSYSTATUS_RESET);
 
   if (step == 0) {
     _device_ready = false;
@@ -332,9 +332,8 @@ void Atapi::enqueue_stop(){
 }
 void Atapi::enqueue_eject(){
   set_command("eject", [this](uint8_t step) {
-    set_busy(true);
+    set_busy_status(BUSYSTATUS_EJECT);
     if (sendPac(atapi_fnc_open_tray, _currentfunction_first_try)) {
-      set_busy(false);
       return true;
     }
     return false;
@@ -342,7 +341,7 @@ void Atapi::enqueue_eject(){
 }
 void Atapi::enqueue_load(){
   set_command("load", [this](uint8_t step) {
-    set_busy(true);
+    set_busy_status(BUSYSTATUS_LOAD);
     if (sendPac(atapi_fnc_close_tray, _currentfunction_first_try)) {
       return true;
     }
@@ -642,7 +641,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
     _toc_read=true;
     ESP_LOGD(TAG,"TOC Read ok. Tracks: %d/%d - Time: %d:%d",_start_track,_total_tracks,_end_position.minutes,_end_position.seconds);
     toc_callback_.call();
-    set_busy(false);
+    set_busy_status(BUSYSTATUS_NONE);
     return true;
   }
 
@@ -737,10 +736,14 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
 
     if ((_audio_status==0x15) && (!_toc_read)) { // Stopped
       enqueue_get_TOC();
-    } else {
-      set_busy(false);
-      return true;
+      return false;
     }
+
+    if ((_audio_status == 0x11) || (_busy_status != BUSYSTATUS_PLAY)) {
+      set_busy_status(BUSYSTATUS_NONE);
+    }
+
+    return true;
 
   }
 
@@ -770,7 +773,6 @@ bool Atapi::cmd_check_disk(uint8_t step) {
   if (step == 3) {
     uint8_t lVal;
 
-    _disc_state = 0;
     readIDE(DataReg,nullptr,nullptr);                           // Read and discard Mode Sense data length
     readIDE(DataReg, &lVal, nullptr);                           // Get Medium Type byte
 
@@ -782,12 +784,22 @@ bool Atapi::cmd_check_disk(uint8_t step) {
       (lVal == 0x26))                                           // If valid audio disk present disk_ok=0x00
     {
       ESP_LOGD(TAG, "Disc present");
-      _disc_state = 1;
+      _disc_state = DISC_STATUS_DISC_PRESENT;
     } else if (lVal == 0x71){                      // Note if door open
-      ESP_LOGD(TAG, "Door open");
-      _disc_state = 2;
+      ESP_LOGD(TAG, "Tray open");
+      _disc_state = DISC_STATUS_TRAY_OPENED;
     } else {
-      ESP_LOGD(TAG, "No disc");
+      if (! (
+          (_disc_state == DISC_STATUS_DISC_PRESENT)
+          &&
+          (_busy_status == BUSYSTATUS_PLAY)
+        ))
+        {
+        ESP_LOGD(TAG, "No disc");
+
+        _toc_read = false;
+        _disc_state = DISC_STATUS_NODISC;
+      }
     }
 
     set_next_command_step();
@@ -797,19 +809,28 @@ bool Atapi::cmd_check_disk(uint8_t step) {
   if (step == 4) {
     uint8_t lVal;
 
-    readIDE(DataReg,nullptr,nullptr);
-    readIDE(ComSReg,&lVal,nullptr);
-    if (! (lVal & (1<<3))) {          // Read rest of data from Data Reg. until DRQ=0
-      set_next_command_step();
-    }
+    do {
+      readIDE(DataReg,nullptr,nullptr);
+      readIDE(ComSReg,&lVal,nullptr);
+    } while(lVal & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
+
+    set_next_command_step();
   }
 
   if (step == 5) {
     ESP_LOGD(TAG,"LAST STEP. disc state: %d", _disc_state);
-    if (_disc_state == 1) { // Disc inserted, set next command to read TOC
-      ESP_LOGD(TAG,"Disc present.. replacing with enqueue_read_subch_cmd");
+    if ((_disc_state == DISC_STATUS_DISC_PRESENT) &&
+      (
+        (_busy_status == BUSYSTATUS_PLAY)
+        ||
+        (get_status() == AUDIOSTATUS_PLAYING)
+        ||
+        (! _toc_read)
+      )) {
+      ESP_LOGD(TAG,"Replacing with enqueue_read_subch_cmd");
       enqueue_read_subch_cmd();
     } else {
+      set_busy_status(BUSYSTATUS_NONE);
       return true;
     }
   }

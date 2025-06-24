@@ -6,6 +6,22 @@
 
 #define MAX_TRACKS 99
 
+#define BUSYSTATUS_NONE 0
+#define BUSYSTATUS_RESET 1
+#define BUSYSTATUS_PLAY 2
+#define BUSYSTATUS_EJECT 3
+#define BUSYSTATUS_LOAD 4
+
+#define AUDIOSTATUS_NODISC 0
+#define AUDIOSTATUS_STOPPED 1
+#define AUDIOSTATUS_PLAYING 2
+#define AUDIOSTATUS_PAUSED 3
+#define AUDIOSTATUS_UNKNOWN 99
+
+#define DISC_STATUS_NODISC 0
+#define DISC_STATUS_DISC_PRESENT 1
+#define DISC_STATUS_TRAY_OPENED 2
+
 namespace esphome {
 namespace atapi {
 
@@ -23,6 +39,9 @@ const uint8_t atapi_fnc_mode_sense[16]      = {0x5A, 0x00, 0x01, 0x00, 0x00, 0x0
 const uint8_t atapi_fnc_read_subchannel[16] = {0x42, 0x02, 0x40, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // rd subch.
 const uint8_t atapi_fnc_request_sense[16]   = {0x03, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // req. sense
 const uint8_t atapi_fnc_stop_disk[16]       = {0x4E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Stop disk
+
+
+
 
 typedef std::function<bool(uint8_t)> AsyncAtapiCommand;
 typedef std::pair<const char*, AsyncAtapiCommand > AsyncAtapiCommandPair;
@@ -114,15 +133,15 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   uint8_t get_status() {
     switch (_audio_status) {
       case 0x00: // No disc
-        return 0;
+        return AUDIOSTATUS_NODISC;
       case 0x15: // Stopped
-        return 1;
+        return AUDIOSTATUS_STOPPED;
       case 0x11: // Playing
-        return 2;
+        return AUDIOSTATUS_PLAYING;
       case 0x12: // Paused
-        return 3;
+        return AUDIOSTATUS_PAUSED;
     }
-    return 0;
+    return AUDIOSTATUS_UNKNOWN;
   }
 
 
@@ -154,7 +173,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   bool req_sense(bool firstCall);
   bool sendPac(const uint8_t* packet, bool firstCall);
 
-  void set_busy(bool busy_status);
+  void set_busy_status(uint8_t busy_status);
 
   // #################################################
   // Auxiliary functions ATAPI Status Register related
@@ -185,7 +204,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   uint8_t _audio_status = 0xFF;              // subchannel data: 0x11=play, 0x12=pause, 0x15=stop
   bool _toc_read;
   bool _device_ready;
-  bool _device_busy;
+  uint8_t _busy_status;
 
 
   // ###########################
