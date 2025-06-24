@@ -110,10 +110,11 @@ void Atapi::update() {
       (_currentCommand.first)
   )
   {
+    ESP_LOGD(TAG, "Device busy, skip polling");
     return;
   }
 
-  ESP_LOGCONFIG(TAG, "Polling...");
+  ESP_LOGD(TAG, "Polling...");
   enqueue_check_disk();
 
 }
@@ -604,7 +605,7 @@ bool Atapi::sendPac(const uint8_t* packet, bool firstCall) {
   }
 
   if (internal_step == 1) {
-    if (async_delay(400, internal_millis)) {
+    if (async_delay(100, internal_millis)) { // was 400
       internal_step++;
     }
   }
@@ -757,6 +758,8 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
 
     if (! ignore) {
       _current_track_position.seconds = lVal;              // Store S value
+
+      ESP_LOGD(TAG,"Currentt track: %d - Time: %d:%d",_current_track,_current_track_position.minutes,_current_track_position.seconds);
     }
 
     step = set_next_command_step();
