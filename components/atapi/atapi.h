@@ -159,7 +159,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   uint8_t _currentCommandStep;
   unsigned long _currentFunction_call_time;
   bool _currentfunction_first_try;
-  void set_next_command_step();
+  uint8_t set_next_command_step();
 
 
   bool cmd_reset(uint8_t step);

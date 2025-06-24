@@ -125,14 +125,14 @@ bool Atapi::cmd_play_track(uint8_t step) {
   // See also doc. sff8020i table 76
 
   if (step == 0) {
-    set_busy_status(BUSYSTATUS_PLAY);/*
+    set_busy_status(BUSYSTATUS_PLAY);
     atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
     atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
     atapi_fnc_start_play[5] = _tracks[_requested_track].frames;
     atapi_fnc_start_play[6] = _end_position.minutes;
     atapi_fnc_start_play[7] = _end_position.seconds;
     atapi_fnc_start_play[8] = _end_position.frames;
-    */
+
     ESP_LOGD(TAG,"Set play command to this array: %02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d",
              atapi_fnc_start_play[0],
              atapi_fnc_start_play[1],
@@ -151,41 +151,19 @@ bool Atapi::cmd_play_track(uint8_t step) {
              atapi_fnc_start_play[14],
              atapi_fnc_start_play[15]
     );
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 1) {
-    if (sendPac(atapi_fnc_mode_sense, _currentfunction_first_try)) { // used to check_unit_ready
-      ESP_LOGD(TAG,"SENSE pre play command complete");
-      set_next_command_step();
+    if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
+      ESP_LOGD(TAG,"Play command complete");
+      step = set_next_command_step();
     }
   }
 
   if (step == 2) {
-    if (async_delay(10)) {
-      set_next_command_step();
-    }
-  }
-
-  if (step == 3) {
-    if (DRQ_set_wait_async()) {
-      set_next_command_step();
-    }
-  }
-
-
-  if (step == 4) {
-    if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
-      ESP_LOGD(TAG,"Play command complete");
-      set_next_command_step();
-    }
-  }
-
-  if (step == 5) {
-    if (async_delay(2000)) {
-      ESP_LOGD(TAG,"Play command delay complete");
-      return true;
-    }
+    ESP_LOGD(TAG,"Play command delay complete");
+    return true;
   }
 
   return false;
@@ -197,16 +175,18 @@ bool Atapi::async_delay(unsigned int delay) {
 }
 
 bool Atapi::async_delay(unsigned int delay, unsigned long start_millis) {
-  if (millis() - start_millis > delay) {
-    ESP_LOGD(TAG,"async_delay done");
-  }
+//  if (millis() - start_millis > delay) {
+//    ESP_LOGD(TAG,"async_delay done");
+//  }
   return  (millis() - _currentFunction_call_time > delay);
 }
 
-void Atapi::set_next_command_step() {
+uint8_t Atapi::set_next_command_step() {
   _currentCommandStep++;
   _currentFunction_call_time = millis();
   _currentfunction_first_try = true;
+  return _currentCommandStep;
+
 }
 
 bool Atapi::cmd_reset(uint8_t step) {
@@ -222,12 +202,12 @@ bool Atapi::cmd_reset(uint8_t step) {
     ESP_LOGCONFIG(TAG, "Setting up ports expander...");
     highZ();
     reset_IDE();                              // Do hard reset
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 1) {
     if (async_delay(3000)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -235,14 +215,14 @@ bool Atapi::cmd_reset(uint8_t step) {
     ESP_LOGD(TAG, "BSY_clear_wait_async...");
     if (BSY_clear_wait_async()) {
       ESP_LOGD(TAG, "BSY_clear_wait_async done");
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 3) {
     if (DRY_set_wait_async()) {
       ESP_LOGD(TAG, "DRY_set_wait_async done");
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -263,7 +243,7 @@ bool Atapi::cmd_reset(uint8_t step) {
 
     }
     writeIDE(HeadReg, 0x00, 0xFF);            // Set Device to Master (Device 0)
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 5) {
@@ -271,25 +251,25 @@ bool Atapi::cmd_reset(uint8_t step) {
     writeIDE(CylHReg, 0x02, 0xFF);            // Set PIO buffer to max. transfer length (= 200h)
     writeIDE(CylLReg, 0x00, 0xFF);
     writeIDE(AStCReg, 0x02, 0xFF);            // Set nIEN, we don't care about the INTRQ signal
-    set_next_command_step();
+    step = set_next_command_step();
 
   }
 
   if (step == 6) {
     if (BSY_clear_wait_async()) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 7) {
     if (DRQ_clear_wait_async()) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 8) {
     if (async_delay(3000)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -308,24 +288,24 @@ bool Atapi::cmd_reset(uint8_t step) {
       error_callback_.call(1);
       return true;
     }
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 10) {
     if (async_delay(3000)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
 
   if (step == 11) {
     writeIDE (ComSReg, 0xA1, 0xFF);           // Issue Identify Device Command
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 12) {
     if (async_delay(500)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -346,24 +326,24 @@ bool Atapi::cmd_reset(uint8_t step) {
       readIDE(ComSReg, &lVal, nullptr);             // Read Status Register and check DRQ,
     } while(lVal & (1<<3));                         // skip rest of data until DRQ=0
     readIDE(AStCReg,nullptr,nullptr);
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 14) {
     if (DRQ_clear_wait_async()) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 15) {
     if (unit_ready(_currentfunction_first_try)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 16) {
     if (req_sense(_currentfunction_first_try)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -632,10 +612,10 @@ bool Atapi::sendPac(const uint8_t* packet, bool firstCall) {
     for (uint8_t i=0;i<_packet_length;i=i+2){        // Send packet with length of '_packet_length'
       // ESP_LOGD(TAG,"Write ide, %02d:%02d", packet[i], packet[i+1]);
       writeIDE(DataReg, packet[i], packet[i + 1]);
-      uint8_t lVal, hVal;
-      readIDE(AStCReg,&lVal,&hVal);                         // Read alternate stat reg.
+//      uint8_t lVal, hVal;
+      readIDE(AStCReg,nullptr,nullptr);                         // Read alternate stat reg.
       // ESP_LOGD(TAG,"RESPONSE 1, %02d:%02d", lVal,hVal);
-      readIDE(AStCReg,&lVal,&hVal);                         // Read alternate stat reg.
+      readIDE(AStCReg,nullptr,nullptr);                         // Read alternate stat reg.
       // ESP_LOGD(TAG,"RESPONSE 2, %02d:%02d", lVal,hVal);
     }
     internal_step++;
@@ -655,19 +635,19 @@ bool Atapi::cmd_get_toc(uint8_t step){
   // Send read TOC command packet
   if (step == 0) {
     if (sendPac(atapi_fnc_read_toc, _currentfunction_first_try)) { // used to check_unit_ready
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 1) {
     if (async_delay(10)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 2) {
     if (DRQ_set_wait_async()) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -680,7 +660,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
     readIDE(DataReg,&lVal, &hVal);                      // Read first and last session
     _start_track = lVal - 1;
     _total_tracks = hVal;
-    set_next_command_step();
+    step = set_next_command_step();
   };
 
   if (step == 4) {
@@ -706,7 +686,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
       }
       readIDE(ComSReg, &lVal, nullptr);
     } while (lVal & (1<<3));
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 5) { // TOC Read correctly
@@ -725,8 +705,8 @@ bool Atapi::cmd_get_toc(uint8_t step){
 bool Atapi::cmd_read_subch_cmd(uint8_t step) {
   if (step == 0) {
     if (sendPac(atapi_fnc_read_subchannel, _currentfunction_first_try)) { // used to check_unit_ready
-      ESP_LOGD(TAG,"Packet read. Proceeding");
-      set_next_command_step();
+//      ESP_LOGD(TAG,"Packet read. Proceeding");
+      step = set_next_command_step();
     }
   }
 
@@ -735,7 +715,7 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
     bool ignore = false;
 
     readIDE(DataReg, &lVal, &hVal);                      // Get Audio Status
-    ESP_LOGD(TAG,"Packet value: %d / %d, %d", lVal, hVal, hVal == 0x15);
+//    ESP_LOGD(TAG,"Packet value: %d / %d, %d", lVal, hVal, hVal == 0x15);
 
     if(hVal==0x13){                                      // Play operation successfully completed
       hVal=0x15;                                         // means drive is neither paused nor in play
@@ -750,10 +730,10 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
           (hVal==0x12)|                                    // paused
           (hVal==0x15))                                    // stopped
       {
-        ESP_LOGD(TAG,"SETTING HVAL WITH REQ VALUE");
+//        ESP_LOGD(TAG,"SETTING HVAL WITH REQ VALUE");
         _audio_status=hVal;                                  //
       }else{
-        ESP_LOGD(TAG,"hVal value %d not recognided", hVal);
+        ESP_LOGW(TAG,"hVal value %d not recognized", hVal);
         _audio_status=0;                                      // all other values will report "NO DISC"
       }
 
@@ -778,22 +758,22 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
       _current_track_position.seconds = lVal;              // Store S value
     }
 
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 2) {
-    ESP_LOGD(TAG,"Step 2");
+//    ESP_LOGD(TAG,"Step 2");
     uint8_t lVal;
 
     readIDE(DataReg, nullptr, nullptr);
     readIDE(ComSReg, &lVal, nullptr);
     if (! (lVal & (1<<3))) {          // Read rest of data from Data Reg. until DRQ=0
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 3) {
-    ESP_LOGD(TAG,"Step 3. audio status: %d, toc read: %d", _audio_status, _toc_read);
+//    ESP_LOGD(TAG,"Step 3. audio status: %d, toc read: %d", _audio_status, _toc_read);
     state_callback_.call(get_status());
 
     if(_audio_status==0x11){ // Playing
@@ -825,19 +805,19 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
 bool Atapi::cmd_check_disk(uint8_t step) {
   if (step == 0) {
     if (sendPac(atapi_fnc_mode_sense, _currentfunction_first_try)) { // used to check_unit_ready
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 1) {
     if (async_delay(10)) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
   if (step == 2) {
     if (DRQ_set_wait_async()) {
-      set_next_command_step();
+      step = set_next_command_step();
     }
   }
 
@@ -873,7 +853,7 @@ bool Atapi::cmd_check_disk(uint8_t step) {
       }
     }
 
-    set_next_command_step();
+    step = set_next_command_step();
 
   }
 
@@ -885,11 +865,11 @@ bool Atapi::cmd_check_disk(uint8_t step) {
       readIDE(ComSReg,&lVal,nullptr);
     } while(lVal & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
 
-    set_next_command_step();
+    step = set_next_command_step();
   }
 
   if (step == 5) {
-    ESP_LOGD(TAG,"LAST STEP. disc state: %d", _disc_state);
+//    ESP_LOGD(TAG,"LAST STEP. disc state: %d", _disc_state);
     if ((_disc_state == DISC_STATUS_DISC_PRESENT) &&
       (
         (_busy_status == BUSYSTATUS_PLAY)
@@ -898,7 +878,7 @@ bool Atapi::cmd_check_disk(uint8_t step) {
         ||
         (! _toc_read)
       )) {
-      ESP_LOGD(TAG,"enqueue_read_subch_cmd");
+//      ESP_LOGD(TAG,"enqueue_read_subch_cmd");
       enqueue_read_subch_cmd();
     } else {
       set_busy_status(BUSYSTATUS_NONE);
