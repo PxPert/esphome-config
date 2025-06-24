@@ -92,6 +92,7 @@ void Atapi::set_busy_status(uint8_t busy_status) {
   if (_busy_status != busy_status) {
     ESP_LOGI(TAG,"Set busy status to %d", busy_status);
     _busy_status = busy_status;
+    lock_callback_.call(_busy_status);
   }
 }
 
@@ -366,7 +367,7 @@ bool Atapi::cmd_reset(uint8_t step) {
 // ##################################
 
 void Atapi::enqueue_play(){
-  enqueue_play_track(0);
+  enqueue_play_track(_start_track);
 }
 
 void Atapi::enqueue_stop(){
@@ -966,6 +967,9 @@ void Atapi::enqueue_get_TOC(){
 }
 
 void Atapi::enqueue_play_track(uint8_t trck) {
+  if ( (trck < _start_track)  || (trck > (_total_tracks - 1)) ) {
+    return;
+  }
   _requested_track = trck;
   enqueue_play_selected_track();
 }

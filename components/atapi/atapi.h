@@ -107,6 +107,10 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     this->error_callback_.add(std::move(callback));
   }
 
+  uint8_t get_busy_status() {
+    return _busy_status;
+  }
+
   uint8_t get_tracks() {
     return _total_tracks;
   }
@@ -116,11 +120,11 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   }
 
   uint16_t get_total_time() {
-    return _end_position.toSeconds();
+    return _end_position.toSeconds() - _tracks[_start_track].toSeconds();
   }
 
   uint16_t get_current_time() {
-    return _current_track_position.toSeconds();
+    return _current_track_position.toSeconds() - _tracks[_start_track].toSeconds();
   }
 
   uint16_t get_current_track_time() {
@@ -150,7 +154,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   CallbackManager<void(int)> state_callback_{};
   CallbackManager<void()> update_callback_{};
   CallbackManager<void()> toc_callback_{};
-  CallbackManager<void(bool)> lock_callback_{};
+  CallbackManager<void(int)> lock_callback_{};
   CallbackManager<void(int)> error_callback_{};
 
  private:

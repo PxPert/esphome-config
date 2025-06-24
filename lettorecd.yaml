@@ -111,23 +111,43 @@ display:
         it.print(50, 28, id(font_body), "--/--");
       }
       
-
+script: 
+  id: set_led_effect
+  mode: restart
+  then:
+    - light.turn_on:
+        id: light_led
+        effect: !lambda |-
+          return id(cd_reader).status_has_error() ?
+            "Error"
+          :
+          ( id(cd_reader).get_busy_status() ?
+              "Loading"
+            :
+            (  id(cd_reader).get_status() == 2 ?
+              "Playing"
+            :
+            "none"
+            )
+          );
+    
 atapi:
   id: cd_reader
   on_error:
     - component.update: lcd_display
+    - script.execute: set_led_effect
+
   on_lock:
     - component.update: lcd_display
+    - script.execute: set_led_effect
+
   on_update:
     - component.update: lcd_display
   on_toc:
     - component.update: lcd_display
   on_state:
     - component.update: lcd_display
-    - light.control:
-        id: light_led
-        state: !lambda |-
-          return x;
+    - script.execute: set_led_effect
           
 #  frequency: 500kHz
 
@@ -188,19 +208,19 @@ light:
     restore_mode: ALWAYS_ON
     effects:
       - pulse:
-          name: "Fast Pulse"
+          name: "Loading"
           transition_length: 0.1s
           update_interval: 0.1s
           min_brightness: 0%
           max_brightness: 70%
       - pulse:
-          name: "Slow Pulse"
+          name: "Playing"
           transition_length: 5s
           update_interval: 5s
           min_brightness: 20%
           max_brightness: 50%
       - pulse:
-          name: "Blink"
+          name: "Error"
           transition_length: 0s
           update_interval: 0.3s
           min_brightness: 0%

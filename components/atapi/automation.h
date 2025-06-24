@@ -48,10 +48,10 @@ class TocTrigger : public Trigger<> {
   }
 };
 
-class LockTrigger : public Trigger<bool> {
+class LockTrigger : public Trigger<int> {
  public:
   explicit LockTrigger(Atapi *parent) {
-    parent->add_on_lock_callback([this](bool val) {
+    parent->add_on_lock_callback([this](int val) {
         this->trigger(val);
     });
   }

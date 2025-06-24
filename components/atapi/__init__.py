@@ -85,7 +85,7 @@ async def to_code(config):
         await automation.build_automation(trigger, [], conf)
     for conf in config.get(CONF_ON_LOCK, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-        await automation.build_automation(trigger, [(bool, "x")], conf)
+        await automation.build_automation(trigger, [(int, "x")], conf)
     for conf in config.get(CONF_ON_ERROR, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(trigger, [(int, "x")], conf)
