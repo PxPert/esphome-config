@@ -27,8 +27,6 @@ static const uint8_t D5_pin = 5;
 static const uint8_t D6_pin = 6;
 static const uint8_t D7_pin = 7;
 
-// LiquidCrystal_I2C lcd(LCD_I2C_ADDR,En_pin,Rw_pin,Rs_pin,D4_pin,D5_pin,D6_pin,D7_pin);
-
 // IDE Register addresses
 static const uint8_t DataReg = 0xF0;         // Addr. Data register of IDE device.
 static const uint8_t ErrFReg = 0xF1;         // Addr. Error/Feature (rd/wr) register of IDE device.
@@ -41,10 +39,7 @@ static const uint8_t ComSReg = 0xF7;         // Addr. Command/Status (wr/rd) reg
 static const uint8_t AStCReg = 0xEE;         // Addr. Alternate Status/Device Control (rd/wr) register of IDE device.
 
 
-static Atapi* atapi_ = nullptr;
-
 void Atapi::setup() {
-  atapi_ = this;
   ESP_LOGCONFIG(TAG, "Empty I2C component3");
   _device_ready = false;
 
@@ -77,6 +72,12 @@ void Atapi::loop() {
 
 }
 
+void Atapi::set_busy(bool busy_status) {
+  if (_device_busy != busy_status) {
+    _device_busy = busy_status;
+  }
+}
+
 void Atapi::dump_config(){
     ESP_LOGCONFIG(TAG, "Atapi dump_config");
 //    reset_all();
@@ -99,29 +100,33 @@ void Atapi::update() {
 
 }
 
+bool Atapi::cmd_play_track(uint8_t step) {
+  static uint8_t atapi_fnc_start_play[16] = {0x47, 0x00, 0x00, 0x10, 0x28, 0x05, 0x4C, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  // Start PLAY
+  // from from MSF location stored at indexes 3 to 8.
+  // See also doc. sff8020i table 76
 
-void Atapi::enqueue_goto_track(uint8_t trck) {
-#ifdef TODO
-  a_trck = trck;
-  if(a_trck > _total_tracks){(a_trck = _start_track);}      // over last track? -> point to start track
-  ESP_LOGI(TAG,"Requested track: %d - going to: %d/%d", trck, a_trck, _total_tracks);
-  reset_queue();
-  // enqueue_get_TOC();                                   // Get MSF for a_trck
-  _loopfunctions.emplace(AsyncFunction( "enqueue_goto_track",[&]() {
-//    fnc[51] = d_trck_m;                          // Store new play start position
-//    fnc[52] = d_trck_s;                          // in play packet and start play
-//    fnc[53] = d_trck_f;
-    enqueue_play();
-    if((_audio_status == 0x12) |                        // If paused or stopped -> pause
-        (_audio_status == 0x15))
-      {
-      enqueue_pause();
+  if (step == 0) {
+    set_busy(true);
+    atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
+    atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
+    atapi_fnc_start_play[5] = _tracks[_requested_track].frames;
+    atapi_fnc_start_play[6] = _end_position.minutes;
+    atapi_fnc_start_play[7] = _end_position.seconds;
+    atapi_fnc_start_play[8] = _end_position.frames;
+    set_next_command_step();
+  }
+
+  if (step == 1) {
+    if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
+      set_busy(false);
+      return true;
     }
-    return true;
-  }));
-#endif
-}
+  }
 
+  return false;
+
+}
 
 bool Atapi::async_delay(unsigned int delay) {
   return async_delay(delay, _currentFunction_call_time);
@@ -142,6 +147,9 @@ void Atapi::set_next_command_step() {
 
 bool Atapi::cmd_reset(uint8_t step) {
   bool cmd_complete = false;
+
+  set_busy(true);
+
   if (step == 0) {
     _device_ready = false;
     this->status_clear_error();
@@ -314,34 +322,47 @@ bool Atapi::cmd_reset(uint8_t step) {
 // ##################################
 
 void Atapi::enqueue_play(){
-//    reset_queue();
-                                                  // pointer to play function and Play
-//    enqueue_sendPac(48);                          // from MSF location stored at idx=(51-56)
-}                                                 // See also doc. sff8020i table 76
+  enqueue_play_track(0);
+}
 
 void Atapi::enqueue_stop(){
-//    reset_queue();
-//    enqueue_sendPac(32);                          // pointer to stop unit function
+  set_command("stop_unit", [this](uint8_t step) {
+    return sendPac(atapi_fnc_stop_unit, _currentfunction_first_try);
+  });
 }
 void Atapi::enqueue_eject(){
-//    reset_queue();
-//    enqueue_sendPac(0);                          // pointer to eject function
+  set_command("eject", [this](uint8_t step) {
+    set_busy(true);
+    if (sendPac(atapi_fnc_open_tray, _currentfunction_first_try)) {
+      set_busy(false);
+      return true;
+    }
+    return false;
+  });
 }
 void Atapi::enqueue_load(){
-//    reset_queue();
-//    enqueue_sendPac(16);                          // pointer to load
+  set_command("load", [this](uint8_t step) {
+    set_busy(true);
+    if (sendPac(atapi_fnc_close_tray, _currentfunction_first_try)) {
+      return true;
+    }
+    return false;
+  });
 }
 void Atapi::enqueue_pause(){
-//    reset_queue();
-//    enqueue_sendPac(64);                          // pointer to hold
+  set_command("pause", [this](uint8_t step) {
+    return sendPac(atapi_fnc_pause_play, _currentfunction_first_try);
+  });
 }
 void Atapi::enqueue_resume(){
-//    reset_queue();
-//    enqueue_sendPac(80);                          // pointer to resume
+  set_command("resume", [this](uint8_t step) {
+    return sendPac(atapi_fnc_resume_play, _currentfunction_first_try);
+  });
 }
 void Atapi::enqueue_stop_disc(){
-//    reset_queue();
-//    enqueue_sendPac(176);                          // pointer to stop disk function
+  set_command("stop_disc", [this](uint8_t step) {
+    return sendPac(atapi_fnc_stop_disk, _currentfunction_first_try);
+  });
 }
 
 // ###########################
@@ -586,7 +607,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
 
     readIDE(DataReg, nullptr, nullptr);                      // TOC Data Length not needed, don't care
     readIDE(DataReg,&lVal, &hVal);                      // Read first and last session
-    _start_track = lVal;
+    _start_track = lVal - 1;
     _total_tracks = hVal;
     set_next_command_step();
   };
@@ -606,8 +627,10 @@ bool Atapi::cmd_get_toc(uint8_t step){
       track.frames = hVal;                                     // Store F of current track
 
       if (current_track < MAX_TRACKS) {
-        _tracks[current_track] = track;
+        ESP_LOGD(TAG,"Track: %d/(index %d) - Time: %d:%d:%d",current_track,current_track - 1,track.minutes,track.seconds, track.frames);
+        _tracks[current_track - 1] = track;
       } else if (current_track == 0xAA) {
+        ESP_LOGD(TAG,"End position time: %d:%d:%d",track.minutes,track.seconds, track.frames);
         _end_position = track;
       }
       readIDE(ComSReg, &lVal, nullptr);
@@ -619,6 +642,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
     _toc_read=true;
     ESP_LOGD(TAG,"TOC Read ok. Tracks: %d/%d - Time: %d:%d",_start_track,_total_tracks,_end_position.minutes,_end_position.seconds);
     toc_callback_.call();
+    set_busy(false);
     return true;
   }
 
@@ -637,6 +661,7 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
 
   if (step == 1) {
     uint8_t lVal, hVal;
+    bool ignore = false;
 
     readIDE(DataReg, &lVal, &hVal);                      // Get Audio Status
     ESP_LOGD(TAG,"Packet value: %d / %d, %d", lVal, hVal, hVal == 0x15);
@@ -645,26 +670,42 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
       hVal=0x15;                                         // means drive is neither paused nor in play
     }                                                    // so treat as stopped
 
-    if((hVal==0x11)|                                     // playing
-        (hVal==0x12)|                                    // paused
-        (hVal==0x15))                                    // stopped
-    {
-      ESP_LOGD(TAG,"SETTING HVAL WITH REQ VALUE");
-      _audio_status=hVal;                                  //
-    }else{
-      ESP_LOGD(TAG,"hVal value %d not recognided", hVal);
-      _audio_status=0;                                      // all other values will report "NO DISC"
+    if(hVal==0x10){                                      // hVal Not recognized, ignore
+      ignore = true;
+    }
+
+    if (!ignore) {
+      if((hVal==0x11)|                                     // playing
+          (hVal==0x12)|                                    // paused
+          (hVal==0x15))                                    // stopped
+      {
+        ESP_LOGD(TAG,"SETTING HVAL WITH REQ VALUE");
+        _audio_status=hVal;                                  //
+      }else{
+        ESP_LOGD(TAG,"hVal value %d not recognided", hVal);
+        _audio_status=0;                                      // all other values will report "NO DISC"
+      }
+
     }
 
     readIDE(DataReg,nullptr,nullptr);                    // Get (ignore) Subchannel Data Length
     readIDE(DataReg,nullptr,nullptr);                    // Get (ignore) Format Code, ADR and Control
-    readIDE(DataReg,&lVal,nullptr);                    // Get actual track
+    readIDE(DataReg,&lVal,nullptr);                      // Get actual track
 
-    _current_track = lVal;
-    readIDE(DataReg,nullptr,&hVal);                    // Get M field of actual MFS data and
-    _current_track_position.minutes = hVal;                    // store M it
-    readIDE(DataReg,&lVal,nullptr);                    // get S and F fields
-    _current_track_position.seconds = lVal;                    // Store S value
+    if (! ignore) {
+      _current_track = lVal - 1;
+    }
+
+    readIDE(DataReg,nullptr,&hVal);                      // Get M field of actual MFS data and
+
+    if (! ignore) {
+      _current_track_position.minutes = hVal;              // store M it
+    }
+    readIDE(DataReg,&lVal,nullptr);                      // get S and F fields
+
+    if (! ignore) {
+      _current_track_position.seconds = lVal;              // Store S value
+    }
 
     set_next_command_step();
   }
@@ -697,6 +738,7 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
     if ((_audio_status==0x15) && (!_toc_read)) { // Stopped
       enqueue_get_TOC();
     } else {
+      set_busy(false);
       return true;
     }
 
@@ -851,27 +893,15 @@ void Atapi::enqueue_get_TOC(){
   set_command("getToc", [this](uint8_t val) { return cmd_get_toc(val); });
 }
 
+void Atapi::enqueue_play_track(uint8_t trck) {
+  _requested_track = trck;
+  enqueue_play_selected_track();
+}
 
+void Atapi::enqueue_play_selected_track() {
+  set_command("play", [this](uint8_t step) { return cmd_play_track(step); });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 }  // namespace atapi
 }  // namespace esphome

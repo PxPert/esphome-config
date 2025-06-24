@@ -12,7 +12,9 @@ namespace atapi {
 const uint8_t atapi_fnc_open_tray[16]       = {0x1B, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Open tray
 const uint8_t atapi_fnc_close_tray[16]      = {0x1B, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Close tray
 const uint8_t atapi_fnc_stop_unit[16]       = {0x1B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Stop unit
-const uint8_t atapi_fnc_start_play[16]      = {0x47, 0x00, 0x00, 0x10, 0x28, 0x05, 0x4C, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Start PLAY
+// const uint8_t atapi_fnc_start_play[16]      = {0x47, 0x00, 0x00, 0x10, 0x28, 0x05, 0x4C, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Start PLAY
+//                                                                                                                                                 // from from MSF location stored at indexes 3 to 8.
+//                                                                                                                                                 // See also doc. sff8020i table 76
 const uint8_t atapi_fnc_pause_play[16]      = {0x4B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // PAUSE play
 const uint8_t atapi_fnc_resume_play[16]     = {0x4B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // RESUME play
 const uint8_t atapi_fnc_read_toc[16]        = {0x43, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Read TOC
@@ -30,6 +32,9 @@ public:
   uint8_t minutes;
   uint8_t seconds;
   uint8_t frames;
+  uint16_t toSeconds() {
+    return (minutes * 60) + seconds;
+  }
 };
 
 class Atapi : public i2c::I2CDevice, public PollingComponent {
@@ -60,10 +65,11 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   void enqueue_stop_disc();
 
   bool set_command(const char* name, AsyncAtapiCommand cmd);
-  inline void enqueue_next() { enqueue_goto_track(_current_track + 1); }
-  inline void enqueue_previous(){enqueue_goto_track(_current_track - 1);}
-  inline void enqueue_restart_track(){enqueue_goto_track(_current_track);}
-  void enqueue_goto_track(uint8_t trck);
+  inline void enqueue_next() { enqueue_play_track(_current_track + 1); }
+  inline void enqueue_previous(){enqueue_play_track(_current_track - 1);}
+  inline void enqueue_restart_track(){enqueue_play_track(_current_track);}
+  void enqueue_play_track(uint8_t trck);
+  void enqueue_play_selected_track();
 
   void add_on_state_callback(std::function<void(int)> &&callback){
     this->state_callback_.add(std::move(callback));
@@ -90,18 +96,15 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   }
 
   uint16_t get_total_time() {
-    return 0;
-    // return (fnc[54] * 60) + fnc[55];
+    return _end_position.toSeconds();
   }
 
   uint16_t get_current_time() {
-    return 0;
-    // return (MFS_M * 60) + MFS_S;
+    return _current_track_position.toSeconds();
   }
 
   uint16_t get_current_track_time() {
-    return 0;
-    // return get_current_time() - ((fnc[51] * 60) + fnc[52]);
+    return _current_track_position.toSeconds() - _tracks[_current_track].toSeconds();
   }
 
   uint8_t get_disc_state() {
@@ -139,6 +142,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
 
   bool cmd_reset(uint8_t step);
   bool cmd_check_disk(uint8_t step);
+  bool cmd_play_track(uint8_t step);
   bool cmd_read_subch_cmd(uint8_t step);
   bool cmd_get_toc(uint8_t step);
 
@@ -149,6 +153,8 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   bool unit_ready(bool firstCall);
   bool req_sense(bool firstCall);
   bool sendPac(const uint8_t* packet, bool firstCall);
+
+  void set_busy(bool busy_status);
 
   // #################################################
   // Auxiliary functions ATAPI Status Register related
@@ -172,12 +178,14 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   uint8_t _start_track;
   uint8_t _total_tracks;
   uint8_t _current_track;
+  uint8_t _requested_track;
   uint8_t _disc_state;
   uint8_t _additional_sense_code;
   uint8_t _packet_length = 12;                  // Default packet length
   uint8_t _audio_status = 0xFF;              // subchannel data: 0x11=play, 0x12=pause, 0x15=stop
   bool _toc_read;
   bool _device_ready;
+  bool _device_busy;
 
 
   // ###########################

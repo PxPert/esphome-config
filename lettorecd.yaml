@@ -100,7 +100,7 @@ display:
       it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,"\U000F01D1");
 
       if (id(cd_reader).get_disc_state() == 1) {
-        it.printf(50, 28, id(font_body), "%02d/%02d", (id(cd_reader).get_status() > 1)?id(cd_reader).get_current_track():0,id(cd_reader).get_tracks() );
+        it.printf(50, 28, id(font_body), "%02d/%02d", (id(cd_reader).get_status() > 1)?id(cd_reader).get_current_track() + 1:0,id(cd_reader).get_tracks() );
         if (id(cd_reader).get_status() > 1) {
           it.printf(65, 48, id(font_header),TextAlign::TOP_LEFT,"%02d:%02d",id(cd_reader).get_current_track_time() / 60, id(cd_reader).get_current_track_time() % 60);
         } else {
