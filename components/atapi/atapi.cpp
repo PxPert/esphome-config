@@ -115,11 +115,30 @@ bool Atapi::cmd_play_track(uint8_t step) {
     atapi_fnc_start_play[6] = _end_position.minutes;
     atapi_fnc_start_play[7] = _end_position.seconds;
     atapi_fnc_start_play[8] = _end_position.frames;
+    ESP_LOGD(TAG,"Set play command to this array: %02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d",
+             atapi_fnc_start_play[0],
+             atapi_fnc_start_play[1],
+             atapi_fnc_start_play[2],
+             atapi_fnc_start_play[3],
+             atapi_fnc_start_play[4],
+             atapi_fnc_start_play[5],
+             atapi_fnc_start_play[6],
+             atapi_fnc_start_play[7],
+             atapi_fnc_start_play[8],
+             atapi_fnc_start_play[9],
+             atapi_fnc_start_play[10],
+             atapi_fnc_start_play[11],
+             atapi_fnc_start_play[12],
+             atapi_fnc_start_play[13],
+             atapi_fnc_start_play[14],
+             atapi_fnc_start_play[15]
+    );
     set_next_command_step();
   }
 
   if (step == 1) {
     if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
+      ESP_LOGD(TAG,"Play command complete");
       return true;
     }
   }
