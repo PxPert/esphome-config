@@ -223,7 +223,8 @@ button:
     on_press:
       - logger.log: Reset device request
       - lambda: |-
-          id(cd_reader).reset_all();
+          // id(cd_reader).reset_all();
+          id(cd_reader).enqueue_reset();
   - platform: template
     name: Play
     id: play

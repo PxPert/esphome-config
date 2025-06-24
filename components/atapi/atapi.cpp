@@ -46,34 +46,33 @@ static Atapi* atapi_ = nullptr;
 void Atapi::setup() {
   atapi_ = this;
   ESP_LOGCONFIG(TAG, "Empty I2C component3");
-  device_ready = false;
+  _device_ready = false;
 
 }
+bool Atapi::set_command(const char* name, AsyncAtapiCommand cmd) {
+  _currentCommand.first = name;
+  _currentCommand.second = cmd;
+  _currentCommandStep = 0;
+  _currentFunction_call_time = 0;
+  _currentfunction_first_try = true;
+  return true;
 
+}
 void Atapi::loop() {
 
-  if (_currentFunction) {
-//    ESP_LOGD(TAG,"Executing function START");
-    std::function<bool()> f = _currentFunction->second;
-    if (f) {
-//      ESP_LOGD(TAG,"Function set");
-      if (f()) {
-        // ESP_LOGD(TAG, "Function completed in %d msecs. Processing next loop function. %d still in queue", millis() - _currentFunction_call_time, _loopfunctions.size());
-        _currentFunction = nullptr;
-      }
+  if (_currentCommand.first) {
+    if (_currentFunction_call_time == 0) {
+      _currentfunction_first_try = true;
+      _currentFunction_call_time = millis();
     } else {
-      ESP_LOGE(TAG,"Function NOT set");
-      _currentFunction = nullptr;
+      _currentfunction_first_try = false;
     }
-    return;
-  }
-
-  if (! _loopfunctions.empty()) {
-    _currentFunction = &_loopfunctions.front();
-    ESP_LOGD(TAG,"Setting next function to %s", _currentFunction->first);
-    _loopfunctions.pop();
-    _currentFunction_call_time = millis();
-    return;
+    AsyncAtapiCommand c = _currentCommand.second;
+    if (c(_currentCommandStep)) {
+      _currentCommand.first = nullptr;
+      _currentCommandStep = 0;
+      _currentFunction_call_time = 0;
+    }
   }
 
 }
@@ -87,210 +86,227 @@ void Atapi::dump_config(){
 
 void Atapi::update() {
   if (
-      (! device_ready)
+      (! _device_ready)
     ||
-      (_currentFunction)
-    ||
-      (_loopfunctions.size())
+      (_currentCommand.first)
   )
   {
     return;
   }
 
   ESP_LOGCONFIG(TAG, "Polling...");
-  // enqueue_read_subch_cmd();
   enqueue_check_disk();
-
-  _loopfunctions.emplace(AsyncFunction( "update_1",  [&]() {
-    state_callback_.call(get_status());
-
-    if(aud_stat==0x11){ // Playing
-      ESP_LOGD(TAG, "Play");
-      ESP_LOGD(TAG, "Current track: %d - Time: %d:%d",a_trck,MFS_M - fnc[51],MFS_S - fnc[52]);            // Units failing this may still work fine
-      update_callback_.call();
-    }
-
-    if(aud_stat==0x12){ // Paused
-      ESP_LOGD(TAG, "Pause");
-    }
-
-    if(aud_stat==0x15){ // Stopped
-      ESP_LOGI(TAG, "Stopped. TOC: %d", toc );
-      if (!toc) {
-        enqueue_get_TOC(); // try to read TOC
-        _loopfunctions.emplace(AsyncFunction( "update_2",  [&]() {
-          ESP_LOGI(TAG, "TOC read");
-          toc=true;
-          ESP_LOGI(TAG, "Tracks: %d/%d - Time: %d:%d",s_trck,e_trck,fnc[54],fnc[55]);            // Units failing this may still work fine
-          toc_callback_.call();
-          return true;
-        }));
-
-      }
-    }
-
-    if(aud_stat==0x00){                         // Audio status 0 covers all other posible
-      ESP_LOGD(TAG, "No Disc");
-      toc = false;
-    }
-
-    return true;
-
-  }));
 
 }
 
 
 void Atapi::enqueue_goto_track(uint8_t trck) {
+#ifdef TODO
   a_trck = trck;
-  if(a_trck > e_trck){(a_trck = s_trck);}      // over last track? -> point to start track
-  ESP_LOGI(TAG,"Requested track: %d - going to: %d/%d", trck, a_trck, e_trck);
+  if(a_trck > _total_tracks){(a_trck = _start_track);}      // over last track? -> point to start track
+  ESP_LOGI(TAG,"Requested track: %d - going to: %d/%d", trck, a_trck, _total_tracks);
   reset_queue();
-  enqueue_get_TOC();                                   // Get MSF for a_trck
+  // enqueue_get_TOC();                                   // Get MSF for a_trck
   _loopfunctions.emplace(AsyncFunction( "enqueue_goto_track",[&]() {
-    fnc[51] = d_trck_m;                          // Store new play start position
-    fnc[52] = d_trck_s;                          // in play packet and start play
-    fnc[53] = d_trck_f;
+//    fnc[51] = d_trck_m;                          // Store new play start position
+//    fnc[52] = d_trck_s;                          // in play packet and start play
+//    fnc[53] = d_trck_f;
     enqueue_play();
-    if((aud_stat == 0x12) |                        // If paused or stopped -> pause
-        (aud_stat == 0x15))
+    if((_audio_status == 0x12) |                        // If paused or stopped -> pause
+        (_audio_status == 0x15))
       {
       enqueue_pause();
     }
     return true;
   }));
+#endif
 }
 
+
 bool Atapi::async_delay(unsigned int delay) {
-  if (millis() - _currentFunction_call_time > delay) {
+  return async_delay(delay, _currentFunction_call_time);
+}
+
+bool Atapi::async_delay(unsigned int delay, unsigned long start_millis) {
+  if (millis() - start_millis > delay) {
     ESP_LOGD(TAG,"async_delay done");
   }
   return  (millis() - _currentFunction_call_time > delay);
 }
 
+void Atapi::set_next_command_step() {
+  _currentCommandStep++;
+  _currentFunction_call_time = millis();
+  _currentfunction_first_try = true;
+}
 
-bool Atapi::reset_all() {
+bool Atapi::cmd_reset(uint8_t step) {
+  bool cmd_complete = false;
+  if (step == 0) {
+    _device_ready = false;
+    this->status_clear_error();
+    error_callback_.call(0);
 
-  device_ready = false;
-  this->status_clear_error();
-  error_callback_.call(0);
+    ESP_LOGCONFIG(TAG, "Setting up ports expander...");
+    highZ();
+    reset_IDE();                              // Do hard reset
+    set_next_command_step();
+  }
 
-  ESP_LOGCONFIG(TAG, "Setting up ports expander...");
-  highZ();
-  reset_IDE();                              // Do hard reset
+  if (step == 1) {
+    if (async_delay(3000)) {
+      set_next_command_step();
+    }
+  }
 
-  _loopfunctions.emplace(AsyncFunction( "reset_all_1",[&]() { return async_delay(3000); }));
-  _loopfunctions.emplace(AsyncFunction( "reset_all_2",[&]() { return BSY_clear_wait_async(); })); // The ATAPI spec. allows drives to take up to
-  _loopfunctions.emplace(AsyncFunction( "reset_all_3",[&]() { return DRY_set_wait_async();  }));  // 31 sec. but all tested where alright within 3s.
-  _loopfunctions.emplace(AsyncFunction( "reset_all_4",[&]() {                                    // Check device signature for ATAPI capability
-    readIDE(CylLReg);
+  if (step == 2) {
+    ESP_LOGD(TAG, "BSY_clear_wait_async...");
+    if (BSY_clear_wait_async()) {
+      ESP_LOGD(TAG, "BSY_clear_wait_async done");
+      set_next_command_step();
+    }
+  }
 
-    if(dataLval == 0x14){
-      readIDE(CylHReg);
-      if(dataLval == 0xEB){
+  if (step == 3) {
+    if (DRY_set_wait_async()) {
+      ESP_LOGD(TAG, "DRY_set_wait_async done");
+      set_next_command_step();
+    }
+  }
+
+  if (step == 4) {
+    uint8_t lVal;
+    readIDE(CylLReg, &lVal, nullptr);
+
+    if(lVal == 0x14){
+      readIDE(CylHReg, &lVal, nullptr);
+      if(lVal == 0xEB){
           ESP_LOGCONFIG(TAG, "Found ATAPI Device");
       }
     }else{
           ESP_LOGCONFIG(TAG, "No ATAPI Device!");
           this->status_set_error("No ATAPI Device!");
-          reset_queue();
           error_callback_.call(255);
           return true;
 
     }
     writeIDE(HeadReg, 0x00, 0xFF);            // Set Device to Master (Device 0)
-    return true;
+    set_next_command_step();
+  }
 
-  }));
+  if (step == 5) {
+    writeIDE(ErrFReg, 0x00, 0xFF);            // Set Feature register = 0 (no overlapping and no DMA)
+    writeIDE(CylHReg, 0x02, 0xFF);            // Set PIO buffer to max. transfer length (= 200h)
+    writeIDE(CylLReg, 0x00, 0xFF);
+    writeIDE(AStCReg, 0x02, 0xFF);            // Set nIEN, we don't care about the INTRQ signal
+    set_next_command_step();
 
-  // Initialise task file
-  // ####################
-    ESP_LOGCONFIG(TAG, "init_task_file... ");
-    enqueue_init_task_file();
+  }
 
-  _loopfunctions.emplace(AsyncFunction( "reset_all_5",[&]() {return async_delay(3000); }));
+  if (step == 6) {
+    if (BSY_clear_wait_async()) {
+      set_next_command_step();
+    }
+  }
 
-  _loopfunctions.emplace(AsyncFunction( "reset_all_6",[&]() {
-      ESP_LOGCONFIG(TAG, "Self Diag. ");
+  if (step == 7) {
+    if (DRQ_clear_wait_async()) {
+      set_next_command_step();
+    }
+  }
 
+  if (step == 8) {
+    if (async_delay(3000)) {
+      set_next_command_step();
+    }
+  }
 
-      writeIDE(ComSReg, 0x90, 0xFF);            // Issue Run Self Diagnostic Command
-      readIDE(ErrFReg);
-      if(dataLval == 0x01){
-        ESP_LOGCONFIG(TAG, "OK");
-      }else{
-        ESP_LOGE(TAG, "Self diag fail. Read value: %d",dataLval);            // Units failing this may still work fine
-        this->status_set_error("Self diag fail.");
-        error_callback_.call(1);
-        reset_queue();
-      }
+  if (step == 9) {
+    ESP_LOGCONFIG(TAG, "Self Diag. ");
+
+    writeIDE(ComSReg, 0x90, 0xFF);            // Issue Run Self Diagnostic Command
+    uint8_t lVal;
+    readIDE(ErrFReg, &lVal, nullptr);
+
+    if(lVal == 0x01){
+      ESP_LOGCONFIG(TAG, "OK");
+    }else{
+      ESP_LOGE(TAG, "Self diag fail. Read value: %d",lVal);            // Units failing this may still work fine
+      this->status_set_error("Self diag fail.");
+      error_callback_.call(1);
       return true;
-    }));
+    }
+    set_next_command_step();
+  }
 
-  _loopfunctions.emplace(AsyncFunction( "reset_all_7",[&]() { return async_delay(3000); }));
+  if (step == 10) {
+    if (async_delay(3000)) {
+      set_next_command_step();
+    }
+  }
 
-  _loopfunctions.emplace(AsyncFunction( "reset_all_8",[&]() {
-    ESP_LOGCONFIG(TAG, "ATAPI Device:");
 
+  if (step == 11) {
     writeIDE (ComSReg, 0xA1, 0xFF);           // Issue Identify Device Command
-    return true;
-  }));
-  _loopfunctions.emplace(AsyncFunction( "reset_all_9",[&]() {return async_delay(500); }));
-  _loopfunctions.emplace(AsyncFunction( "reset_all_10",[&]() {
+    set_next_command_step();
+  }
 
+  if (step == 12) {
+    if (async_delay(500)) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 13) {
+    uint8_t lVal, hVal;
+    uint8_t i = 0;
     do{
-      readIDE(DataReg);
-      if (cnt == 0){                                // Get supported packet lenght
-        if(dataLval & (1<<0)){                      // contained in lower byte of first word
-          paclen = 16;                              // 1st bit set -> use 16 byte packets
+      readIDE(DataReg, &lVal, &hVal);
+      if (i == 0){                                // Get supported packet lenght
+        if(lVal & (1<<0)){                      // contained in lower byte of first word
+          _packet_length = 16;                              // 1st bit set -> use 16 byte packets
         }
       }
-      if((cnt > 26) & (cnt < 47)){                      // Read Model
-        ESP_LOGI(TAG, "Model: %d-%d",dataHval,dataLval);
+      if((i > 26) & (i < 47)){                      // Read Model
+        ESP_LOGI(TAG, "Model: %d-%d",lVal,hVal);
       }
-      cnt++;
-      readIDE(ComSReg);                             // Read Status Register and check DRQ,
-    } while(dataLval & (1<<3));                     // skip rest of data until DRQ=0
-    readIDE(AStCReg);
-    return true;
-  }));
-  _loopfunctions.emplace(AsyncFunction( "reset_all_11",[&]() {  return DRQ_clear_wait_async(); }));
+      i++;
+      readIDE(ComSReg, &lVal, nullptr);             // Read Status Register and check DRQ,
+    } while(lVal & (1<<3));                         // skip rest of data until DRQ=0
+    readIDE(AStCReg,nullptr,nullptr);
+    set_next_command_step();
+  }
 
-  enqueue_unit_ready();                                   // Send packet 'test unit ready'
-  enqueue_req_sense();                                    // Send packet 'Request Sense'
-  _loopfunctions.emplace(AsyncFunction( "reset_all_12",[&]() {
-      if(asc == 0x29){                                    // Req. Sense returns 'HW Reset'
-        ESP_LOGI(TAG, "ASC 0x29");
-        enqueue_unit_ready();                             // (ASC=29h) at first since we had one.
-        enqueue_req_sense();                              // New Req. Sense returns if media
-      }
+  if (step == 14) {
+    if (DRQ_clear_wait_async()) {
+      set_next_command_step();
+    }
+  }
 
-      enqueue_wait_drive();
+  if (step == 15) {
+    if (unit_ready(_currentfunction_first_try)) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 16) {
+    if (req_sense(_currentfunction_first_try)) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 17) {
+    if (_additional_sense_code != 0x04) {
+      ESP_LOGI(TAG, "Reset complete");
+      _device_ready = true;
       return true;
-  }));
-
-  return true;
-}
-
-void Atapi::enqueue_wait_drive(){
-
-  _loopfunctions.emplace(AsyncFunction( "enqueue_wait_drive_msg",[&]() {
-    ESP_LOGI(TAG, "Waiting the drive to be ready");
-    return true;
-  }));
-
-  enqueue_unit_ready();                                // Wait until drive is ready.
-  enqueue_req_sense();                                 // Some devices take some time
-  _loopfunctions.emplace(AsyncFunction( "enqueue_wait_drive",[&]() {
-    if (asc != 0x04) {
-      ESP_LOGCONFIG(TAG, "Reset complete");
-      device_ready = true;
     } else {
       ESP_LOGI(TAG, "Still resetting");
-      enqueue_wait_drive();
+      step = 15; // Go back to step 15
     }
-    return true;
-  }));
+  }
+
+  return false;
 }
 
 // ##################################
@@ -298,34 +314,34 @@ void Atapi::enqueue_wait_drive(){
 // ##################################
 
 void Atapi::enqueue_play(){
-    reset_queue();
+//    reset_queue();
                                                   // pointer to play function and Play
-    enqueue_sendPac(48);                          // from MSF location stored at idx=(51-56)
+//    enqueue_sendPac(48);                          // from MSF location stored at idx=(51-56)
 }                                                 // See also doc. sff8020i table 76
 
 void Atapi::enqueue_stop(){
-    reset_queue();
-    enqueue_sendPac(32);                          // pointer to stop unit function
+//    reset_queue();
+//    enqueue_sendPac(32);                          // pointer to stop unit function
 }
 void Atapi::enqueue_eject(){
-    reset_queue();
-    enqueue_sendPac(0);                          // pointer to eject function
+//    reset_queue();
+//    enqueue_sendPac(0);                          // pointer to eject function
 }
 void Atapi::enqueue_load(){
-    reset_queue();
-    enqueue_sendPac(16);                          // pointer to load
+//    reset_queue();
+//    enqueue_sendPac(16);                          // pointer to load
 }
 void Atapi::enqueue_pause(){
-    reset_queue();
-    enqueue_sendPac(64);                          // pointer to hold
+//    reset_queue();
+//    enqueue_sendPac(64);                          // pointer to hold
 }
 void Atapi::enqueue_resume(){
-    reset_queue();
-    enqueue_sendPac(80);                          // pointer to resume
+//    reset_queue();
+//    enqueue_sendPac(80);                          // pointer to resume
 }
 void Atapi::enqueue_stop_disc(){
-    reset_queue();
-    enqueue_sendPac(176);                          // pointer to stop disk function
+//    reset_queue();
+//    enqueue_sendPac(176);                          // pointer to stop disk function
 }
 
 // ###########################
@@ -368,6 +384,8 @@ void Atapi::reset_IDE(){
   static const uint8_t bit5_low = (uint8_t)B11011111; // Bit 5 LOW to reset IDE via nRESET
   static const uint8_t bit5_high = (uint8_t)B11111111; // Bit 5 HIGH to release reset
 
+  _toc_read = false;
+
   esphome::i2c::ErrorCode e = bus_->write(RegSel, &bit5_low, 1);
   if (e != esphome::i2c::ERROR_OK) {
     ESP_LOGE(TAG, "reset_IDE low error: %d", e);
@@ -388,7 +406,7 @@ void Atapi::reset_IDE(){
 }
 
 // Read one word from IDE register
-void Atapi::readIDE (uint8_t regval){
+void Atapi::readIDE (uint8_t regval, uint8_t* toDataLval, uint8_t* toDataHval){
   uint8_t reg = regval & B01111111;     // set nDIOR bit LOW preserving register address
 
   esphome::i2c::ErrorCode e = bus_->write(RegSel, &reg, 1);
@@ -399,20 +417,24 @@ void Atapi::readIDE (uint8_t regval){
     return;
   }
 
-  e = bus_->read(DataH, &dataHval, 1);
-  if (e != esphome::i2c::ERROR_OK) {
-    ESP_LOGE(TAG, "readIDE DataH error: %d", e);
-    this->status_set_error("readIDE DataH error");
-    error_callback_.call(8);
-    return;
+  if (toDataHval) {
+    e = bus_->read(DataH, toDataHval, 1);
+
+    if (e != esphome::i2c::ERROR_OK) {
+      ESP_LOGE(TAG, "readIDE DataH error: %d", e);
+      this->status_set_error("readIDE DataH error");
+      error_callback_.call(8);
+      return;
+    }
   }
 
-  e = bus_->read(DataL, &dataLval, 1);
-  if (e != esphome::i2c::ERROR_OK) {
-    ESP_LOGE(TAG, "readIDE DataL error: %d", e);
-    this->status_set_error("readIDE DataL error");
-    error_callback_.call(9);
-    return;
+  if (toDataLval) {
+    e = bus_->read(DataL, toDataLval, 1);
+    if (e != esphome::i2c::ERROR_OK) {
+      this->status_set_error("readIDE DataL error");
+      error_callback_.call(9);
+      return;
+    }
   }
 
   highZ();                              // set all I/O pins to HIGH -> impl. nDIOR release
@@ -468,230 +490,366 @@ void Atapi::writeIDE (uint8_t regval, uint8_t dataLval, uint8_t dataHval){
 
 // Wait for BSY clear
 bool Atapi::BSY_clear_wait_async(){
-  readIDE(ComSReg);
-  if (! (dataLval & (1<<7))) {
-    ESP_LOGD(TAG,"BSY_clear_wait_async done");
-  }
-  return ! (dataLval & (1<<7));
+  uint8_t lVal;
+
+  readIDE(ComSReg, &lVal,nullptr);
+  return ! (lVal & (1<<7));
 }
 
 // Wait for DRQ clear
 bool Atapi::DRQ_clear_wait_async(){
-  readIDE(ComSReg);
-  return ! (dataLval & (1<<3));
+  uint8_t lVal;
+
+  readIDE(ComSReg, &lVal,nullptr);
+  return ! (lVal & (1<<3));
 }
 
 // Wait for DRQ set
 bool Atapi::DRQ_set_wait_async(){
-  readIDE(ComSReg);
-  return ! ((dataLval & ~(1<<3)) == true);
+  uint8_t lVal;
+
+  readIDE(ComSReg, &lVal,nullptr);
+  return ! ((lVal & ~(1<<3)) == true);
 }
 
 // Wait for DRY set
 bool Atapi::DRY_set_wait_async(){
-  readIDE(ComSReg);
-  return ! ((dataLval & ~(1<<6)) == true);
+  uint8_t lVal;
+
+  readIDE(ComSReg, &lVal,nullptr);
+  return ! ((lVal & ~(1<<6)) == true);
 }
 
 // ##################################
 // Auxiliary functions Packet related
 // ##################################
+bool Atapi::sendPac(const uint8_t* packet, bool firstCall) {
+  static uint8_t internal_step = 0;
+  static unsigned long internal_millis = millis();
 
-// Send a packet starting at fnc array position idx
-void Atapi::enqueue_sendPac(uint8_t index /* index used as pointer within packet array */) {
-//  ESP_LOGD(TAG,"Enqueue pac, index: %d", index);
-  uint8_t* indexPtr = new uint8_t(index);
-  ESP_LOGD(TAG,"Send pac PRE index: %d - pointer val: %d, pointer: %d",index, *indexPtr, indexPtr);
-  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_1",[&]() {
+  if (firstCall) {
+    internal_step = 0;
+    internal_millis = millis();
+  }
+  if (internal_step == 0) {
      writeIDE (AStCReg, B00001010, 0xFF);     // Set nIEN before you send the PACKET command!
      writeIDE(ComSReg, 0xA0, 0xFF);           // Write Packet Command Opcode
-     return true;
-  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_2",[&]() { return async_delay(400); }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_3",std::bind([](uint8_t* lambda_index) {
-     ESP_LOGD(TAG,"Send pac before for, index: %d - pointer: %d, max: %d", *lambda_index, lambda_index);
-     ESP_LOGD(TAG,"Send pac before for, index: %d - cur: %d, max: %d", *lambda_index, atapi_->cnt, atapi_->paclen);
-     for (atapi_->cnt=0;atapi_->cnt<atapi_->paclen;atapi_->cnt=atapi_->cnt+2){        // Send packet with length of 'paclen'
-//       ESP_LOGD(TAG,"Send pac, index: %d - cur: %d, max: %d", *lambda_index, atapi_->cnt, atapi_->paclen);
+     internal_step++;
+     internal_millis = millis();
+  }
 
-        atapi_->dataLval = atapi_->fnc[(*lambda_index + atapi_->cnt)];             // to IDE Data Registeraccording to idx value
-        atapi_->dataHval = atapi_->fnc[(*lambda_index + atapi_->cnt + 1)];
-        atapi_->writeIDE(DataReg, atapi_->dataLval, atapi_->dataHval);
-        atapi_->readIDE(AStCReg);                         // Read alternate stat reg.
-        atapi_->readIDE(AStCReg);                         // Read alternate stat reg.
-     }
-     delete(lambda_index);
-     return true;
-  },indexPtr)));
+  if (internal_step == 1) {
+    if (async_delay(400, internal_millis)) {
+      internal_step++;
+    }
+  }
 
-  _loopfunctions.emplace(AsyncFunction( "enqueue_sendPac_4",[&]() { return BSY_clear_wait_async();  }));
+  if (internal_step == 2) {
+    for (uint8_t i=0;i<_packet_length;i=i+2){        // Send packet with length of '_packet_length'
+      writeIDE(DataReg, packet[i], packet[i + 1]);
+      readIDE(AStCReg,nullptr,nullptr);                         // Read alternate stat reg.
+      readIDE(AStCReg,nullptr,nullptr);                         // Read alternate stat reg.
+    }
+    return true;
+  }
+
+
+  return false;
+
 }
 
-void Atapi::enqueue_get_TOC(){
+bool Atapi::cmd_get_toc(uint8_t step){
   // Pointer to Read TOC Packet
   // Send read TOC command packet
-  enqueue_sendPac(96);
-  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_1",[&]() { return async_delay(10);  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_2",[&]() { return DRQ_set_wait_async();  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_3",[&]() {
-    readIDE(DataReg);                      // TOC Data Length not needed, don't care
-    readIDE(DataReg);                      // Read first and last session
-    s_trck = dataLval;
-    e_trck = dataHval;
-    return true;
-  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_get_TOC_4",[&]() {
-      readIDE(DataReg);                   // Skip Session no. ADR and control fields
-      readIDE(DataReg);                   // Read curent track number
-      c_trck = dataLval;
-      readIDE(DataReg);                   // Read M
-      c_trck_m = dataHval;                // Store M of curent track
-      readIDE(DataReg);                   // Read S and F
-      c_trck_s = dataLval;                // Store S of current track
-      c_trck_f = dataHval;                // Store F of current track
+  if (step == 0) {
+    if (sendPac(atapi_fnc_read_toc, _currentfunction_first_try)) { // used to check_unit_ready
+      set_next_command_step();
+    }
+  }
 
-      if (c_trck == s_trck){              // Store MSF of first track
-          fnc[51] = c_trck_m;             //
-          fnc[52] = c_trck_s;
-          fnc[53] = c_trck_f;
+  if (step == 1) {
+    if (async_delay(10)) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 2) {
+    if (DRQ_set_wait_async()) {
+      set_next_command_step();
+    }
+  }
+
+
+
+  if (step == 3) {
+    uint8_t lVal, hVal;
+
+    readIDE(DataReg, nullptr, nullptr);                      // TOC Data Length not needed, don't care
+    readIDE(DataReg,&lVal, &hVal);                      // Read first and last session
+    _start_track = lVal;
+    _total_tracks = hVal;
+    set_next_command_step();
+  };
+
+  if (step == 4) {
+    uint8_t lVal, hVal, current_track;
+    do {
+      AudioTrack track;
+
+      readIDE(DataReg,nullptr,nullptr);                    // Skip Session no. ADR and control fields
+      readIDE(DataReg,&lVal,nullptr);                              // Read curent track number
+      current_track = lVal;
+      readIDE(DataReg, nullptr, &hVal);                     // Read M
+      track.minutes = hVal;                                     // Store M of curent track
+      readIDE(DataReg, &lVal, &hVal);                      // Read S and F
+      track.seconds = lVal;                                     // Store S of current track
+      track.frames = hVal;                                     // Store F of current track
+
+      if (current_track < MAX_TRACKS) {
+        _tracks[current_track] = track;
+      } else if (current_track == 0xAA) {
+        _end_position = track;
       }
-      if (c_trck == a_trck){              // Store MSF of actual track
-          d_trck_m = c_trck_m;            //
-          d_trck_s = c_trck_s;
-          d_trck_f = c_trck_f;
-      }
-      if (c_trck == 0xAA){                // Store MSF of end position
-          fnc[54] = c_trck_m;
-          fnc[55] = c_trck_s;
-          fnc[56] = c_trck_f;
-      }
-      readIDE(ComSReg);
-      return ! (dataLval & (1<<3));
-  })); // Fetch result
+      readIDE(ComSReg, &lVal, nullptr);
+    } while (lVal & (1<<3));
+    set_next_command_step();
+  }
+
+  if (step == 5) { // TOC Read correctly
+    _toc_read=true;
+    ESP_LOGD(TAG,"TOC Read ok. Tracks: %d/%d - Time: %d:%d",_start_track,_total_tracks,_end_position.minutes,_end_position.seconds);
+    toc_callback_.call();
+    return true;
+  }
+
+  return false;
 
 
 }
 
-void Atapi::enqueue_read_subch_cmd(){
-  enqueue_sendPac(144); // Pointer to read Subchannel Packet, Send read Subchannel command packet
-  _loopfunctions.emplace(AsyncFunction( "enqueue_read_subch_cmd_1",[&]() {
-    readIDE(DataReg);                    // Get Audio Status
-    if(dataHval==0x13){                  // Play operation successfully completed
-      dataHval=0x15;                     // means drive is neither paused nor in play
-    }                                    // so treat as stopped
-    if((dataHval==0x11)|                   // playing
-        (dataHval==0x12)|                   // paused
-        (dataHval==0x15))                   // stopped
-        {aud_stat=dataHval;               //
+bool Atapi::cmd_read_subch_cmd(uint8_t step) {
+  if (step == 0) {
+    if (sendPac(atapi_fnc_read_subchannel, _currentfunction_first_try)) { // used to check_unit_ready
+      ESP_LOGD(TAG,"Packet read. Proceeding");
+      set_next_command_step();
+    }
+  }
+
+  if (step == 1) {
+    uint8_t lVal, hVal;
+
+    readIDE(DataReg, &lVal, &hVal);                      // Get Audio Status
+    ESP_LOGD(TAG,"Packet value: %d / %d, %d", lVal, hVal, hVal == 0x15);
+
+    if(hVal==0x13){                                      // Play operation successfully completed
+      hVal=0x15;                                         // means drive is neither paused nor in play
+    }                                                    // so treat as stopped
+
+    if((hVal==0x11)|                                     // playing
+        (hVal==0x12)|                                    // paused
+        (hVal==0x15))                                    // stopped
+    {
+      ESP_LOGD(TAG,"SETTING HVAL WITH REQ VALUE");
+      _audio_status=hVal;                                  //
     }else{
-        aud_stat=0;                      // all other values will report "NO DISC"
+      ESP_LOGD(TAG,"hVal value %d not recognided", hVal);
+      _audio_status=0;                                      // all other values will report "NO DISC"
     }
 
-    readIDE(DataReg);                    // Get (ignore) Subchannel Data Length
-    readIDE(DataReg);                    // Get (ignore) Format Code, ADR and Control
-    readIDE(DataReg);                    // Get actual track
+    readIDE(DataReg,nullptr,nullptr);                    // Get (ignore) Subchannel Data Length
+    readIDE(DataReg,nullptr,nullptr);                    // Get (ignore) Format Code, ADR and Control
+    readIDE(DataReg,&lVal,nullptr);                    // Get actual track
 
-    a_trck = dataLval;
-    readIDE(DataReg);                    // Get M field of actual MFS data and
-    MFS_M = dataHval;                    // store M it
-    readIDE(DataReg);                    // get S and F fields
-    MFS_S = dataLval;                    // Store S value
-    return true;
-  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_read_subch_cmd_2",[&]() {
-    readIDE(DataReg);
-    readIDE(ComSReg);
-    return ! (dataLval & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
-  }));
+    _current_track = lVal;
+    readIDE(DataReg,nullptr,&hVal);                    // Get M field of actual MFS data and
+    _current_track_position.minutes = hVal;                    // store M it
+    readIDE(DataReg,&lVal,nullptr);                    // get S and F fields
+    _current_track_position.seconds = lVal;                    // Store S value
+
+    set_next_command_step();
+  }
+
+  if (step == 2) {
+    ESP_LOGD(TAG,"Step 2");
+    uint8_t lVal;
+
+    readIDE(DataReg, nullptr, nullptr);
+    readIDE(ComSReg, &lVal, nullptr);
+    if (! (lVal & (1<<3))) {          // Read rest of data from Data Reg. until DRQ=0
+      set_next_command_step();
+    }
+  }
+
+  if (step == 3) {
+    ESP_LOGD(TAG,"Step 3. audio status: %d, toc read: %d", _audio_status, _toc_read);
+    state_callback_.call(get_status());
+
+    if(_audio_status==0x11){ // Playing
+      ESP_LOGD(TAG, "Play");
+      update_callback_.call();
+    }
+
+    if(_audio_status==0x00){                         // Audio status 0 covers all other posible
+      ESP_LOGD(TAG, "No Disc");
+      _toc_read = false;
+    }
+
+    if ((_audio_status==0x15) && (!_toc_read)) { // Stopped
+      enqueue_get_TOC();
+    } else {
+      return true;
+    }
+
+  }
+
+  return false;
+
 }
 
-void Atapi::enqueue_check_disk(){
-  enqueue_sendPac(128); // Send mode sense packet
-  _loopfunctions.emplace(AsyncFunction( "enqueue_check_disk_1",[&]() { return async_delay(10);  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_check_disk_2",[&]() { return DRQ_set_wait_async();  }));
+bool Atapi::cmd_check_disk(uint8_t step) {
+  if (step == 0) {
+    if (sendPac(atapi_fnc_mode_sense, _currentfunction_first_try)) { // used to check_unit_ready
+      set_next_command_step();
+    }
+  }
 
-  _loopfunctions.emplace(AsyncFunction("enqueue_check_disk_3",[&]() {
-    uint8_t new_disc_state = 0;
-    readIDE(DataReg);                           // Read and discard Mode Sense data length
-    readIDE(DataReg);                           // Get Medium Type byte
-                                                  // If valid audio disk present disk_ok=0x00
-    if ((dataLval == 0x02) |
-      (dataLval == 0x06) |
-      (dataLval == 0x12) |
-      (dataLval == 0x16) |
-      (dataLval == 0x22) |
-      (dataLval == 0x26))
+  if (step == 1) {
+    if (async_delay(10)) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 2) {
+    if (DRQ_set_wait_async()) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 3) {
+    uint8_t lVal;
+
+    _disc_state = 0;
+    readIDE(DataReg,nullptr,nullptr);                           // Read and discard Mode Sense data length
+    readIDE(DataReg, &lVal, nullptr);                           // Get Medium Type byte
+
+    if ((lVal == 0x02) |
+      (lVal == 0x06) |
+      (lVal == 0x12) |
+      (lVal == 0x16) |
+      (lVal == 0x22) |
+      (lVal == 0x26))                                           // If valid audio disk present disk_ok=0x00
     {
       ESP_LOGD(TAG, "Disc present");
-      new_disc_state = 1;
-    } else if (dataLval == 0x71){                      // Note if door open
+      _disc_state = 1;
+    } else if (lVal == 0x71){                      // Note if door open
       ESP_LOGD(TAG, "Door open");
-      new_disc_state = 2;
+      _disc_state = 2;
     } else {
       ESP_LOGD(TAG, "No disc");
     }
 
-    if (new_disc_state != disc_state) {
-      disc_state = new_disc_state;
+    set_next_command_step();
+
+  }
+
+  if (step == 4) {
+    uint8_t lVal;
+
+    readIDE(DataReg,nullptr,nullptr);
+    readIDE(ComSReg,&lVal,nullptr);
+    if (! (lVal & (1<<3))) {          // Read rest of data from Data Reg. until DRQ=0
+      set_next_command_step();
     }
-    if (disc_state == 1) { // Disc inserted, read TOC
+  }
+
+  if (step == 5) {
+    ESP_LOGD(TAG,"LAST STEP. disc state: %d", _disc_state);
+    if (_disc_state == 1) { // Disc inserted, set next command to read TOC
+      ESP_LOGD(TAG,"Disc present.. replacing with enqueue_read_subch_cmd");
       enqueue_read_subch_cmd();
+    } else {
+      return true;
     }
+  }
 
-    return true;
-  }));
-
-  _loopfunctions.emplace(AsyncFunction( "enqueue_check_disk_4",[&]() {
-    readIDE(DataReg);
-    readIDE(ComSReg);
-    return ! (dataLval & (1<<3));          // Read rest of data from Data Reg. until DRQ=0
-  }));
+  return false;
 
 }
 
 
-void Atapi::enqueue_unit_ready(){                 // Reuests unit to report status
-  enqueue_sendPac(112);                           // used to check_unit_ready
+bool Atapi::unit_ready(bool firstCall){               // Reuests unit to report status
+  return sendPac(atapi_fnc_unit_ready, firstCall);                     // used to check_unit_ready
 }
 
-void Atapi::enqueue_req_sense(){                  // Request Sense Command is used to check
-  enqueue_sendPac(160);                           // used to check_unit_ready
-                                                  // the result of the Unit Ready command.
-                                                  // The Additional Sense Code is used,
-                                                  // see table 71 in sff8020i documentation
-  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_1",[&]() { return async_delay(10);  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_2",[&]() { return DRQ_set_wait_async();  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_3",[&]() { cnt=0; return true;  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_req_sense_4",[&]() {
-    readIDE(DataReg);
-    if (cnt == 6){
-        asc=dataLval;                          // Store Additional Sense Code
+bool Atapi::req_sense(bool firstCall){                // Request Sense Command is used to check
+                                                      // used to check_unit_ready
+                                                      // the result of the Unit Ready command.
+                                                      // The Additional Sense Code is used,
+                                                      // see table 71 in sff8020i documentation
+  static uint8_t internal_step = 0;
+  static unsigned long internal_millis = millis();
+
+  if (firstCall) {
+    internal_step = 0;
+    internal_millis = millis();
+  }
+
+  if (internal_step == 0) {
+    if (sendPac(atapi_fnc_mode_sense,firstCall)) {
+      internal_step++;
+      internal_millis = millis();
     }
-    cnt++;
-    readIDE(AStCReg);
-    readIDE(ComSReg);
-    return ! (dataLval & (1<<3));                  // Skip rest of packet
-  }));
+  }
 
-}
+  if (internal_step == 1) {
+    if (async_delay(10, internal_millis)) {
+      internal_step++;
+    }
+  }
 
+  if (internal_step == 2) {
+    if (DRQ_set_wait_async()) {
+      internal_step++;
+    }
+  }
 
-void Atapi::enqueue_init_task_file(){
-  _loopfunctions.emplace(AsyncFunction( "enqueue_init_task_file_1",[&]() {
-    writeIDE(ErrFReg, 0x00, 0xFF);            // Set Feature register = 0 (no overlapping and no DMA)
-    writeIDE(CylHReg, 0x02, 0xFF);            // Set PIO buffer to max. transfer length (= 200h)
-    writeIDE(CylLReg, 0x00, 0xFF);
-    writeIDE(AStCReg, 0x02, 0xFF);            // Set nIEN, we don't care about the INTRQ signal
+  if (internal_step == 3) {
+    uint8_t lVal;
+    uint8_t i = 0;
+
+    do {
+    readIDE(DataReg,&lVal,nullptr);
+    if (i == 6){
+        _additional_sense_code=lVal;                          // Store Additional Sense Code
+    }
+    i++;
+    readIDE(AStCReg,nullptr,nullptr);
+    readIDE(ComSReg,&lVal,nullptr);
+
+    } while (lVal & (1<<3));                  // Skip rest of packet
     return true;
-  }));
-  _loopfunctions.emplace(AsyncFunction( "enqueue_init_task_file_2",[&]() { return BSY_clear_wait_async();}));                         // When conditions are met then IDE bus is idle,
-  _loopfunctions.emplace(AsyncFunction( "enqueue_init_task_file_3",[&]() { return DRQ_clear_wait_async(); }));                         // this check may not be necessary (???)
+
+  }
+
+  return false;
 
 }
 
+void Atapi::enqueue_check_disk(){
+  set_command("CheckDisk", [this](uint8_t val) { return cmd_check_disk(val); });
+}
 
+void Atapi::enqueue_read_subch_cmd(){
+  set_command("ReadSubch", [this](uint8_t val) { return cmd_read_subch_cmd(val); });
+}
 
+void Atapi::enqueue_reset(){
+  set_command("Reset", [this](uint8_t val) { return cmd_reset(val); });
+}
 
+void Atapi::enqueue_get_TOC(){
+  set_command("getToc", [this](uint8_t val) { return cmd_get_toc(val); });
+}
 
 
 
