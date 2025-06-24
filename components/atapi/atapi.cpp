@@ -155,13 +155,33 @@ bool Atapi::cmd_play_track(uint8_t step) {
   }
 
   if (step == 1) {
+    if (sendPac(atapi_fnc_mode_sense, _currentfunction_first_try)) { // used to check_unit_ready
+      ESP_LOGD(TAG,"SENSE pre play command complete");
+      set_next_command_step();
+    }
+  }
+
+  if (step == 2) {
+    if (async_delay(10)) {
+      set_next_command_step();
+    }
+  }
+
+  if (step == 3) {
+    if (DRQ_set_wait_async()) {
+      set_next_command_step();
+    }
+  }
+
+
+  if (step == 4) {
     if (sendPac(atapi_fnc_start_play, _currentfunction_first_try)) {
       ESP_LOGD(TAG,"Play command complete");
       set_next_command_step();
     }
   }
 
-  if (step == 2) {
+  if (step == 5) {
     if (async_delay(2000)) {
       ESP_LOGD(TAG,"Play command delay complete");
       return true;
@@ -610,13 +630,13 @@ bool Atapi::sendPac(const uint8_t* packet, bool firstCall) {
 
   if (internal_step == 2) {
     for (uint8_t i=0;i<_packet_length;i=i+2){        // Send packet with length of '_packet_length'
-      ESP_LOGD(TAG,"Write ide, %02d:%02d", packet[i], packet[i+1]);
+      // ESP_LOGD(TAG,"Write ide, %02d:%02d", packet[i], packet[i+1]);
       writeIDE(DataReg, packet[i], packet[i + 1]);
       uint8_t lVal, hVal;
       readIDE(AStCReg,&lVal,&hVal);                         // Read alternate stat reg.
-      ESP_LOGD(TAG,"RESPONSE 1, %02d:%02d", lVal,hVal);
+      // ESP_LOGD(TAG,"RESPONSE 1, %02d:%02d", lVal,hVal);
       readIDE(AStCReg,&lVal,&hVal);                         // Read alternate stat reg.
-      ESP_LOGD(TAG,"RESPONSE 2, %02d:%02d", lVal,hVal);
+      // ESP_LOGD(TAG,"RESPONSE 2, %02d:%02d", lVal,hVal);
     }
     internal_step++;
   }
