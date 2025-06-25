@@ -117,7 +117,7 @@ void Atapi::update() {
     return;
   }
 
-  ESP_LOGD(TAG, "Polling...");
+  ESP_LOGD(TAG, "Polling... Busy state: %d - Disc state: %d - Play state: %d", _busy_status, _disc_state, get_status());
   enqueue_check_disk();
 
 }
@@ -131,9 +131,15 @@ bool Atapi::cmd_play_track(uint8_t step) {
 
   if (step == 0) {
     set_busy_status(BUSYSTATUS_PLAY);
-    atapi_fnc_start_play[3] = _tracks[_requested_track].minutes + (_requested_position / 60);
-    atapi_fnc_start_play[4] = _tracks[_requested_track].seconds + (_requested_position % 60);
-    atapi_fnc_start_play[5] =  (_requested_position > 0)?0:_tracks[_requested_track].frames;
+    if (_requested_position > 0) {
+      atapi_fnc_start_play[3] = (_tracks[_requested_track].toSeconds() + _requested_position) / 60;
+      atapi_fnc_start_play[4] = (_tracks[_requested_track].toSeconds() + _requested_position) % 60;
+      atapi_fnc_start_play[5] = 0;
+    } else {
+      atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
+      atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
+      atapi_fnc_start_play[5] =  (_requested_position > 0)?0:_tracks[_requested_track].frames;
+    }
     atapi_fnc_start_play[6] = _end_position.minutes;
     atapi_fnc_start_play[7] = _end_position.seconds;
     atapi_fnc_start_play[8] = _end_position.frames;
@@ -375,9 +381,23 @@ void Atapi::enqueue_play(){
 }
 
 void Atapi::enqueue_stop(){
-  enqueue_command("stop_unit", [this](uint8_t step) {
-    return sendPac(atapi_fnc_stop_unit, _currentfunction_first_try);
-  });
+  if (get_status() > AUDIOSTATUS_STOPPED) {
+    enqueue_command("stop_unit", [this](uint8_t step) {
+      if (step == 0) {
+       if (sendPac(atapi_fnc_stop_unit, _currentfunction_first_try)) {
+          step = set_next_command_step();
+        }
+      }
+
+      if (step == 1) {
+        _audio_status = 0x15;
+        state_callback_.call(get_status());
+        return true;
+      }
+
+      return false;
+    });
+  }
 }
 void Atapi::enqueue_eject(){
   enqueue_command("eject", [this](uint8_t step) {

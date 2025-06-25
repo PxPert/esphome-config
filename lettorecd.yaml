@@ -1,6 +1,5 @@
 # TODO:
-# Bugs:
-# - When playing, then pause, then stop -> the state seems to not be changed
+# Bugs
 #
 # Features
 # - LCD Icon with the following states:
@@ -78,13 +77,17 @@ font:
     size: 40
     glyphs:
       - "\U000F01D1" # disc-alert
-      - "\U000F05EE" # disc
       - "\U000F040A" # play
       - "\U000F03E4" # pause
       - "\U000F04DB" # stop
       - "\U000F01EA" # eject
-      - "\U000F0453" # loading
+#      - "\U000F0453" # loading
       - "\U000F0028" # alert
+      - "\U000F04AC" # skip-next
+      - "\U000F0211" # fast-forward
+      - "\U000F045F" # rewind
+      - "\U000F04AB" # skip-previous
+
 #      - "\U000" # 
     
 display:
@@ -94,6 +97,51 @@ display:
     id: lcd_display
     # show_test_card: true
     lambda: |-
+      // Icon
+      const char* disc_icon = "\U000F01D1"; // No disc default icon
+      if (id(cd_reader).status_has_error()) {
+        disc_icon = "\U000F0028"; // Alert icon
+      } else {
+        switch (id(cd_reader).get_disc_state()) {
+          case DISC_STATUS_NODISC:
+            break;
+          case DISC_STATUS_TRAY_OPENED:
+            disc_icon = "\U000F01EA"; // Tray opened icon
+            break;
+          default:
+            if (id(requested_seek_type) == 2) {
+              if (id(requested_seek_direction) > 0) {
+                disc_icon = "\U000F04AC"; // Skip next icon
+              } else {
+                disc_icon = "\U000F04AB"; // Skip previous icon
+              }
+            } else {
+              if (id(requested_seek_type) == 3) {
+                if (id(requested_seek_direction) > 0) {
+                  disc_icon = "\U000F0211"; // Fast forward icon
+                } else {
+                  disc_icon = "\U000F045F"; // Rewind icon
+                }
+              } else {
+                switch (id(cd_reader).get_status()) {
+                  case AUDIOSTATUS_PLAYING:
+                    disc_icon = "\U000F040A"; // Play icon
+                    break;
+                  case AUDIOSTATUS_PAUSED:
+                    disc_icon = "\U000F03E4"; // Pause icon
+                    break;
+                  default:
+                    disc_icon = "\U000F04DB"; // Stop icon
+                    break;
+                }
+              }
+            }
+            break;
+        }
+      }
+
+      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,disc_icon);
+      // Header
       switch (id(cd_reader).get_disc_state()) {
         case 0:
           it.print(0, 0, id(font_header), "No disc");
@@ -109,10 +157,10 @@ display:
           break;
       }
 
+      // Line separator
       it.line(0, 20, it.get_width(), 20);
 
-      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,"\U000F01D1");
-
+      // Central track number & play time
       if (id(cd_reader).get_disc_state() == 1) {
         if (id(requested_seek_type) > 0) {
           // Show requested seek time / track
@@ -192,6 +240,10 @@ globals:
     type: int
     initial_value: '0'
     restore_value: no
+  - id: requested_seek_direction
+    type: int
+    initial_value: '0'
+    restore_value: no
 
 script: 
   - id: reset_variables
@@ -205,6 +257,9 @@ script:
         value: '0'
     - globals.set:
         id: requested_seek_type
+        value: '0'
+    - globals.set:
+        id: requested_seek_direction
         value: '0'
 
   - id: set_led_effect
@@ -269,6 +324,7 @@ script:
       press_duration: int
     then:
     - lambda: |-
+        id(requested_seek_direction) = direction;
         if (id(requested_seek_type) == 2) {
 
           if (
