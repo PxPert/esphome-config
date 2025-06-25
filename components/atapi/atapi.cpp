@@ -40,8 +40,11 @@ static const uint8_t AStCReg = 0xEE;         // Addr. Alternate Status/Device Co
 
 
 void Atapi::setup() {
-  ESP_LOGCONFIG(TAG, "Empty I2C component3");
+  ESP_LOGCONFIG(TAG, "CD Reader setup");
   _device_ready = 0;
+  _busy_status = 0;
+  _disc_state = DISC_STATUS_NODISC;
+  _audio_status = AUDIOSTATUS_NODISC;
 
 }
 

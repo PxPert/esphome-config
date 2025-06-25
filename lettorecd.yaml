@@ -144,24 +144,7 @@ atapi:
         condition:
         - lambda: 'return id(cd_reader).get_status() == AUDIOSTATUS_NODISC;'
         then:
-        - logger.log: "Reset variables"
-        - globals.set:
-            id: fast_forward_release_time
-            value: '0'
-        - globals.set:
-            id: fast_forward_long_press_time
-            value: '0'
-        - globals.set:
-            id: rewind_release_time
-            value: '0'
-        - globals.set:
-            id: rewind_long_press_time
-            value: '0'
-        - globals.set:
-            id: requested_seek_type
-            value: '0'
-
-
+        - script.execute: reset_variables
     - component.update: lcd_display
     - script.execute: set_led_effect
 
@@ -169,19 +152,11 @@ atapi:
 #  frequency: 500kHz
 
 globals:
-  - id: fast_forward_release_time
+  - id: seek_release_time
     type: unsigned long
     restore_value: no
     initial_value: '0'
-  - id: fast_forward_long_press_time
-    type: unsigned long
-    restore_value: no
-    initial_value: '0'
-  - id: rewind_release_time
-    type: unsigned long
-    restore_value: no
-    initial_value: '0'
-  - id: rewind_long_press_time
+  - id: seek_long_press_time
     type: unsigned long
     restore_value: no
     initial_value: '0'
@@ -205,6 +180,19 @@ globals:
     restore_value: no
 
 script: 
+  - id: reset_variables
+    then:
+    - logger.log: "Reset variables"
+    - globals.set:
+        id: seek_release_time
+        value: '0'
+    - globals.set:
+        id: seek_long_press_time
+        value: '0'
+    - globals.set:
+        id: requested_seek_type
+        value: '0'
+
   - id: set_led_effect
     mode: restart
     then:
@@ -236,51 +224,30 @@ script:
           id(requested_seek_type) = seek_type;
         }
 
-  - id: handle_forward_release
+  - id: handle_seek_release
     mode: restart
     then:
-    - logger.log: "FF release handle start"
+    - logger.log: "Release handle start"
     - lambda: |-
-        id(fast_forward_release_time) = millis();
+        id(seek_release_time) = millis();
     - wait_until:
         condition:
-          binary_sensor.is_on: btn_fast_forward
+          any:
+            - binary_sensor.is_on: btn_fast_forward
+            - binary_sensor.is_on: btn_rewind
         timeout: 1s
     - if:
         condition:
           lambda: |-
-            return  (millis() - id(fast_forward_release_time)) > 900;
+            return  (millis() - id(seek_release_time)) > 900;
         then:
-          - logger.log: "FF release handle Condition OK"
+          - logger.log: "release Condition OK"
           - script.execute:
               id: perform_seek
         else:
           - logger.log:
-              format: "FF release handle Condition KO: %lu - %lu"
-              args: [ 'id(fast_forward_release_time)', 'millis()' ]
-
-  - id: handle_rewind_release
-    mode: restart
-    then:
-    - logger.log: "Rewind release handle start"
-    - lambda: |-
-        id(rewind_release_time) = millis();
-    - wait_until:
-        condition:
-          binary_sensor.is_on: btn_rewind
-        timeout: 1s
-    - if:
-        condition:
-          lambda: |-
-            return  (millis() - id(rewind_release_time)) > 900;
-        then:
-          - logger.log: "Rewind release handle Condition OK"
-          - script.execute:
-              id: perform_seek
-        else:
-          - logger.log:
-              format: "Rewind release handle Condition KO: %lu - %lu"
-              args: [ 'id(rewind_release_time)', 'millis()' ]
+              format: "release Condition KO: %lu - %lu"
+              args: [ 'id(seek_release_time)', 'millis()' ]
 
   - id: set_seek_value
     parameters: 
@@ -358,7 +325,15 @@ script:
         format: "Seek to track: %02d - position: %02d"
         args: [ 'id(selected_track)', 'id(selected_time)' ]
     - lambda: |-
-        id(cd_reader).enqueue_play_track(id(selected_track), id(selected_time));
+        if (id(requested_seek_type) > 1) 
+        {
+          if ( id(cd_reader).get_status() == AUDIOSTATUS_PLAYING ) {
+            id(cd_reader).enqueue_play_track(id(selected_track), id(selected_time));
+          } else {
+            id(requested_seek_type) = 1;
+          }
+          
+        }
     - component.update: lcd_display
 
 
@@ -370,10 +345,48 @@ binary_sensor:
       number: GPIO3
       mode: INPUT_PULLUP
       inverted: true
+    filters:
+    - lambda: |-
+        if (
+          (id(cd_reader).get_busy_status() > 0) 
+          ||
+          (id(cd_reader).status_has_error()) 
+          ||
+          (id(cd_reader).get_status() == AUDIOSTATUS_NODISC) 
+          ||
+          (id(cd_reader).get_disc_state() != DISC_STATUS_DISC_PRESENT) 
+        )
+        {
+          return {};
+        } else {
+          return x;
+        }
+
     on_press:
       - lambda: |-
           if (id(cd_reader).get_device_ready() == 2) {
-            id(cd_reader).enqueue_play();
+            if (id(cd_reader).get_status() == AUDIOSTATUS_PLAYING) {
+              ESP_LOGD("cdreader-playpause", "Requesting pause");
+              id(cd_reader).enqueue_pause();
+            } else { 
+              if (id(cd_reader).get_disc_state() == DISC_STATUS_DISC_PRESENT) {
+
+                if (id(requested_seek_type)) {
+                  id(requested_seek_type) = 1;
+                  ESP_LOGD("cdreader-playpause", "Requesting play at specific position");
+                  id(cd_reader).enqueue_play_track(id(selected_track), id(selected_time));
+                } else {
+                  if (id(cd_reader).get_status() == AUDIOSTATUS_PAUSED) {
+                    ESP_LOGD("cdreader-playpause", "Requesting resume");
+                    id(cd_reader).enqueue_resume();
+                  } else {
+                    ESP_LOGD("cdreader-playpause", "Requesting play");
+                    id(cd_reader).enqueue_play();
+                  }
+                  
+                }
+              }
+            }
           } else {
             id(cd_reader).enqueue_reset();
           }
@@ -385,9 +398,45 @@ binary_sensor:
       number: GPIO0
       mode: INPUT_PULLUP
       inverted: true
+    filters:
+    - lambda: |-
+        if (
+          (id(cd_reader).status_has_error()) 
+           ||
+          (id(cd_reader).get_device_ready() != 2)
+        )
+        {
+          return {};
+        } else {
+          return x;
+        }
     on_press:
-      - lambda: |-
-          id(cd_reader).enqueue_stop();
+    - lambda: |-
+        if ((id(cd_reader).get_disc_state() == DISC_STATUS_NODISC) || (id(cd_reader).get_disc_state() == AUDIOSTATUS_NODISC)) {
+          id(cd_reader).enqueue_eject();
+          ESP_LOGD("cdreader-stopeject", "Requesting eject");
+        } else {
+          if (id(cd_reader).get_disc_state() == DISC_STATUS_TRAY_OPENED) {
+            ESP_LOGD("cdreader-stopeject", "Closing tray");
+            id(cd_reader).enqueue_load();
+          } else {
+            if ( (id(cd_reader).get_status() == AUDIOSTATUS_PLAYING) || (id(cd_reader).get_status() == AUDIOSTATUS_PAUSED)) {
+              ESP_LOGD("cdreader-stopeject", "Requesting stop");
+              id(cd_reader).enqueue_stop();
+            } else {
+              if (id(requested_seek_type) != 0) {
+                id(requested_seek_type) = 0;
+                id(selected_track) = 0;
+                id(selected_time) = 0;
+              } else {
+                ESP_LOGD("cdreader-stopeject", "Requesting eject");
+                id(cd_reader).enqueue_eject();
+              }
+            }
+          }
+        }
+
+# Fast Forward
   - platform: gpio
     internal: True
     name: "Fast Forward"
@@ -396,10 +445,27 @@ binary_sensor:
       number: GPIO14
       mode: INPUT_PULLUP
       inverted: true
+    filters:
+    - lambda: |-
+        if (
+          (id(cd_reader).get_busy_status() > 0) 
+          ||
+          (id(cd_reader).status_has_error()) 
+          ||
+          (id(cd_reader).get_status() == AUDIOSTATUS_NODISC) 
+          ||
+          (id(cd_reader).get_disc_state() != DISC_STATUS_DISC_PRESENT) 
+        )
+        {
+          return {};
+        } else {
+          return x;
+        }
+
     on_release:
       then:
         - logger.log: "FF release"
-        - script.execute: handle_forward_release
+        - script.execute: handle_seek_release
     on_multi_click:
     - timing:
         - ON for at most 500ms
@@ -423,7 +489,7 @@ binary_sensor:
             seek_type: '3'
         - script.wait: set_seek_type
         - lambda: |-
-            id(fast_forward_long_press_time) = millis();
+            id(seek_long_press_time) = millis();
         - while:
             condition:
               binary_sensor.is_on: btn_fast_forward
@@ -432,10 +498,10 @@ binary_sensor:
             - script.execute:
                 id: set_seek_value
                 direction: '1'
-                press_duration: !lambda "return id(fast_forward_long_press_time);"
+                press_duration: !lambda "return id(seek_long_press_time);"
             - delay: 500ms
 
-
+# Rewind
   - platform: gpio
     internal: True
     name: "Rewind"
@@ -444,10 +510,27 @@ binary_sensor:
       number: GPIO2
       mode: INPUT_PULLUP
       inverted: true
+    filters:
+    - lambda: |-
+        if (
+          (id(cd_reader).get_busy_status() > 0) 
+          ||
+          (id(cd_reader).status_has_error()) 
+          ||
+          (id(cd_reader).get_status() == AUDIOSTATUS_NODISC) 
+          ||
+          (id(cd_reader).get_disc_state() != DISC_STATUS_DISC_PRESENT) 
+        )
+        {
+          return {};
+        } else {
+          return x;
+        }
+
     on_release:
       then:
         - logger.log: "Rewind release"
-        - script.execute: handle_rewind_release
+        - script.execute: handle_seek_release
     on_multi_click:
     - timing:
         - ON for at most 500ms
@@ -471,7 +554,7 @@ binary_sensor:
             seek_type: '3'
         - script.wait: set_seek_type
         - lambda: |-
-            id(rewind_long_press_time) = millis();
+            id(seek_long_press_time) = millis();
         - while:
             condition:
               binary_sensor.is_on: btn_rewind
@@ -480,10 +563,8 @@ binary_sensor:
             - script.execute:
                 id: set_seek_value
                 direction: '-1'
-                press_duration: !lambda "return id(rewind_long_press_time);"
+                press_duration: !lambda "return id(seek_long_press_time);"
             - delay: 500ms
-
-
 
 output:
   - platform: esp8266_pwm
