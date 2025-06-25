@@ -1,3 +1,17 @@
+# TODO:
+# Bugs:
+# - When playing, then pause, then stop -> the state seems to not be changed
+#
+# Features
+# - LCD Icon with the following states:
+#     Rewind / Fast forward
+#     Track Selection
+#     Play / Pause
+#     Eject
+# - Remote control
+# - HA Buttons and sensors
+
+
 esphome:
   name: lettorecd
   friendly_name: Lettore CD
