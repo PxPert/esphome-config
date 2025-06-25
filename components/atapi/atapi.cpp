@@ -41,7 +41,7 @@ static const uint8_t AStCReg = 0xEE;         // Addr. Alternate Status/Device Co
 
 void Atapi::setup() {
   ESP_LOGCONFIG(TAG, "Empty I2C component3");
-  _device_ready = false;
+  _device_ready = 0;
 
 }
 
@@ -105,7 +105,7 @@ void Atapi::dump_config(){
 
 void Atapi::update() {
   if (
-      (! _device_ready)
+      (_device_ready < 2)
     ||
       (_currentCommand.first)
   )
@@ -128,9 +128,9 @@ bool Atapi::cmd_play_track(uint8_t step) {
 
   if (step == 0) {
     set_busy_status(BUSYSTATUS_PLAY);
-    atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
-    atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
-    atapi_fnc_start_play[5] = _tracks[_requested_track].frames;
+    atapi_fnc_start_play[3] = _tracks[_requested_track].minutes + (_requested_position / 60);
+    atapi_fnc_start_play[4] = _tracks[_requested_track].seconds + (_requested_position % 60);
+    atapi_fnc_start_play[5] =  (_requested_position > 0)?0:_tracks[_requested_track].frames;
     atapi_fnc_start_play[6] = _end_position.minutes;
     atapi_fnc_start_play[7] = _end_position.seconds;
     atapi_fnc_start_play[8] = _end_position.frames;
@@ -197,7 +197,7 @@ bool Atapi::cmd_reset(uint8_t step) {
   set_busy_status(BUSYSTATUS_RESET);
 
   if (step == 0) {
-    _device_ready = false;
+    _device_ready = 1;
     this->status_clear_error();
     error_callback_.call(0);
 
@@ -352,7 +352,7 @@ bool Atapi::cmd_reset(uint8_t step) {
   if (step == 17) {
     if (_additional_sense_code != 0x04) {
       ESP_LOGI(TAG, "Reset complete");
-      _device_ready = true;
+      _device_ready = 2;
       return true;
     } else {
       ESP_LOGI(TAG, "Still resetting");
@@ -968,13 +968,17 @@ void Atapi::enqueue_reset(){
 void Atapi::enqueue_get_TOC(){
   enqueue_command("getToc", [this](uint8_t val) { return cmd_get_toc(val); });
 }
-
-void Atapi::enqueue_play_track(uint8_t trck) {
+void Atapi::enqueue_play_track(uint8_t trck, uint16_t position) {
   if ( (trck < _start_track)  || (trck > (_total_tracks - 1)) ) {
     return;
   }
   _requested_track = trck;
+  _requested_position = position;
   enqueue_play_selected_track();
+
+}
+void Atapi::enqueue_play_track(uint8_t trck) {
+  enqueue_play_track(trck, 0);
 }
 
 void Atapi::enqueue_play_selected_track() {

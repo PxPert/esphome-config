@@ -72,9 +72,6 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
 
 
   void enqueue_reset();
-
-
-
   void enqueue_play();
   void enqueue_stop();
   void enqueue_eject();
@@ -83,12 +80,11 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   void enqueue_resume();
   void enqueue_stop_disc();
 
-  bool enqueue_command(const char* name, AsyncAtapiCommand cmd);
-  bool dequeue_command();
   inline void enqueue_next() { enqueue_play_track(_current_track + 1); }
   inline void enqueue_previous(){enqueue_play_track(_current_track - 1);}
   inline void enqueue_restart_track(){enqueue_play_track(_current_track);}
   void enqueue_play_track(uint8_t trck);
+  void enqueue_play_track(uint8_t trck, uint16_t position);
   void enqueue_play_selected_track();
 
   void add_on_state_callback(std::function<void(int)> &&callback){
@@ -119,6 +115,10 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     return _current_track;
   }
 
+  uint8_t get_start_track() {
+    return _start_track;
+  }
+
   uint16_t get_total_time() {
     return _end_position.toSeconds() - _tracks[_start_track].toSeconds();
   }
@@ -134,6 +134,16 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   uint8_t get_disc_state() {
     return _disc_state;
   }
+
+  uint16_t get_track_duration(uint8_t track) {
+    return ((track == _total_tracks - 1)?_end_position.toSeconds():_tracks[track+1].toSeconds() ) - _tracks[track].toSeconds();
+  }
+
+  uint8_t get_device_ready() {
+    return _device_ready;
+  }
+
+
 
   uint8_t get_status() {
     switch (_audio_status) {
@@ -165,6 +175,8 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   bool _currentfunction_first_try;
   uint8_t set_next_command_step();
 
+  bool enqueue_command(const char* name, AsyncAtapiCommand cmd);
+  bool dequeue_command();
 
   bool cmd_reset(uint8_t step);
   bool cmd_check_disk(uint8_t step);
@@ -205,12 +217,13 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   uint8_t _total_tracks;
   uint8_t _current_track;
   uint8_t _requested_track;
+  uint8_t _requested_position;
   uint8_t _disc_state;
   uint8_t _additional_sense_code;
   uint8_t _packet_length = 12;                  // Default packet length
   uint8_t _audio_status = 0xFF;              // subchannel data: 0x11=play, 0x12=pause, 0x15=stop
   bool _toc_read;
-  bool _device_ready;
+  uint8_t _device_ready;
   uint8_t _busy_status;
 
 
