@@ -1,12 +1,7 @@
-# TODO:
-# Bugs
+# TODO
+# Bugs:
 #
-# Features
-# - LCD Icon with the following states:
-#     Rewind / Fast forward
-#     Track Selection
-#     Play / Pause
-#     Eject
+# Features:
 # - Remote control
 # - HA Buttons and sensors
 
@@ -38,20 +33,26 @@ wifi:
   password: !secret wifi_dmz_password
   use_address: 192.168.2.17
 
-# mqtt:
-#   id: mqtt_client
-#   broker: !secret mqtt_server
-#   username: !secret mqtt_user
-#   password: !secret mqtt_pwd
-#   discovery: false
-#   client_id: ${name}
-# #  log_topic: null
+mdns:
+  disabled: true
+
+#mqtt:
+#  id: mqtt_client
+#  broker: !secret mqtt_server
+#  username: !secret mqtt_user
+#  password: !secret mqtt_pwd
+#  discovery: true
+# #   client_id: cd_reader
+# # #  log_topic: null
 
 external_components:
   - source: /config/components/
-    components: [ atapi ]
+    components: [ atapi, rc5x ]
 
-captive_portal:
+rc5x:
+  pin: 12
+#  id: remote_control
+# captive_portal:
     
 i2c:
   scan: False
@@ -185,6 +186,9 @@ atapi:
   on_error:
     - component.update: lcd_display
     - script.execute: set_led_effect
+#    - sensor.template.publish:
+#        id: error_code
+#        state: !lambda 'return x;'
 
   on_lock:
     - script.execute: set_led_effect
@@ -196,11 +200,30 @@ atapi:
             id: requested_seek_type
             value: '0'
     - component.update: lcd_display
+#    - sensor.template.publish:
+#        id: busy_state
+#        state: !lambda 'return x;'
+
 
   on_update:
     - component.update: lcd_display
+#    - sensor.template.publish:
+#        id: song_duration
+#        state: !lambda 'return id(cd_reader).get_track_duration(id(cd_reader).get_current_track());'
+#    - sensor.template.publish:
+#        id: current_track
+#        state: !lambda 'return id(cd_reader).get_current_track();'
+#    - sensor.template.publish:
+#        id: current_position
+#        state: !lambda 'return id(cd_reader).get_current_track_time();'
   on_toc:
     - component.update: lcd_display
+#    - sensor.template.publish:
+#        id: total_duration
+#        state: !lambda 'return id(cd_reader).get_total_time();'
+#    - sensor.template.publish:
+#        id: total_tracks
+#        state: !lambda 'return id(cd_reader).get_tracks();'
   on_state:
     - if:
         condition:
@@ -208,7 +231,13 @@ atapi:
         then:
         - script.execute: reset_variables
     - component.update: lcd_display
-    - script.execute: set_led_effect
+    - script.execute: set_led_effect    
+#    - sensor.template.publish:
+#        id: audio_state
+#        state: !lambda 'return x;'
+#    - sensor.template.publish:
+#        id: disc_state
+#        state: !lambda 'return id(cd_reader).get_disc_state();'
 
           
 #  frequency: 500kHz
@@ -405,6 +434,64 @@ script:
           
         }
     - component.update: lcd_display
+
+debug: 
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    fragmentation:
+      name: "Heap Fragmentation"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+
+
+# sensor:
+#   - platform: template
+#     name: "Song duration"
+#     id: song_duration
+#   - platform: template
+#     name: "Error code"
+#     id: error_code
+#   - platform: template
+#     name: "Total duration"
+#     id: total_duration
+#   - platform: template
+#     name: "Total tracks"
+#     id: total_tracks
+#   - platform: template
+#     name: "Current track"
+#     id: current_track
+#   - platform: template
+#     name: "Current position"
+#     id: current_position
+#   - platform: template
+#     name: "Disc state"
+#     id: disc_state
+#   - platform: template
+#     name: "Audio state"
+#     id: audio_state
+#   - platform: template
+#     name: "Busy state"
+#     id: busy_state
+#
+# number:
+#   - platform: template
+#     name: "Track select"
+#     optimistic: true
+#     min_value: 0
+#     max_value: 98
+#     step: 1
+#   - platform: template
+#     name: "Track Position select"
+#     optimistic: true
+#     min_value: 0
+#     max_value: 5400
+#     step: 1
+#
 
 
 binary_sensor:
@@ -669,10 +756,10 @@ light:
           max_brightness: 100%
 
 # remote_receiver:
-#   pin: 
+#   pin:
 #     number: GPIO12
-#     inverted: True
-#   dump: all
+#     inverted: false
+#   dump: raw
 
 button:
   - platform: safe_mode
@@ -701,59 +788,59 @@ button:
       - logger.log: Stop request
       - lambda: |-
           id(cd_reader).enqueue_stop();
-  - platform: template
-    name: Eject
-    id: eject
-    on_press:
-      - logger.log: Eject request
-      - lambda: |-
-          id(cd_reader).enqueue_eject();
-  - platform: template
-    name: Load
-    id: load
-    on_press:
-      - logger.log: Load request
-      - lambda: |-
-          id(cd_reader).enqueue_load();
-  - platform: template
-    name: Pause
-    id: pause_
-    on_press:
-      - logger.log: Pause request
-      - lambda: |-
-          id(cd_reader).enqueue_pause();
-  - platform: template
-    name: Resume
-    id: resume
-    on_press:
-      - logger.log: Resume request
-      - lambda: |-
-          id(cd_reader).enqueue_resume();
-  - platform: template
-    name: Stop Disc
-    id: stop_disc
-    on_press:
-      - logger.log: Stop disc request
-      - lambda: |-
-          id(cd_reader).enqueue_stop_disc();
-  - platform: template
-    name: Next
-    id: next_track
-    on_press:
-      - logger.log: Next track request
-      - lambda: |-
-          id(cd_reader).enqueue_next();
-  - platform: template
-    name: Previous
-    id: prev_track
-    on_press:
-      - logger.log: Previous track request
-      - lambda: |-
-          id(cd_reader).enqueue_previous();
-  - platform: template
-    name: Restart track
-    id: restart_track
-    on_press:
-      - logger.log: Restart track request
-      - lambda: |-
-          id(cd_reader).enqueue_restart_track();
+#  - platform: template
+#    name: Eject
+#    id: eject
+#    on_press:
+#      - logger.log: Eject request
+#      - lambda: |-
+#          id(cd_reader).enqueue_eject();
+#  - platform: template
+#    name: Load
+#    id: load
+#    on_press:
+#      - logger.log: Load request
+#      - lambda: |-
+#          id(cd_reader).enqueue_load();
+#  - platform: template
+#    name: Pause
+#    id: pause_
+#    on_press:
+#      - logger.log: Pause request
+#      - lambda: |-
+#          id(cd_reader).enqueue_pause();
+#  - platform: template
+#    name: Resume
+#    id: resume
+#    on_press:
+#      - logger.log: Resume request
+#      - lambda: |-
+#          id(cd_reader).enqueue_resume();
+#  - platform: template
+#    name: Stop Disc
+#    id: stop_disc
+#    on_press:
+#      - logger.log: Stop disc request
+#      - lambda: |-
+#          id(cd_reader).enqueue_stop_disc();
+#  - platform: template
+#    name: Next
+#    id: next_track
+#    on_press:
+#      - logger.log: Next track request
+#      - lambda: |-
+#          id(cd_reader).enqueue_next();
+#  - platform: template
+#    name: Previous
+#    id: prev_track
+#    on_press:
+#      - logger.log: Previous track request
+#      - lambda: |-
+#          id(cd_reader).enqueue_previous();
+#  - platform: template
+#    name: Restart track
+#    id: restart_track
+#    on_press:
+#      - logger.log: Restart track request
+#      - lambda: |-
+#          id(cd_reader).enqueue_restart_track();
