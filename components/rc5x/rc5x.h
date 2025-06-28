@@ -8,10 +8,30 @@
 namespace esphome {
 namespace rc5x {
 
+
+struct RC5xComponentStore {
+  static void rc5x_read(RC5xComponentStore* store);
+  static void decodeEvent(RC5xComponentStore* store, unsigned char event);
+  static void reset(RC5xComponentStore* store);
+
+
+  ISRInternalGPIOPin pin;
+  // Used by ISR
+  unsigned long time0;
+  bool lastValue;
+  unsigned char state;
+  unsigned char bits;
+  unsigned char messageLength;
+  uint32_t command;
+
+  // Shared with main loop
+  volatile uint32_t message;
+
+};
 // class RC5x : public binary_sensor::BinarySensor, public Component {
 class RC5x : public Component {
  public:
-  void set_pin(GPIOPin *pin) { pin_ = pin; }
+  void set_pin(InternalGPIOPin *pin) { _pin = pin; }
   // ========== INTERNAL METHODS ==========
   // (In most use cases you won't need these)
   /// Setup pin
@@ -22,26 +42,19 @@ class RC5x : public Component {
   /// Check sensor
   void loop() override;
 
-  void add_on_command_callback(std::function<void(unsigned char, unsigned char, unsigned char)> &&callback){
+  void add_on_command_callback(std::function<void(unsigned char, unsigned char, unsigned char, unsigned char)> &&callback){
     this->command_callback_.add(std::move(callback));
   }
 
 
  protected:
-  GPIOPin *pin_;
-  CallbackManager<void(unsigned char, unsigned char, unsigned char)> command_callback_{};
+  CallbackManager<void(unsigned char, unsigned char, unsigned char, unsigned char)> command_callback_{};
 
  private:
-  unsigned char state;
-  unsigned int bits;
-  unsigned int command;
-  unsigned long time0;
-  unsigned long lastValue;
+  InternalGPIOPin *_pin;
 
-  void reset();
-  bool read(unsigned int *message);
-  void decodeEvent(unsigned char event);
-  void decodePulse(unsigned char signal, unsigned long period);
+  RC5xComponentStore _store;
+
 
 };
 

@@ -51,6 +51,10 @@ external_components:
 
 rc5x:
   pin: 12
+  on_message:
+    lambda: |-
+      // Icon
+      ESP_LOGD("rc5x-yaml","From yaml. %d - %d - %d - %d", t,a,c,e);
 #  id: remote_control
 # captive_portal:
     

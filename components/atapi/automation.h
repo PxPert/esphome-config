@@ -17,7 +17,7 @@ class StateTrigger : public Trigger<int> {
   explicit StateTrigger(Atapi *parent) {
     last_state = -1; // Unset
 
-    parent->add_on_state_callback([this](int val) {
+    parent->add_on_state_callback([this](uint8_t val) {
       if (last_state != val) {
         last_state = val;
         this->trigger(val);
@@ -51,7 +51,7 @@ class TocTrigger : public Trigger<> {
 class LockTrigger : public Trigger<int> {
  public:
   explicit LockTrigger(Atapi *parent) {
-    parent->add_on_lock_callback([this](int val) {
+    parent->add_on_lock_callback([this](uint8_t val) {
         this->trigger(val);
     });
   }

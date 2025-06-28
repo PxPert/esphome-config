@@ -6,10 +6,7 @@ from esphome.const import (
     CONF_ID,
     CONF_TRIGGER_ID,
     CONF_PIN,
-    CONF_ON_STATE,
-    CONF_ON_UPDATE,
-    CONF_ON_LOCK,
-    CONF_ON_ERROR,
+    CONF_ON_MESSAGE
     )
 
 rc5x_ns = cg.esphome_ns.namespace("rc5x")
@@ -23,7 +20,7 @@ CommandTrigger = rc5x_ns.class_("CommandTrigger", automation.Trigger.template())
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(RC5x),
-        cv.Optional(CONF_ON_STATE): automation.validate_automation(
+        cv.Optional(CONF_ON_MESSAGE): automation.validate_automation(
           {
             cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(CommandTrigger),
           }
@@ -40,4 +37,8 @@ async def to_code(config):
     await cg.register_component(var, config)
 
     pin = await cg.gpio_pin_expression(config[CONF_PIN])
+
     cg.add(var.set_pin(pin))
+    for conf in config.get(CONF_ON_MESSAGE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(trigger, [(cg.int32, "t"),(cg.int32, "a"),(cg.int32, "c"),(cg.int32, "e")], conf)

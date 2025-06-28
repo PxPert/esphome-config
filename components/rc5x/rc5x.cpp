@@ -10,6 +10,8 @@ namespace rc5x {
 #define MIN_LONG  1334
 #define MAX_LONG  2222
 
+#define MIN_RC5M  4000
+#define MAX_RC5M  6000
 /*
  * These step by two because it makes it
  * possible to use the values as bit-shift counters
@@ -41,6 +43,13 @@ namespace rc5x {
 #define COMMAND_MASK  0x003F //  low 6 bits
 #define COMMAND_SHIFT 0
 
+#define MSG_RC5_MARANTZ_FLAG 0x80000000
+
+#define RC5M_VALUE_MASK 0x003F //  low 6 bits
+#define RC5M_VALUE_SHIFT 6
+
+#define MESSAGE_LENGTH_RC5 14
+#define MESSAGE_LENGTH_MARANTZ 20
 
 /* trans[] is a table of transitions, indexed by
  * the current state.  Each byte in the table
@@ -72,21 +81,24 @@ static const char *const TAG = "rc5x";
 
 void RC5x::setup() {
 
-  this->pin_->setup();
 
-  this->reset();
+  this->_pin->setup();
+  _store.pin = this->_pin->to_isr();
+  this->_pin->attach_interrupt(&RC5xComponentStore::rc5x_read, &_store, gpio::INTERRUPT_ANY_EDGE);
+
+  _store.reset(&_store);
   ESP_LOGCONFIG(TAG,"Setup completed");
 //  this->publish_initial_state(this->pin_->digital_read());
 
 
 }
-
-void RC5x::reset()
+void IRAM_ATTR HOT RC5xComponentStore::reset(RC5xComponentStore* store)
 {
-    this->state = STATE_MID1;
-    this->bits = 1;  // emit a 1 at start - see state machine graph
-    this->command = 1;
-    this->time0 = micros();
+    store->state = STATE_MID1;
+    store->bits = 1;  // emit a 1 at start - see state machine graph
+    store->command = 1;
+    store->time0 = micros();
+    store->messageLength = MESSAGE_LENGTH_RC5;
 }
 
 void RC5x::dump_config() {
@@ -95,72 +107,68 @@ void RC5x::dump_config() {
 }
 
 
-void RC5x::decodePulse(unsigned char signal, unsigned long period)
-{
-    if (period >= MIN_SHORT && period <= MAX_SHORT) {
-        this->decodeEvent(signal ? EVENT_SHORTPULSE : EVENT_SHORTSPACE);
-    } else if (period >= MIN_LONG && period <= MAX_LONG) {
-        this->decodeEvent(signal ? EVENT_LONGPULSE : EVENT_LONGSPACE);
-    } else {
-        // time period out of range, reset
-        this->reset();
-    }
-}
-
-void RC5x::decodeEvent(unsigned char event)
+void IRAM_ATTR HOT RC5xComponentStore::decodeEvent(RC5xComponentStore* store, unsigned char event)
 {
     // find next state, 2 bits
-    unsigned char newState = (trans[this->state]>>event) & 0x3;
-    if (newState==this->state) {
+// ESP_LOGD(TAG,"Event %d", event);
+    unsigned char newState = (trans[store->state]>>event) & 0x3;
+    if (newState==store->state) {
         // no state change indicates error, reset
-        this->reset();
+        store->reset(store);
     } else {
-        this->state = newState;
+        store->state = newState;
         if (newState == STATE_MID0) {
             // always emit 0 when entering mid0 state
-            this->command = (this->command<<1)+0;
-            this->bits++;
+            store->command = (store->command<<1)+0;
+            store->bits++;
         } else if (newState == STATE_MID1) {
             // always emit 1 when entering mid1 state
-            this->command = (this->command<<1)+1;
-            this->bits++;
+            store->command = (store->command<<1)+1;
+            store->bits++;
         }
     }
 }
 
-bool RC5x::read(unsigned int *message)
+void IRAM_ATTR HOT RC5xComponentStore::rc5x_read(RC5xComponentStore* store)
 {
-    static unsigned long lastmillis = millis();
     /* Note that the input value read is inverted from the theoretical signal,
        ie we get 1 while no signal present, pulled to 0 when a signal is detected.
        So when the value changes, the inverted value that we get from reading the pin
        is equal to the theoretical (uninverted) signal value of the time period that
        has just ended.
     */
-    int value = this->pin_->digital_read();
+    const bool signal = store->pin.digital_read();
 
-    if (value != this->lastValue) {
+    if (signal != store->lastValue) {
         unsigned long time1 = micros();
-        unsigned long elapsed = time1-this->time0;
-        this->time0 = time1;
-        this->lastValue = value;
-        this->decodePulse(value, elapsed);
+        unsigned long period = time1 - store->time0;
+
+        store->time0 = time1;
+        store->lastValue = signal;
+
+        if (period >= MIN_SHORT && period <= MAX_SHORT) {
+            store->decodeEvent(store, signal ? EVENT_SHORTPULSE : EVENT_SHORTSPACE);
+        } else if (period >= MIN_LONG && period <= MAX_LONG) {
+            store->decodeEvent(store, signal ? EVENT_LONGPULSE : EVENT_LONGSPACE);
+        } else if ((period >= MIN_RC5M && period <= MAX_RC5M) && (store->bits == 8)) {
+            // Marantz format
+            store->command = (store->command<<1)+1;
+            store->messageLength = MESSAGE_LENGTH_MARANTZ;
+            store->bits++;
+            store->state = STATE_MID1;
+        } else {
+            // time period out of range, reset
+            store->reset(store);
+        }
+
     }
 
-    if (this->bits == 14) {
-        *message = this->command;
-        this->command = 0;
-        this->bits = 0;
-        return true;
-    } else {
-        if (millis() - lastmillis > 1000) {
-            lastmillis = millis();
-            ESP_LOGD(TAG,"no Message received");
-        }
-        return false;
+    if (store->bits == store->messageLength) {
+        store->message = store->command | (store->messageLength==MESSAGE_LENGTH_MARANTZ?MSG_RC5_MARANTZ_FLAG:0) ;
+        store->command = 0;
+        store->bits = 0;
     }
 }
-
 
 
 void RC5x::loop() {
@@ -168,8 +176,17 @@ void RC5x::loop() {
     unsigned char toggle;
     unsigned char address;
     unsigned char command;
+    unsigned char extCode = 0;
 
-    if (this->read(&message)) {
+    if (_store.message) {
+        message = _store.message;
+        _store.message = 0;
+        ESP_LOGD(TAG,"Pending %d", message);
+
+        if (message & MSG_RC5_MARANTZ_FLAG) {
+            extCode = message & RC5M_VALUE_MASK;
+            message = (message & ~MSG_RC5_MARANTZ_FLAG) >> RC5M_VALUE_SHIFT;
+        }
         toggle  = (message & TOGGLE_MASK ) >> TOGGLE_SHIFT;
         address = (message & ADDRESS_MASK) >> ADDRESS_SHIFT;
 
@@ -178,8 +195,8 @@ void RC5x::loop() {
         unsigned char extended;
         extended = (~message & S2_MASK) >> (S2_SHIFT - 6);
         command = ((message & COMMAND_MASK) >> COMMAND_SHIFT) | extended;
-        ESP_LOGD(TAG,"Received RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x", toggle, address, command);
-        command_callback_.call(toggle,address,command);
+        ESP_LOGD(TAG,"Received RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x extcode: 0x%04x", toggle, address, command, extCode);
+        command_callback_.call(toggle,address,command, extCode);
 
     }
 
