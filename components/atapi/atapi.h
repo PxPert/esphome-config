@@ -80,6 +80,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   void enqueue_resume();
   void enqueue_stop_disc();
 
+
   inline void enqueue_next() { enqueue_play_track(_current_track + 1); }
   inline void enqueue_previous(){enqueue_play_track(_current_track - 1);}
   inline void enqueue_restart_track(){enqueue_play_track(_current_track);}
@@ -143,7 +144,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
     return _device_ready;
   }
 
-
+  bool can_enqueue(bool disc_required);
 
   uint8_t get_status() {
     switch (_audio_status) {

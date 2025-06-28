@@ -214,7 +214,7 @@ void RC5x::loop() {
       _active_command_press_time = millis();
 
     } else {
-        if ( (_active_message) && (_active_command_press_time < millis() - 1000) ) {
+        if ( (_active_message) && (_active_command_press_time < millis() - 200) ) {
             ESP_LOGD(TAG,"Released RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x extcode: 0x%04x", _active_toggle, _active_address, _active_command, _active_extCode);
             command_release_callback_.call(_active_toggle,_active_address,_active_command, _active_extCode);
             _active_message = 0;

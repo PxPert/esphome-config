@@ -69,6 +69,33 @@ bool Atapi::enqueue_command(const char* name, AsyncAtapiCommand cmd) {
   return true;
 
 }
+
+bool Atapi::can_enqueue(bool disc_required) {
+  if (
+    (get_busy_status() > 0)
+    ||
+    (status_has_error())
+  ) {
+    return false;
+  }
+
+  if (
+      (disc_required)
+      &&
+      (
+        (get_status() == AUDIOSTATUS_NODISC)
+        ||
+        (get_disc_state() != DISC_STATUS_DISC_PRESENT)
+      )
+  )
+  {
+    return false;
+  }
+
+  return true;
+
+}
+
 void Atapi::loop() {
 
   if (_currentCommand.first) {
@@ -383,6 +410,10 @@ void Atapi::enqueue_play(){
 }
 
 void Atapi::enqueue_stop(){
+  if (! can_enqueue(true)) {
+    return;
+  }
+
   if (get_status() > AUDIOSTATUS_STOPPED) {
     enqueue_command("stop_unit", [this](uint8_t step) {
       if (step == 0) {
@@ -402,6 +433,9 @@ void Atapi::enqueue_stop(){
   }
 }
 void Atapi::enqueue_eject(){
+  if (! can_enqueue(false)) {
+    return;
+  }
   enqueue_command("eject", [this](uint8_t step) {
     set_busy_status(BUSYSTATUS_EJECT);
     if (sendPac_progmem(atapi_fnc_open_tray, _currentfunction_first_try)) {
@@ -411,6 +445,9 @@ void Atapi::enqueue_eject(){
   });
 }
 void Atapi::enqueue_load(){
+  if (! can_enqueue(false)) {
+    return;
+  }
   enqueue_command("load", [this](uint8_t step) {
     set_busy_status(BUSYSTATUS_LOAD);
     if (sendPac_progmem(atapi_fnc_close_tray, _currentfunction_first_try)) {
@@ -420,16 +457,25 @@ void Atapi::enqueue_load(){
   });
 }
 void Atapi::enqueue_pause(){
+  if (! can_enqueue(true)) {
+    return;
+  }
   enqueue_command("pause", [this](uint8_t step) {
     return sendPac_progmem(atapi_fnc_pause_play, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_resume(){
+  if (! can_enqueue(true)) {
+    return;
+  }
   enqueue_command("resume", [this](uint8_t step) {
     return sendPac_progmem(atapi_fnc_resume_play, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_stop_disc(){
+  if (! can_enqueue(true)) {
+    return;
+  }
   enqueue_command("stop_disc", [this](uint8_t step) {
     return sendPac_progmem(atapi_fnc_stop_disk, _currentfunction_first_try);
   });
@@ -1007,6 +1053,9 @@ void Atapi::enqueue_play_track(uint8_t trck) {
 }
 
 void Atapi::enqueue_play_selected_track() {
+  if (! can_enqueue(true)) {
+    return;
+  }
   enqueue_command("play", [this](uint8_t step) { return cmd_play_track(step); });
 
 }
