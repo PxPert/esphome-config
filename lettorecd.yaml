@@ -65,18 +65,18 @@ rc5x:
           id(stop_eject).execute();
         break;
         case 1332736: // Right button
-          id(seek_from_remote).execute(3,1, true);
+          id(seek_request).execute(3,1, true);
         break;
         case 1332480: // Left button
-          id(seek_from_remote).execute(3,-1, true);
+          id(seek_request).execute(3,-1, true);
         break;
         case 1318912: // Next button
         case 1331200: // Up button
-          id(seek_from_remote).execute(2,1, true);
+          id(seek_request).execute(2,1, true);
         break;
         case 1319168: // Previous button
         case 1331456: // Down button
-          id(seek_from_remote).execute(2,-1, true);
+          id(seek_request).execute(2,-1, true);
         break;
 
         default:
@@ -297,7 +297,7 @@ globals:
     initial_value: '0'
 
   - id: requested_seek_type
-    type: int
+    type: int8_t
     initial_value: '0'
     # 0 = no seek requested
     # 1 = seek/track selected. Request pending
@@ -367,24 +367,20 @@ script:
           id(requested_seek_type) = seek_type;
         }
 
-  - id: seek_from_remote
+  - id: seek_request
     mode: restart
     parameters: 
       seek_type: int
       direction: int
-      force_change_direction: bool
+      force_change_type: bool
     then:
       - lambda: |-
           id(seek_long_press_time) = millis();
       - script.execute: 
           id: set_seek_type
           seek_type: !lambda "return seek_type;"
-          force: !lambda "return force_change_direction;"
+          force: !lambda "return force_change_type;"
       - script.wait: set_seek_type
-#      - script.execute:
-#          id: set_seek_value
-#          direction: !lambda "return direction;"
-#          press_duration: !lambda "return id(seek_long_press_time);"
       - while:
           condition:
           - lambda: |-
@@ -397,20 +393,38 @@ script:
               press_duration: !lambda "return id(seek_long_press_time);"
           - delay: 500ms
 
+  - id: seek_request_single
+    mode: restart
+    parameters: 
+      seek_type: int
+      direction: int
+      force_change_type: bool
+    then:
+      - globals.set: 
+          id: seek_long_press_time 
+          value: "0"
+      - script.execute: 
+          id: set_seek_type
+          seek_type: !lambda "return seek_type;"
+          force: !lambda "return force_change_type;"
+      - script.wait: set_seek_type
+      - script.execute:
+         id: set_seek_value
+         direction: !lambda "return direction;"
+         press_duration: 0
+
   - id: handle_seek_release
     mode: restart
     then:
     - logger.log: "Release handle start"
+    - script.stop: seek_request
     - lambda: |-
         id(seek_long_press_time) = 0;
         id(seek_release_time) = millis();
     - wait_until:
         condition:
-          any:
-            - binary_sensor.is_on: btn_fast_forward
-            - binary_sensor.is_on: btn_rewind
-            - lambda: |-
-                return id(seek_long_press_time);
+        - lambda: |-
+            return id(seek_long_press_time);
         timeout: 1s
     - if:
         condition:
@@ -687,36 +701,21 @@ binary_sensor:
       then:
         - logger.log: "Normal click"
         - script.execute:
-            id: set_seek_type
+            id: seek_request_single
             seek_type: '2'
-            force: false
-        - script.wait: set_seek_type
-        - script.execute:
-            id: set_seek_value
             direction: '1'
-            press_duration: 0
+            force_change_type: false
 
     - timing:
         - ON for at least 1000ms
       then:
         - logger.log: "Long click"
         - script.execute:
-            id: set_seek_type
+            id: seek_request
             seek_type: '3'
-            force: false
-        - script.wait: set_seek_type
-        - lambda: |-
-            id(seek_long_press_time) = millis();
-        - while:
-            condition:
-              binary_sensor.is_on: btn_fast_forward
-            then:
-            - logger.log: "Still executing"
-            - script.execute:
-                id: set_seek_value
-                direction: '1'
-                press_duration: !lambda "return id(seek_long_press_time);"
-            - delay: 500ms
+            direction: '1'
+            force_change_type: false
+
 
 # Rewind
   - platform: gpio
@@ -745,36 +744,20 @@ binary_sensor:
       then:
         - logger.log: "Normal click"
         - script.execute:
-            id: set_seek_type
+            id: seek_request_single
             seek_type: '2'
-            force: false
-        - script.wait: set_seek_type
-        - script.execute:
-            id: set_seek_value
             direction: '-1'
-            press_duration: 0
+            force_change_type: false
 
     - timing:
         - ON for at least 1000ms
       then:
         - logger.log: "Long click"
         - script.execute:
-            id: set_seek_type
+            id: seek_request
             seek_type: '3'
-            force: false
-        - script.wait: set_seek_type
-        - lambda: |-
-            id(seek_long_press_time) = millis();
-        - while:
-            condition:
-              binary_sensor.is_on: btn_rewind
-            then:
-            - logger.log: "Still executing"
-            - script.execute:
-                id: set_seek_value
-                direction: '-1'
-                press_duration: !lambda "return id(seek_long_press_time);"
-            - delay: 500ms
+            direction: '-1'
+            force_change_type: false
 
 output:
   - platform: esp8266_pwm
