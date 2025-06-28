@@ -123,7 +123,7 @@ void Atapi::update() {
 }
 
 bool Atapi::cmd_play_track(uint8_t step) {
-  static uint8_t atapi_fnc_start_play[16] = {0x47, 0x00, 0x00, 0x10, 0x28, 0x05, 0x4C, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  static uint8_t atapi_fnc_start_play[DEFAULT_PACKET_SIZE] = {0x47, 0x00, 0x00, 0x10, 0x28, 0x05, 0x4C, 0x1A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
   // Start PLAY
   // from from MSF location stored at indexes 3 to 8.
@@ -132,10 +132,12 @@ bool Atapi::cmd_play_track(uint8_t step) {
   if (step == 0) {
     set_busy_status(BUSYSTATUS_PLAY);
     if (_requested_position > 0) {
+      ESP_LOGD(TAG,"Requested play to specific position. Track %d - Seconds %d", _requested_track, _requested_position);
       atapi_fnc_start_play[3] = (_tracks[_requested_track].toSeconds() + _requested_position) / 60;
       atapi_fnc_start_play[4] = (_tracks[_requested_track].toSeconds() + _requested_position) % 60;
       atapi_fnc_start_play[5] = 0;
     } else {
+      ESP_LOGD(TAG,"Requested play. Track %d", _requested_track);
       atapi_fnc_start_play[3] = _tracks[_requested_track].minutes;
       atapi_fnc_start_play[4] = _tracks[_requested_track].seconds;
       atapi_fnc_start_play[5] =  (_requested_position > 0)?0:_tracks[_requested_track].frames;
@@ -384,7 +386,7 @@ void Atapi::enqueue_stop(){
   if (get_status() > AUDIOSTATUS_STOPPED) {
     enqueue_command("stop_unit", [this](uint8_t step) {
       if (step == 0) {
-       if (sendPac(atapi_fnc_stop_unit, _currentfunction_first_try)) {
+       if (sendPac_progmem(atapi_fnc_stop_unit, _currentfunction_first_try)) {
           step = set_next_command_step();
         }
       }
@@ -402,7 +404,7 @@ void Atapi::enqueue_stop(){
 void Atapi::enqueue_eject(){
   enqueue_command("eject", [this](uint8_t step) {
     set_busy_status(BUSYSTATUS_EJECT);
-    if (sendPac(atapi_fnc_open_tray, _currentfunction_first_try)) {
+    if (sendPac_progmem(atapi_fnc_open_tray, _currentfunction_first_try)) {
       return true;
     }
     return false;
@@ -411,7 +413,7 @@ void Atapi::enqueue_eject(){
 void Atapi::enqueue_load(){
   enqueue_command("load", [this](uint8_t step) {
     set_busy_status(BUSYSTATUS_LOAD);
-    if (sendPac(atapi_fnc_close_tray, _currentfunction_first_try)) {
+    if (sendPac_progmem(atapi_fnc_close_tray, _currentfunction_first_try)) {
       return true;
     }
     return false;
@@ -419,17 +421,17 @@ void Atapi::enqueue_load(){
 }
 void Atapi::enqueue_pause(){
   enqueue_command("pause", [this](uint8_t step) {
-    return sendPac(atapi_fnc_pause_play, _currentfunction_first_try);
+    return sendPac_progmem(atapi_fnc_pause_play, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_resume(){
   enqueue_command("resume", [this](uint8_t step) {
-    return sendPac(atapi_fnc_resume_play, _currentfunction_first_try);
+    return sendPac_progmem(atapi_fnc_resume_play, _currentfunction_first_try);
   });
 }
 void Atapi::enqueue_stop_disc(){
   enqueue_command("stop_disc", [this](uint8_t step) {
-    return sendPac(atapi_fnc_stop_disk, _currentfunction_first_try);
+    return sendPac_progmem(atapi_fnc_stop_disk, _currentfunction_first_try);
   });
 }
 
@@ -659,7 +661,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
   // Pointer to Read TOC Packet
   // Send read TOC command packet
   if (step == 0) {
-    if (sendPac(atapi_fnc_read_toc, _currentfunction_first_try)) { // used to check_unit_ready
+    if (sendPac_progmem(atapi_fnc_read_toc, _currentfunction_first_try)) { // used to check_unit_ready
       step = set_next_command_step();
     }
   }
@@ -729,7 +731,7 @@ bool Atapi::cmd_get_toc(uint8_t step){
 
 bool Atapi::cmd_read_subch_cmd(uint8_t step) {
   if (step == 0) {
-    if (sendPac(atapi_fnc_read_subchannel, _currentfunction_first_try)) { // used to check_unit_ready
+    if (sendPac_progmem(atapi_fnc_read_subchannel, _currentfunction_first_try)) { // used to check_unit_ready
 //      ESP_LOGD(TAG,"Packet read. Proceeding");
       step = set_next_command_step();
     }
@@ -831,7 +833,7 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
 
 bool Atapi::cmd_check_disk(uint8_t step) {
   if (step == 0) {
-    if (sendPac(atapi_fnc_mode_sense, _currentfunction_first_try)) { // used to check_unit_ready
+    if (sendPac_progmem(atapi_fnc_mode_sense, _currentfunction_first_try)) { // used to check_unit_ready
       step = set_next_command_step();
     }
   }
@@ -919,7 +921,7 @@ bool Atapi::cmd_check_disk(uint8_t step) {
 
 
 bool Atapi::unit_ready(bool firstCall){               // Reuests unit to report status
-  return sendPac(atapi_fnc_unit_ready, firstCall);                     // used to check_unit_ready
+  return sendPac_progmem(atapi_fnc_unit_ready, firstCall);                     // used to check_unit_ready
 }
 
 bool Atapi::req_sense(bool firstCall){                // Request Sense Command is used to check
@@ -936,7 +938,7 @@ bool Atapi::req_sense(bool firstCall){                // Request Sense Command i
   }
 
   if (internal_step == 0) {
-    if (sendPac(atapi_fnc_mode_sense,firstCall)) {
+    if (sendPac_progmem(atapi_fnc_mode_sense,firstCall)) {
       internal_step++;
       internal_millis = millis();
     }

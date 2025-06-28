@@ -172,15 +172,23 @@ void IRAM_ATTR HOT RC5xComponentStore::rc5x_read(RC5xComponentStore* store)
 
 
 void RC5x::loop() {
-    unsigned int message;
-    unsigned char toggle;
-    unsigned char address;
-    unsigned char command;
-    unsigned char extCode = 0;
-
     if (_store.message) {
-        message = _store.message;
-        _store.message = 0;
+      uint32_t message;
+      unsigned char toggle;
+      unsigned char address;
+      unsigned char command;
+      unsigned char extCode = 0;
+
+      message = _store.message;
+      _store.message = 0;
+      if (_active_message != message) {
+        if (_active_message) {
+            ESP_LOGD(TAG,"Force Released RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x extcode: 0x%04x", _active_toggle, _active_address, _active_command, _active_extCode);
+            command_release_callback_.call(_active_toggle,_active_address,_active_command, _active_extCode);
+        }
+
+        _active_message = message;
+
         if (message & MSG_RC5_MARANTZ_FLAG) {
             extCode = message & RC5M_VALUE_MASK;
             message = (message & ~MSG_RC5_MARANTZ_FLAG) >> RC5M_VALUE_SHIFT;
@@ -193,9 +201,24 @@ void RC5x::loop() {
         unsigned char extended;
         extended = (~message & S2_MASK) >> (S2_SHIFT - 6);
         command = ((message & COMMAND_MASK) >> COMMAND_SHIFT) | extended;
-        ESP_LOGD(TAG,"Received RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x extcode: 0x%04x", toggle, address, command, extCode);
-        command_callback_.call(toggle,address,command, extCode);
 
+        _active_toggle = toggle;
+        _active_address = address;
+        _active_command = command;
+        _active_extCode = extCode;
+
+        ESP_LOGD(TAG,"Received RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x extcode: 0x%04x", toggle, address, command, extCode);
+        command_press_callback_.call(toggle,address,command, extCode);
+      }
+
+      _active_command_press_time = millis();
+
+    } else {
+        if ( (_active_message) && (_active_command_press_time < millis() - 1000) ) {
+            ESP_LOGD(TAG,"Released RC5x - toggle: 0x%04x address: 0x%04x command: 0x%04x extcode: 0x%04x", _active_toggle, _active_address, _active_command, _active_extCode);
+            command_release_callback_.call(_active_toggle,_active_address,_active_command, _active_extCode);
+            _active_message = 0;
+        }
     }
 
 //	this->publish_state(this->pin_->digital_read());

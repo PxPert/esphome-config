@@ -11,10 +11,20 @@
 namespace esphome {
 namespace rc5x {
 
-class CommandTrigger : public Trigger<bool, uint32_t> {
+class CommandPressTrigger : public Trigger<bool, uint32_t> {
  public:
-  explicit CommandTrigger(RC5x *parent) {
-    parent->add_on_command_callback([this](unsigned char toggle, unsigned char address, unsigned char command, unsigned char extcode) {
+  explicit CommandPressTrigger(RC5x *parent) {
+    parent->add_on_command_press_callback([this](unsigned char toggle, unsigned char address, unsigned char command, unsigned char extcode) {
+      this->trigger(toggle,(address << 16) | (command << 8)  | extcode);
+    });
+
+  }
+};
+
+class CommandReleaseTrigger : public Trigger<bool, uint32_t> {
+ public:
+  explicit CommandReleaseTrigger(RC5x *parent) {
+    parent->add_on_command_release_callback([this](unsigned char toggle, unsigned char address, unsigned char command, unsigned char extcode) {
       this->trigger(toggle,(address << 16) | (command << 8)  | extcode);
     });
 
