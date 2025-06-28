@@ -51,7 +51,7 @@ public:
   uint8_t minutes;
   uint8_t seconds;
   uint8_t frames;
-  uint16_t toSeconds() {
+  int16_t toSeconds() {
     return (minutes * 60) + seconds;
   }
 };
@@ -85,7 +85,7 @@ class Atapi : public i2c::I2CDevice, public PollingComponent {
   inline void enqueue_previous(){enqueue_play_track(_current_track - 1);}
   inline void enqueue_restart_track(){enqueue_play_track(_current_track);}
   void enqueue_play_track(uint8_t trck);
-  void enqueue_play_track(uint8_t trck, uint16_t position);
+  void enqueue_play_track(uint8_t trck, int16_t position);
   void enqueue_play_selected_track();
 
   void add_on_state_callback(std::function<void(int)> &&callback){

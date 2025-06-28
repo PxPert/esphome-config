@@ -45,6 +45,7 @@ void Atapi::setup() {
   _busy_status = 0;
   _disc_state = DISC_STATUS_NODISC;
   _audio_status = AUDIOSTATUS_NODISC;
+  enqueue_reset();
 
 }
 
@@ -128,7 +129,6 @@ void Atapi::set_busy_status(uint8_t busy_status) {
 
 void Atapi::dump_config(){
     ESP_LOGCONFIG(TAG, "Atapi dump_config");
-//    reset_all();
 }
 
 
@@ -469,6 +469,7 @@ void Atapi::enqueue_resume(){
     return;
   }
   enqueue_command("resume", [this](uint8_t step) {
+    set_busy_status(BUSYSTATUS_PLAY);
     return sendPac_progmem(atapi_fnc_resume_play, _currentfunction_first_try);
   });
 }
@@ -808,6 +809,7 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
       }else{
         ESP_LOGW(TAG,"hVal value %d not recognized", hVal);
         _audio_status=0;                                      // all other values will report "NO DISC"
+        ignore = true;
       }
 
     }
@@ -830,7 +832,7 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
     if (! ignore) {
       _current_track_position.seconds = lVal;              // Store S value
 
-      ESP_LOGD(TAG,"Currentt track: %d - Time: %d:%d",_current_track,_current_track_position.minutes,_current_track_position.seconds);
+      ESP_LOGD(TAG,"Current track: %d - Time: %d:%d",_current_track,_current_track_position.minutes,_current_track_position.seconds);
     }
 
     step = set_next_command_step();
@@ -839,7 +841,6 @@ bool Atapi::cmd_read_subch_cmd(uint8_t step) {
   if (step == 2) {
 //    ESP_LOGD(TAG,"Step 2");
     uint8_t lVal;
-
     readIDE(DataReg, nullptr, nullptr);
     readIDE(ComSReg, &lVal, nullptr);
     if (! (lVal & (1<<3))) {          // Read rest of data from Data Reg. until DRQ=0
@@ -1039,10 +1040,19 @@ void Atapi::enqueue_reset(){
 void Atapi::enqueue_get_TOC(){
   enqueue_command("getToc", [this](uint8_t val) { return cmd_get_toc(val); });
 }
-void Atapi::enqueue_play_track(uint8_t trck, uint16_t position) {
-  if ( (trck < _start_track)  || (trck > (_total_tracks - 1)) ) {
+void Atapi::enqueue_play_track(uint8_t trck, int16_t position) {
+  if (trck < _start_track) {
+    trck = _start_track;
+  }
+  if (trck > (_total_tracks - 1))  {
+    trck = _total_tracks - 1;
     return;
   }
+
+  if (position > _tracks[trck].toSeconds()) {
+    position = std::min(_tracks[trck].toSeconds(), (int16_t)(_tracks[trck].toSeconds() - 5));
+  }
+
   _requested_track = trck;
   _requested_position = position;
   enqueue_play_selected_track();
