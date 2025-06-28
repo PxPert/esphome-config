@@ -54,7 +54,7 @@ rc5x:
   on_message:
     lambda: |-
       // Icon
-      ESP_LOGD("rc5x-yaml","From yaml. %d - %d - %d - %d", t,a,c,e);
+      ESP_LOGD("rc5x-yaml","From yaml. %d - %lu", t,x);
 #  id: remote_control
 # captive_portal:
     

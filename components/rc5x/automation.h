@@ -11,11 +11,11 @@
 namespace esphome {
 namespace rc5x {
 
-class CommandTrigger : public Trigger<int, int, int, int> {
+class CommandTrigger : public Trigger<bool, uint32_t> {
  public:
   explicit CommandTrigger(RC5x *parent) {
     parent->add_on_command_callback([this](unsigned char toggle, unsigned char address, unsigned char command, unsigned char extcode) {
-      this->trigger(toggle,address,command,extcode);
+      this->trigger(toggle,(address << 16) | (command << 8)  | extcode);
     });
 
   }

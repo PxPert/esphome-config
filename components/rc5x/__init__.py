@@ -41,4 +41,4 @@ async def to_code(config):
     cg.add(var.set_pin(pin))
     for conf in config.get(CONF_ON_MESSAGE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-        await automation.build_automation(trigger, [(cg.int32, "t"),(cg.int32, "a"),(cg.int32, "c"),(cg.int32, "e")], conf)
+        await automation.build_automation(trigger, [(bool, "t"),(cg.uint32, "x")], conf)

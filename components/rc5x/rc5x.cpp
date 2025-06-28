@@ -181,8 +181,6 @@ void RC5x::loop() {
     if (_store.message) {
         message = _store.message;
         _store.message = 0;
-        ESP_LOGD(TAG,"Pending %d", message);
-
         if (message & MSG_RC5_MARANTZ_FLAG) {
             extCode = message & RC5M_VALUE_MASK;
             message = (message & ~MSG_RC5_MARANTZ_FLAG) >> RC5M_VALUE_SHIFT;
