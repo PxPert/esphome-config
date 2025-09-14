@@ -110,7 +110,7 @@ void RadiolibCC1101Component::setup() {
 
   this->_gd0_rx->setup();
   this->_gd0_rx_isr = this->_gd0_rx->to_isr();
-  this->_gd0_rx->attach_interrupt(&RadiolibCC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
+  // this->_gd0_rx->attach_interrupt(&RadiolibCC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
 
   this->radioInit();
 
@@ -245,6 +245,7 @@ void RadiolibCC1101Component::radioInit() {
   this->_setupComplete = true;
 }
 
+#ifdef NONO
 void IRAM_ATTR HOT RadiolibCC1101Component::handleInterrupt(RadiolibCC1101Component* component) {
 
   if (! component->_setupComplete) {
@@ -320,6 +321,91 @@ void IRAM_ATTR HOT RadiolibCC1101Component::handleInterrupt(RadiolibCC1101Compon
   }
 
 }
+#endif
+
+void IRAM_ATTR HOT RadiolibCC1101Component::handleInterrupt(RadiolibCC1101Component* component) {
+
+  if (! component->_setupComplete) {
+    return;
+  }
+
+  ESP_LOGD(TAG, "handleInterrupt");
+	uint8_t fifoBytes;
+	bool dup;                                      // true bei identischen Wiederholungen bei readRXFIFO
+
+
+ if (component->_ccBufReady) {
+   ESP_LOGD(TAG, "Buffer ready. Return");
+   return;
+ }
+
+ uint8_t readStart = 0;
+ uint8_t RSSI = 0;
+  while (component->_gd0_rx_isr.digital_read()) {                     // wait for CC1100_FIFOTHR given bytes to arrive in FIFO
+    ESP_LOGD(TAG, "GPIO UP. Reading");
+
+/*
+ *
+ * Ralf ( mode numbering == own selection )
+ * cc1101 Mode: 0 - normal ASK/OOK, 1 - FIFO, 2 - FIFO ohne dup, 3 - FIFO LaCrosse, 4 - experimentell, 9 - FIFO mit Debug Ausgaben
+ *
+ * Sidey ( mode numbering == cc1101 data sheet setting numbering 0x12: MDMCFG2–Modem Configuration )
+ * cc1101 Mode: 0 - FIFO LaCrosse, 3 - normal ASK/OOK
+ *
+
+    if (ccmode == 4) {
+      cc1101::ccStrobe_SIDLE(); // start over syncing
+    }
+*/
+
+		fifoBytes = component->getRXBYTES();          // & 0x7f; // read len, transfer RX fifo
+		if (fifoBytes > 0) {
+      if (! readStart) {
+        RSSI = component->getRSSIdev();
+      }
+
+/*
+ * !!! for DEVELOPMENT and DEBUG only !!!
+ *
+      #ifdef DEBUG
+        if (cc1101::ccmode == 0) {
+          MSG_PRINT(F("RX fifoBytes ("));
+          MSG_PRINT(fifoBytes);
+          MSG_PRINTLN((") "));
+        }
+      #endif
+ *
+ */
+
+			/* if (fifoBytes < 0x80) */ {                // RXoverflow?
+			/*	if (fifoBytes > CC_MAX_BUF) {
+					fifoBytes = CC_MAX_BUF;
+				}
+       */
+				dup = component->readRXFIFO(readStart, fifoBytes);
+        delay(1);
+        readStart += fifoBytes;
+				if (dup == false) { // Ralf9: 2 - FIFO ohne dup
+          component->_ccBufReady = true;
+          ESP_LOGD(TAG, "Buffer ready, Read %d bytes, start: %d - RSSI: %d",fifoBytes, readStart, RSSI);
+
+//				  for (uint8_t i = 0; i < fifoBytes; i++) {
+//						DBG_PRINTtoHEX(ccBuf[i]);
+//					}
+				} else {
+          ESP_LOGD(TAG, "Buffer read error");
+        }
+			}
+		} else {
+      ESP_LOGD(TAG, "Error: 0 fifo bytes");
+    }
+	}
+
+	if (!readStart) {
+    ESP_LOGD(TAG, "GPIO Down");
+  }
+
+}
 
 uint8_t RadiolibCC1101Component::getRXBYTES() {                             // xFSK
 	return readReg(CC1101_SFTX,CC1101_STATUS);
@@ -330,13 +416,13 @@ uint8_t RadiolibCC1101Component::getRSSIdev() {
 	return readReg((revision == 0x01 ? CC1101_RSSI_REV01 : CC1101_RSSI_REV00), CC1101_STATUS);
 }
 
-bool RadiolibCC1101Component::readRXFIFO(uint8_t len) {                             // xFSK
+bool RadiolibCC1101Component::readRXFIFO(uint8_t start, uint8_t len) {                             // xFSK
   bool dup = true;
   uint8_t rx;
 
   this->enable(); // select CC1101
   this->transfer_byte(CC1101_RXFIFO | CC1101_READ_BURST);    // send register address
-  for (uint8_t i = 0; i < len; i++) {
+  for (uint8_t i = start; i < start + len; i++) {
     rx = this->transfer_byte(0x00);                        // read result
     if (i + 1 < CC_MAX_BUF) {
       if (rx != _ccBuf[i]) {                              // if Circuit board for more cc110x -> ccBuf expand ( if (rx != ccBuf[radionr][i] ) )
@@ -487,20 +573,43 @@ uint8_t RadiolibCC1101Component::cmdStrobeTo(const uint8_t cmd) {
 
 }
 
+uint8_t RadiolibCC1101Component::checkParity(const byte* msg) {
+  // First 13 bytes need to match inverse of last 13 bytes
+  for (uint8_t startcol = 0; startcol < (CC_MAX_BUF - 13); startcol++ )
+  {
+    uint8_t col = 0;
+    for (col = 0; col < 13; ++col) {
+      if ((msg[col + startcol] ^ msg[col + startcol + 13]) != 0xff) {
+        ESP_LOGD(TAG,"Parity wrong");
+        break;
+      }
+    }
+    if (col == 13) {
+      ESP_LOGD(TAG,"Parity found at %d", startcol);
+      return startcol;
+    }
+  }
+  return CC_MAX_BUF;
+}
 
 uint8_t RadiolibCC1101Component::bresser_5in1_decode()
 {
     byte msg[CC_MAX_BUF];
     memcpy(msg,(const byte*) this->_ccBuf,CC_MAX_BUF);
 
+    if (checkParity(msg) ==  CC_MAX_BUF) {
+      ESP_LOGD(TAG,"Parity wrong");
+      return 11; // message isn't correct
+    }
+/*
     // First 13 bytes need to match inverse of last 13 bytes
-    for (unsigned col = 0; col < sizeof (this->_ccBuf) / 2; ++col) {
+    for (unsigned col = 0; col < 13; ++col) {
         if ((msg[col] ^ msg[col + 13]) != 0xff) {
             ESP_LOGD(TAG,"Parity wrong");
             return 11; // message isn't correct
         }
     }
-
+*/
     BresserReading reading;
     reading.sensor_id = msg[14];
 

@@ -88,6 +88,7 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
 
   protected:
     volatile uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
+    volatile bool _gpioUP = false;
     volatile bool  _ccBufReady = false;
     volatile bool _setupComplete = false;
 
@@ -96,7 +97,8 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
     ISRInternalGPIOPin _gd0_rx_isr=nullptr; // Used by ISR
     uint8_t bresser_5in1_decode();
 
-    bool readRXFIFO(uint8_t len);                             // xFSK
+    bool readRXFIFO(uint8_t start,uint8_t len);                             // xFSK
+    uint8_t checkParity(const byte*);
     uint8_t getRXBYTES();
     uint8_t getRSSIdev();
 
