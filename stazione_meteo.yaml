@@ -64,6 +64,9 @@ bresser5in1_cc1101:
     mode:
       input: true
       pullup: true
+  on_state:
+    lambda: |-
+      ESP_LOGD("bresser5in1","NEW READ! Temp: %.2f", x->temperature);
 
 button:
   - platform: safe_mode

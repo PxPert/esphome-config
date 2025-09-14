@@ -391,7 +391,7 @@ void Bresser5in1CC1101Component::writeCCreg(uint8_t reg, uint8_t var) { // write
     /*
      * sprintf(b,"W%02X%02X",reg,var); // is 48 bytes bigger
      */
-    ESP_LOGD(TAG, "W%02X%02X",reg,var);
+    // ESP_LOGD(TAG, "W%02X%02X",reg,var);
 
   }
 }
@@ -521,6 +521,8 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
     reading.rain = (float)rain_raw * 0.1f;
 
     reading.battery_ok = ((msg[25] & 0x80) == 0);
+
+    state_callback_.call(&reading);
 
     ESP_LOGD(TAG,"Reading complete. sensor id: %d - Tempera: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
              reading.sensor_id,

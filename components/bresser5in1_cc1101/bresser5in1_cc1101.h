@@ -29,6 +29,10 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     void dump_config() override;
     void set_rx_pin(InternalGPIOPin *rx_pin) { _gd0_rx = rx_pin; }
 
+    void add_on_state_callback(std::function<void(const BresserReading*)> &&callback){
+      this->state_callback_.add(std::move(callback));
+    }
+
   private:
     uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
     volatile bool _gpioChanged = false;
@@ -61,6 +65,8 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     uint8_t populateBuffer();
 
     static void handleInterrupt(Bresser5in1CC1101Component* component);
+
+    CallbackManager<void(const BresserReading*)> state_callback_{};
 
 
 };
