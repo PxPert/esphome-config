@@ -87,10 +87,9 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
     float last_rx_rssi=0;
 
   protected:
-    volatile uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
-    volatile bool _gpioUP = false;
-    volatile bool  _ccBufReady = false;
-    volatile bool _setupComplete = false;
+    uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
+    volatile bool _gpioChanged = false;
+    bool _setupComplete = false;
 
   private:
     InternalGPIOPin* _gd0_rx=nullptr;
@@ -117,6 +116,7 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
     uint8_t cmdStrobe(const uint8_t cmd);
     uint8_t cmdStrobeTo(const uint8_t cmd);
     uint8_t getMARCSTATE();                                         // xFSK
+    uint8_t populateBuffer();
 
     static void handleInterrupt(RadiolibCC1101Component* component);
 
