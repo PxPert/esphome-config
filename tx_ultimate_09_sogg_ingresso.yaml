@@ -25,6 +25,9 @@ packages:
   # Configurazione Custom multitouch
   multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
 
+  # Media Player
+  mediaplayer: !include includes/tx_ultimate_media_player.yaml
+
   # Relè e luci locali
   light_ing: !include
     file: includes/tx_ultimate_light.yaml

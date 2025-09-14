@@ -22,6 +22,9 @@ packages:
   # Configurazione leds
   leds: !include includes/tx_ultimate_leds_3_zone.yaml
 
+  # Media Player
+  mediaplayer: !include includes/tx_ultimate_media_player.yaml
+  
   # Relè e luci locali
   light_1: !include
     file: includes/tx_ultimate_mqtt_relay.yaml

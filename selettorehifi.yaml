@@ -1,0 +1,272 @@
+# TODO
+# Bugs:
+# Features:
+
+
+esphome:
+  name: selettorehifi
+  friendly_name: Selettore HiFi
+#  platformio_options:
+#    board_build.ldscript: eagle.flash.4m.ld
+  on_boot:
+    - priority: 250
+      then:
+        - script.execute: show_display
+
+esp8266:
+  board: esp12e
+
+# Enable logging
+logger:
+  level: DEBUG
+#  level: NONE
+  baud_rate: 115200
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  password: !secret ota_pwd
+  id: my_ota
+  platform: esphome
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.106
+
+mdns:
+  disabled: true
+
+mqtt:
+  id: mqtt_client
+  broker: !secret mqtt_server
+  username: !secret mqtt_user
+  password: !secret mqtt_pwd
+  discovery: false
+# #   client_id: cd_reader
+# # #  log_topic: null
+
+    
+i2c:
+  scan: False
+  frequency: 100kHz
+#  sda: GPIO5
+#  scl: GPIO4
+
+font:
+#   - file: "gfonts://Roboto"
+    # id: roboto_20
+    # size: 20
+#  - file: 'fonts/LiberationMono-Regular.ttf'
+#    id: font_header
+#    size: 14
+
+  - file: 'fonts/LiberationMono-Regular.ttf'
+    id: font_body
+    size: 24
+    # webfonts from https://pictogrammers.com/
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: md_state_icons
+    size: 32
+    glyphs:
+      - "\U000F07F4" # TV
+      - "\U000F0960" # HiFi
+#      - "\U000" # 
+
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x32"
+    address: 0x3C
+    id: lcd_display
+    update_interval: never
+#    show_test_card: true
+    lambda: |-
+      if ( ! ( id(display_on))  ) {
+        return;
+      }
+
+      // Icon
+      if (id(selected_tv_mode)) {
+        it.printf(0, 0, id(md_state_icons), TextAlign::TOP_LEFT,"\U000F07F4");
+        it.printf(64, 4, id(font_body), TextAlign::TOP_LEFT,"TV");
+      } else {
+        it.printf(0, 0, id(md_state_icons), TextAlign::TOP_LEFT,"\U000F0960");
+        it.printf(50, 4, id(font_body), TextAlign::TOP_LEFT,"HiFi");
+      }
+
+
+#debug: 
+#  update_interval: 10s
+
+#sensor:
+#  - platform: debug
+#    free:
+#      name: "Heap Free"
+#    fragmentation:
+#      name: "Heap Fragmentation"
+#    block:
+#      name: "Heap Max Block"
+#    loop_time:
+#      name: "Loop Time"
+
+external_components:
+  - source: /config/components/
+    components: [ rc5x ]
+
+rc5x:
+  id: marantz_remote
+  receive_pin: 13
+  invert_receive_pin: true
+  send_pin: 12
+  on_press:
+    lambda: |-
+      ESP_LOGD("rc5x-yaml","IR Press From yaml. %d - %lu", t,x);
+      id(rc5_in_data).publish_state(x);
+      id(rc5_in_rep_id).publish_state(t);
+
+
+binary_sensor:
+  - platform: gpio
+    internal: True
+    name: "Selector button"
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+#      inverted: True
+    on_press:
+      then:
+        - if:
+            condition: 
+              lambda: |-
+                return id(display_on);
+            then:
+            - globals.set:
+                id: selected_tv_mode
+                value: !lambda 'return 1 - id(selected_tv_mode);'
+        - script.execute: show_display
+        - script.execute: set_selection_mode
+
+globals:
+  - id: selected_tv_mode
+    type: bool
+    restore_value: no
+    initial_value: '0'
+  - id: display_on
+    type: bool
+    initial_value: 'false'
+    restore_value: no
+
+switch:
+  - platform: gpio
+    pin: GPIO15
+    id: tv_mode
+    name: "Tv Mode"
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - script.stop: set_selection_mode
+      - globals.set:
+          id: selected_tv_mode
+          value: '1'
+      - script.execute: show_display
+
+    on_turn_off:
+      - script.stop: set_selection_mode
+      - globals.set:
+          id: selected_tv_mode
+          value: '0'
+      - script.execute: show_display
+
+script:
+  - id: set_selection_mode
+    mode: restart
+    then:
+      - delay: 2s
+      - lambda: |-
+          if (id(selected_tv_mode)) {
+            id(tv_mode).turn_on();
+          } else {
+            id(tv_mode).turn_off();
+          }
+
+  - id: show_display
+    mode: restart
+    then:
+      - globals.set:
+          id: display_on
+          value: 'true'
+      - component.update: lcd_display
+      - delay: 10s
+      - globals.set:
+          id: display_on
+          value: 'false'
+      - component.update: lcd_display
+
+button:
+  - platform: safe_mode
+    name: "Restart (Safe Mode)"
+  - platform: restart
+    name: "Restart"
+  - platform: template
+    name: "Send RC5"
+    on_press: 
+      then:
+        - lambda: |-
+            // id(marantz_remote).send_rc5x(16,12,2,1);
+            // id(marantz_remote).send_rc5x(1051650,1);
+            id(marantz_remote).send_rc5(id(rc5_data).state,id(rc5_repeats).state);
+
+  - platform: template
+    name: "Send RC5x"
+    on_press: 
+      then:
+        - lambda: |-
+            // id(marantz_remote).send_rc5x(16,12,1,1);
+            // id(marantz_remote).send_rc5x(1051649,1);
+            id(marantz_remote).send_rc5x(id(rc5_data).state,id(rc5_repeats).state);
+
+# output:
+#  - platform: gpio
+#    id: ir_tx
+#    pin: 12
+#    inverted: false
+#  - platform: gpio
+#    id: ir_rx
+#    pin: 13
+#    inverted: false
+
+sensor:
+  - platform: template
+    id: rc5_in_data
+    name: "RC5 in data"
+    update_interval: never
+
+  - platform: template
+    id: rc5_in_rep_id
+    name: "RC5 in repetition id"
+    update_interval: never
+
+number:
+  - platform: template
+    id: rc5_data
+    name: "RC5 out data"
+    min_value: 0
+    max_value: 4294967295
+    step: 1
+    mode: box
+    optimistic: True
+    restore_value: False
+    initial_value: 0
+  - platform: template
+    id: rc5_repeats
+    name: "RC5 out repetitions"
+    mode: box
+    min_value: 1
+    max_value: 255
+    step: 1
+    optimistic: True
+    restore_value: False
+    initial_value: 0

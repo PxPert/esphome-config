@@ -16,6 +16,10 @@ packages:
   # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 
+  # Debugger
+  debugger: !include includes/debug.yaml
+
+
   # Connessione MQTT
   mqtt_client: !include includes/mqtt_client.yaml
 

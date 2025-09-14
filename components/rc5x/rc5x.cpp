@@ -4,6 +4,18 @@
 namespace esphome {
 namespace rc5x {
 
+#define RC5_ADDRESS_BITS 5
+#define RC5_COMMAND_BITS 6
+#define RC5_EXT_BITS 6
+#define RC5_COMMAND_FIELD_BIT 1
+#define RC5_TOGGLE_BIT 1
+#define RC5_BITS (RC5_COMMAND_FIELD_BIT + RC5_TOGGLE_BIT + RC5_ADDRESS_BITS + RC5_COMMAND_BITS)  // 13
+#define RC5X_BITS (RC5_BITS + RC5_EXT_BITS) // 19
+#define RC5_UNIT 889  // (32 cycles of 36 kHz)
+#define RC5_DURATION (15L * RC5_UNIT)  // 13335
+#define RC5_REPEAT_PERIOD (128L *RC5_UNIT)  // 113792
+#define RC5_REPEAT_SPACE (RC5_REPEAT_PERIOD - RC5_DURATION)  // 100 ms
+
 
 #define MIN_SHORT  444
 #define MAX_SHORT 1333
@@ -81,10 +93,17 @@ static const char *const TAG = "rc5x";
 
 void RC5x::setup() {
 
+  if (this->_receivePin) {
+    ESP_LOGCONFIG(TAG,"Receive pin set. Initializing...");
+    this->_receivePin->setup();
+    _store.pin = this->_receivePin->to_isr();
+    this->_receivePin->attach_interrupt(&RC5xComponentStore::rc5x_read, &_store, gpio::INTERRUPT_ANY_EDGE);
+  }
 
-  this->_pin->setup();
-  _store.pin = this->_pin->to_isr();
-  this->_pin->attach_interrupt(&RC5xComponentStore::rc5x_read, &_store, gpio::INTERRUPT_ANY_EDGE);
+  if (this->_sendPin) {
+    ESP_LOGCONFIG(TAG,"Send pin set. Initializing...");
+    this->_sendPin->setup();
+  }
 
   _store.reset(&_store);
   ESP_LOGCONFIG(TAG,"Setup completed");
@@ -92,6 +111,172 @@ void RC5x::setup() {
 
 
 }
+
+void RC5x::send_rc5x(uint32_t irData, unsigned char repetitions) {
+    uint8_t aAddress = irData >> 16;
+    uint8_t aCommand = (irData >> 8) & 0xFF;
+    uint8_t aExt = irData & 0xFF;
+
+    ESP_LOGD(TAG,"Send rc5: Addr: 0x%04x - Command: 0x%04x - Ext: 0x%04x - Repetitions: %d", aAddress, aCommand, aExt, repetitions );
+    send_rc5x(aAddress, aCommand, aExt,repetitions);
+
+}
+
+void RC5x::send_rc5(uint16_t irData, unsigned char repetitions) {
+    uint8_t aAddress = irData >> 8;
+    uint8_t aCommand = irData & 0xFF;
+
+    ESP_LOGD(TAG,"Send rc5: Addr: 0x%04x - Command: 0x%04x - Repetitions: %d", aAddress, aCommand, repetitions );
+    send_rc5(aAddress, aCommand, repetitions);
+
+
+}
+
+void RC5x::send_0() {
+  this->_sendPin->digital_write(true);
+  delayMicroseconds(RC5_UNIT);
+  this->_sendPin->digital_write(false);
+  delayMicroseconds(RC5_UNIT);
+}
+
+void RC5x::send_1() {
+  this->_sendPin->digital_write(false);
+  delayMicroseconds(RC5_UNIT);
+  this->_sendPin->digital_write(true);
+  delayMicroseconds(RC5_UNIT);
+}
+
+
+
+void RC5x::send_rc5(uint8_t aAddress, uint8_t aCommand, uint8_t aNumberOfRepeats)
+{
+  if (! this->_sendPin) {
+    ESP_LOGW(TAG,"Send pin not set. Ignoring");
+    return;
+  }
+
+  this->_sendPin->digital_write(false);
+
+  uint16_t tIRData = ((aAddress & 0x1F) << RC5_COMMAND_BITS);
+
+  if (aCommand < 0x40)
+  {
+    // set field bit to lower field / set inverted upper command bit
+    tIRData |= 1 << (RC5_TOGGLE_BIT + RC5_ADDRESS_BITS + RC5_COMMAND_BITS);
+  }
+  else
+  {
+    // let field bit zero
+    aCommand &= 0x3F;
+  }
+
+  tIRData |= aCommand;
+
+  tIRData |= 1 << RC5_BITS;
+
+  if (_lastSendToggleValue == 0)
+  {
+    _lastSendToggleValue = 1;
+    // set toggled bit
+    tIRData |= 1 << (RC5_ADDRESS_BITS + RC5_COMMAND_BITS);
+  }
+  else
+  {
+    _lastSendToggleValue = 0;
+  }
+
+  uint8_t tNumberOfCommands = aNumberOfRepeats + 1;
+
+  while (tNumberOfCommands > 0)
+  {
+    for (int i = 13; 0 <= i; i--)
+    {
+        (tIRData &(1 << i)) ? send_1() : send_0();
+    }
+    tNumberOfCommands--;
+    if (tNumberOfCommands > 0)
+    {
+      // send repeated command in a fixed raster
+      delay(RC5_REPEAT_SPACE / 1000);
+    }
+  }
+
+  this->_sendPin->digital_write(false);
+  return;
+}
+
+
+/*
+ *  Marantz 20 bit RC5 extension, see
+ *  http://lirc.10951.n7.nabble.com/Marantz-RC5-22-bits-Extend-Data-Word-possible-with-lircd-conf-semantic-td9784.html
+ *  could be combined with sendRC5, but ATM split to simplify debugging
+ */
+
+void RC5x::send_rc5x(uint8_t aAddress, uint8_t aCommand, uint8_t aExt, uint8_t aNumberOfRepeats)
+{
+  if (! this->_sendPin) {
+    ESP_LOGW(TAG,"Send pin not set. Ignoring");
+    return;
+  }
+
+  ESP_LOGW(TAG,"Sending!");
+  uint32_t tIRData = (uint32_t)(aAddress & 0x1F) << (RC5_COMMAND_BITS + RC5_EXT_BITS);
+
+  this->_sendPin->digital_write(false);
+
+  if (aCommand < 0x40)
+  {
+    // set field bit to lower field / set inverted upper command bit
+    tIRData |= (uint32_t) 1 << (RC5_TOGGLE_BIT + RC5_ADDRESS_BITS + RC5_COMMAND_BITS + RC5_EXT_BITS);
+  }
+  else
+  {
+    // let field bit zero
+    aCommand &= 0x3F;
+  }
+
+  tIRData |= (uint32_t)(aExt & 0x3F);
+  tIRData |= (uint32_t) aCommand << RC5_EXT_BITS;
+  tIRData |= (uint32_t) 1 << RC5X_BITS;
+
+  if (_lastSendToggleValue == 0)
+  {
+    _lastSendToggleValue = 1;
+    // set toggled bit
+    tIRData |= (uint32_t) 1 << (RC5_ADDRESS_BITS + RC5_COMMAND_BITS + RC5_EXT_BITS);
+  }
+  else
+  {
+    _lastSendToggleValue = 0;
+  }
+
+  uint8_t tNumberOfCommands = aNumberOfRepeats + 1;
+
+  while (tNumberOfCommands > 0)
+  {
+
+    for (int i = 19; 0 <= i; i--)
+    {
+        (tIRData &((uint32_t) 1 << i)) ? send_1() : send_0();
+      if (i == 12)
+      {
+        // space marker for marantz rc5 extension
+        delayMicroseconds(RC5_UNIT *2 *2);
+      }
+    }
+    tNumberOfCommands--;
+    if (tNumberOfCommands > 0)
+    {
+      // send repeated command in a fixed raster
+      delay(RC5_REPEAT_SPACE / 1000);
+    }
+  }
+  this->_sendPin->digital_write(false);
+  return;
+}
+
+
+
 void IRAM_ATTR HOT RC5xComponentStore::reset(RC5xComponentStore* store)
 {
     store->state = STATE_MID1;
@@ -137,7 +322,7 @@ void IRAM_ATTR HOT RC5xComponentStore::rc5x_read(RC5xComponentStore* store)
        is equal to the theoretical (uninverted) signal value of the time period that
        has just ended.
     */
-    const bool signal = store->pin.digital_read();
+    const bool signal = store->invert_receive - (store->pin.digital_read());
 
     if (signal != store->lastValue) {
         unsigned long time1 = micros();

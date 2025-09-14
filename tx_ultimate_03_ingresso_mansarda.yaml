@@ -16,6 +16,9 @@ packages:
   # Connessione MQTT
   mqtt_client: !include includes/mqtt_client.yaml
 
+  # Debugger
+  debugger: !include includes/debug.yaml
+  
   # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 
@@ -25,6 +28,9 @@ packages:
   # Configurazione Custom multitouch
   multitouch: !include includes/tx_ultimate_custom_multitouch.yaml
 
+  # Media Player
+  mediaplayer: !include includes/tx_ultimate_media_player.yaml
+  
   # Relè e luci locali
   light_1: !include
     file: includes/tx_ultimate_light.yaml

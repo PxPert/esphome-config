@@ -1,7 +1,4 @@
 substitutions:
-  audio_lrclk_pin: GPIO4
-  audio_bclk_pin: GPIO2
-  audio_sdata_pin: GPIO15
 
   vibra_time_wake_word: 50ms
   vibra_time_ww_off: 200ms
@@ -11,6 +8,8 @@ substitutions:
 
   text_not_understood: "Mi dispiace, non ho capito"
 
+esp32:
+  cpu_frequency: 240MHz
 #esphome:
 #  includes:
 #    - audio/wake_word_triggered.h
@@ -199,71 +198,8 @@ i2s_audio:
   - id: audio_mic_i2s
     i2s_lrclk_pin: ${mic_lrclk_pin}
     i2s_bclk_pin: ${mic_bclk_pin}
-  - id: audio_i2s
-    i2s_lrclk_pin: ${audio_lrclk_pin}
-    i2s_bclk_pin: ${audio_bclk_pin}
 
-media_player:
-  - platform: speaker
-    id: va_media_player
-    name: Media Player
-    codec_support_enabled: true
-    buffer_size: 250000
-    task_stack_in_psram: false
-    announcement_pipeline:
-      format: WAV
-      speaker: announcement_mixing_input
-      num_channels: 1
-      sample_rate: 48000
-    media_pipeline:
-      format: FLAC
-      speaker: media_mixing_input
-      num_channels: 1
-      sample_rate: 48000
-    on_announcement:
-      - mixer_speaker.apply_ducking:
-          id: media_mixing_input
-          decibel_reduction: 20
-          duration: 0.0s
-    on_state:
-      if:
-        condition:
-          and:
-            - switch.is_off: timer_ringing_int
-            - not:
-                voice_assistant.is_running:
-            - not:
-                media_player.is_announcing:
-        then:
-          - mixer_speaker.apply_ducking:
-              id: media_mixing_input
-              decibel_reduction: 0
-              duration: 1.0s
-    files:
-      - id: wake_word_wav
-        file: audio/wake_word_triggered.wav # Placed in the yaml directory. Should be encoded with a 48000 Hz sample rate, mono or stereo audio, and 16 bits per sample.
-      - id: timer_finished_wav
-        file: audio/timer_finished_48.wav # Placed in the yaml directory. Should be encoded with a 48000 Hz sample rate, mono or stereo audio, and 16 bits per sample.
 
-speaker:
-  - id: audio_out
-    platform: i2s_audio
-    dac_type: external
-    i2s_dout_pin: ${audio_sdata_pin}
-    i2s_audio_id: audio_i2s
-    i2s_comm_fmt: stand_msb
-#    timeout: 100ms
-    timeout: never
-    channel: mono
-    bits_per_sample: 16bit
-    sample_rate: 48000
-    buffer_duration: 500ms
-  - platform: mixer
-    id: mixer_speaker_id
-    output_speaker: audio_out
-    source_speakers:
-      - id: announcement_mixing_input
-      - id: media_mixing_input
 
 microphone:
   - platform: i2s_audio
@@ -272,6 +208,7 @@ microphone:
     adc_type: external
     id: asr_mic
     pdm: false
+    channel: left
     sample_rate: 16000
 
 
@@ -311,6 +248,7 @@ voice_assistant:
       - script.execute: restore_wake_word
 
   on_tts_start:
+    - micro_wake_word.stop:
     - if:
         condition:
           lambda: 'return x == "${text_not_understood}";'
@@ -369,6 +307,50 @@ voice_assistant:
   on_timer_finished:
     - switch.turn_on: timer_ringing_int
 
+media_player:
+  - platform: speaker
+    id: va_media_player
+    name: Media Player
+    codec_support_enabled: true
+    buffer_size: 250000
+    task_stack_in_psram: false
+    volume_initial: 100%
+    announcement_pipeline:
+      format: WAV
+      speaker: announcement_mixing_input
+      num_channels: 1
+      sample_rate: ${play_sample_rate}000
+    media_pipeline:
+      format: FLAC
+      speaker: media_mixing_input
+      num_channels: 1
+      sample_rate: ${play_sample_rate}000
+    on_announcement:
+      - mixer_speaker.apply_ducking:
+          id: media_mixing_input
+          decibel_reduction: 20
+          duration: 0.0s
+    on_state:
+      if:
+        condition:
+          and:
+            - switch.is_off: timer_ringing_int
+            - not:
+                voice_assistant.is_running:
+            - not:
+                media_player.is_announcing:
+        then:
+          - mixer_speaker.apply_ducking:
+              id: media_mixing_input
+              decibel_reduction: 0
+              duration: 1.0s
+    files:
+      - id: wake_word_wav
+        file: audio/wake_word_triggered_${play_sample_rate}.wav # Placed in the yaml directory. Should be encoded with a 48000 Hz sample rate, mono or stereo audio, and 16 bits per sample.
+      - id: timer_finished_wav
+        file: audio/timer_finished_${play_sample_rate}.wav # Placed in the yaml directory. Should be encoded with a 48000 Hz sample rate, mono or stereo audio, and 16 bits per sample.
+
+
 script:
   - id: restore_wake_word
     then:
@@ -376,6 +358,7 @@ script:
           condition:
             switch.is_on: use_wake_word
           then:
+            - delay: 1000ms
             - micro_wake_word.start
           else:
             - micro_wake_word.stop

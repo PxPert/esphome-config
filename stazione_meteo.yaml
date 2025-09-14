@@ -1,0 +1,83 @@
+esphome:
+  name: stazione-meteo
+  friendly_name: Stazione meteo
+  platformio_options:
+    build_flags: -DRADIOLIB_EXCLUDE_LORAWAN=true -DRADIOLIB_EXCLUDE_PAGER=true
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+  level: DEBUG
+
+preferences:
+  flash_write_interval: 6h
+
+mdns:
+  disabled: True
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.12
+#  use_address: 192.168.2.237
+  manual_ip:
+    static_ip: 192.168.2.12
+    gateway: 192.168.2.1
+    subnet: 255.255.255.0
+    dns1: 192.168.2.1
+
+external_components:
+  - source: /config/components/
+    components: [ radiolib_cc1101 ]
+# packages:
+#   cc1101_controls: !include includes/cc1101-controls.yaml
+
+ota:
+  platform: esphome
+  password: !secret ota_pwd_sec
+#  on_begin:
+#    - lambda: id(mycc1101).standby();
+
+
+spi:
+  # these are the default SPI pins to use on ESP8266
+  clk_pin: SCK   # CC1001 pin 5
+  mosi_pin: MOSI  # CC1001 pin 6
+  miso_pin: MISO  # CC1001 pin 7
+  
+
+radiolib_cc1101:
+  id: mycc1101
+  spi_mode: 0
+  # bit_order: msb_first
+  data_rate: 4MHz
+
+#  filter: 150khz # 58-812khz, default=464kHz
+  frequency: 868.35MHz # 300-348, 387-464, 779-928MHz, default=433.92MHz
+  bitrate: 8.22
+  modulation: FSK
+  filter: 270000.0
+#  bitrate: 270000.0
+
+  cs_pin: 5 # CC1101 pin 4
+  rx_pin:
+    number: 4 # This is CC1101 GDO0 pin 3
+    allow_other_uses: false
+    mode:
+      input: true
+      pullup: true
+#  tx_pin:
+#    number: 4 # This is also GDO0
+#    allow_other_uses: true
+
+button:
+  - platform: safe_mode
+    name: "Restart (Safe Mode)"
+  - platform: restart
+    name: "Restart"

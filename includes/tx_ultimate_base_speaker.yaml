@@ -1,0 +1,31 @@
+substitutions:
+  audio_lrclk_pin: GPIO4
+  audio_bclk_pin: GPIO2
+  audio_sdata_pin: GPIO15
+  play_sample_rate: "48"
+
+i2s_audio:
+  - id: audio_i2s
+    i2s_lrclk_pin: ${audio_lrclk_pin}
+    i2s_bclk_pin: ${audio_bclk_pin}
+
+
+speaker:
+  - id: audio_out
+    platform: i2s_audio
+    dac_type: external
+    i2s_dout_pin: ${audio_sdata_pin}
+    i2s_audio_id: audio_i2s
+    i2s_comm_fmt: stand_msb
+#    timeout: 100ms
+    timeout: never
+    channel: mono
+    bits_per_sample: 16bit
+    sample_rate: ${play_sample_rate}000
+    buffer_duration: 500ms
+  - platform: mixer
+    id: mixer_speaker_id
+    output_speaker: audio_out
+    source_speakers:
+      - id: announcement_mixing_input
+      - id: media_mixing_input

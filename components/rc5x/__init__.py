@@ -1,11 +1,9 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation, core, pins
-from esphome.const import CONF_PIN
 from esphome.const import (
     CONF_ID,
     CONF_TRIGGER_ID,
-    CONF_PIN,
     CONF_ON_PRESS,
     CONF_ON_RELEASE
     )
@@ -32,7 +30,10 @@ CONFIG_SCHEMA = cv.Schema(
             cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(CommandReleaseTrigger),
           }
         ),
-        cv.Required(CONF_PIN): pins.gpio_input_pin_schema,
+        cv.Optional("receive_pin"): pins.gpio_input_pin_schema,
+        cv.Optional("invert_receive_pin", default=False): cv.boolean,
+
+        cv.Optional("send_pin"): pins.gpio_output_pin_schema,
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -43,9 +44,17 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
-    pin = await cg.gpio_pin_expression(config[CONF_PIN])
+    if "receive_pin" in config:
+      rcv_pin = await cg.gpio_pin_expression(config["receive_pin"])
+      cg.add(var.set_receivePin(rcv_pin))
 
-    cg.add(var.set_pin(pin))
+    if "send_pin" in config:
+      send_pin = await cg.gpio_pin_expression(config["send_pin"])
+      cg.add(var.set_sendPin(send_pin))
+
+    if "invert_receive_pin" in config:
+        cg.add(var.set_invertReceivePin(config["invert_receive_pin"]))
+
     for conf in config.get(CONF_ON_PRESS, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(trigger, [(bool, "t"),(cg.uint32, "x")], conf)

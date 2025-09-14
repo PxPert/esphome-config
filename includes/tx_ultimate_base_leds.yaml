@@ -19,8 +19,8 @@ light:
   - platform: esp32_rmt_led_strip
     rgb_order: GRB
     chipset: ws2812
-    rmt_channel: 1
-    use_psram: false
+#    rmt_channel: 1
+    use_psram: true
 
     pin: ${led_pin}
     num_leds: 32

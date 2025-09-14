@@ -69,21 +69,18 @@ mdns:
 esp32:
   board: esp32dev
   flash_size: 8MB
+  cpu_frequency: 80MHz
   framework:
     type: esp-idf
-    version: 4.4.8
-    platform_version: 5.4.0
+    advanced:
+      compiler_optimization: PERF
+      enable_lwip_mdns_queries: false
 #    version: 4.4.8
 #    platform_version: 5.4.0
-#    type: arduino
-#    sdkconfig_options:
-#      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
-#      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
-#      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
 
 
 psram:
-  mode: octal
+#  mode: octal
   speed: 80MHz
 
 external_components:
@@ -100,8 +97,9 @@ external_components:
 
 logger:
 #  hardware_uart: UART2
-  level: DEBUG
+  level: WARN
   baud_rate: 0
+
 
 api:
   encryption:
@@ -118,7 +116,7 @@ wifi:
   ap:
     password: !secret ap_pwd
 
-captive_portal:
+# captive_portal:
 
 
 time:
@@ -368,4 +366,5 @@ tx_ultimate_touch:
 packages:
   base_scripts: !include tx_ultimate_base_scripts.yaml
   base_leds: !include tx_ultimate_base_leds.yaml
+  base_speaker: !include tx_ultimate_base_speaker.yaml
 

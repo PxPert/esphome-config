@@ -292,3 +292,8 @@ script:
     - script.execute:
         id: set_light
         effect: "Idle Pulse"
+button:
+  - platform: safe_mode
+    name: "Restart (Safe Mode)"
+  - platform: restart
+    name: "Restart"
