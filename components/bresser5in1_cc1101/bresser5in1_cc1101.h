@@ -6,7 +6,7 @@
 #include "esphome/components/spi/spi.h"
 
 namespace esphome {
-namespace radiolib_cc1101 {
+namespace bresser5in1_cc1101 {
 
 struct BresserReading {
   uint16_t sensor_id;
@@ -22,7 +22,7 @@ struct BresserReading {
 class EH_RL_SPI : public esphome::spi::SPIDevice<esphome::spi::BIT_ORDER_MSB_FIRST,esphome::spi::CLOCK_POLARITY_LOW,
                             esphome::spi::CLOCK_PHASE_LEADING,esphome::spi::DATA_RATE_2MHZ> {};
 
-class RadiolibCC1101Component : public Component, public EH_RL_SPI {
+class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
   public:
     void setup() override;
     void loop() override;
@@ -60,7 +60,7 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
     uint8_t getMARCSTATE();                                         // xFSK
     uint8_t populateBuffer();
 
-    static void handleInterrupt(RadiolibCC1101Component* component);
+    static void handleInterrupt(Bresser5in1CC1101Component* component);
 
 
 };

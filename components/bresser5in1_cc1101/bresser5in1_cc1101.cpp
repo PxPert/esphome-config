@@ -1,5 +1,5 @@
 #include "esphome/core/log.h"
-#include "radiolib_cc1101.h"
+#include "bresser5in1_cc1101.h"
 
 //based on:
 // https://github.com/dbuezas/esphome-cc1101
@@ -100,22 +100,22 @@
 #define CC1101_RXFIFO   0x3F
 
 namespace esphome {
-namespace radiolib_cc1101 {
+namespace bresser5in1_cc1101 {
 
-static const char *TAG = "radiolib_cc1101.component";
+static const char *TAG = "bresser5in1_cc1101.component";
 
-void RadiolibCC1101Component::setup() {
+void Bresser5in1CC1101Component::setup() {
   ESP_LOGI(TAG, "SPI Setup");
   this->spi_setup();
 
   this->_gd0_rx->setup();
-  this->_gd0_rx->attach_interrupt(&RadiolibCC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
+  this->_gd0_rx->attach_interrupt(&Bresser5in1CC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
 
   this->radioInit();
 
 }
 
-void RadiolibCC1101Component::radioInit() {
+void Bresser5in1CC1101Component::radioInit() {
   this->_setupComplete = false;
   ESP_LOGI(TAG, "CC1101 Setup");
 
@@ -223,7 +223,7 @@ void RadiolibCC1101Component::radioInit() {
 
 	for (uint8_t i = 0; i < sizeof(initVal); i++) {         // write value to cc1101
       res = this->transfer_byte(initVal[i]);
-      ESP_LOGD(TAG, "Init Write response: %d", res);
+      // ESP_LOGD(TAG, "Init Write response: %d", res);
 	}
 
 	this->disable();
@@ -245,13 +245,13 @@ void RadiolibCC1101Component::radioInit() {
 }
 
 
-void IRAM_ATTR HOT RadiolibCC1101Component::handleInterrupt(RadiolibCC1101Component* component) {
+void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101Component* component) {
   if (component->_setupComplete) {
     component->_gpioChanged = true;
   }
 }
 
-uint8_t RadiolibCC1101Component::populateBuffer() {
+uint8_t Bresser5in1CC1101Component::populateBuffer() {
   uint8_t readStart = 0;
   uint8_t RSSI = 0;
 
@@ -286,23 +286,24 @@ uint8_t RadiolibCC1101Component::populateBuffer() {
       return 0;
     }
 	}
-
+/*
 	if (!readStart) {
     ESP_LOGD(TAG, "GPIO Down");
   }
+*/
   return readStart;
 
 }
-uint8_t RadiolibCC1101Component::getRXBYTES() {                             // xFSK
+uint8_t Bresser5in1CC1101Component::getRXBYTES() {                             // xFSK
 	return readReg(CC1101_SFTX,CC1101_STATUS);
 }
 
-uint8_t RadiolibCC1101Component::getRSSIdev() {
+uint8_t Bresser5in1CC1101Component::getRSSIdev() {
   uint8_t revision = 0;
 	return readReg((revision == 0x01 ? CC1101_RSSI_REV01 : CC1101_RSSI_REV00), CC1101_STATUS);
 }
 
-bool RadiolibCC1101Component::readRXFIFO(uint8_t start, uint8_t len) {                             // xFSK
+bool Bresser5in1CC1101Component::readRXFIFO(uint8_t start, uint8_t len) {                             // xFSK
   bool dup = true;
   uint8_t rx;
 
@@ -322,7 +323,7 @@ bool RadiolibCC1101Component::readRXFIFO(uint8_t start, uint8_t len) {          
 }
 
 
-void RadiolibCC1101Component::writePatable() {
+void Bresser5in1CC1101Component::writePatable() {
   this->enable();
 	wait_Miso();                                    // wait until MISO goes low
 
@@ -340,7 +341,7 @@ void RadiolibCC1101Component::writePatable() {
 }
 
 
-void RadiolibCC1101Component::writeCfg(const char* IB_1) {
+void Bresser5in1CC1101Component::writeCfg(const char* IB_1) {
   if (IB_1[1] == 'S' && IB_1[2] == '3')
   {
     this->commandStrobes(IB_1);
@@ -353,13 +354,13 @@ void RadiolibCC1101Component::writeCfg(const char* IB_1) {
     memcpy(b, &IB_1[3], 2);
     uint8_t val = strtol(b, nullptr, 16);
 
-    ESP_LOGD(TAG, "Setting reg %d=%d",reg,val);
+    // ESP_LOGD(TAG, "Setting reg %d=%d",reg,val);
 
     this->writeCCreg(reg, val);
   }
 }
 
-void RadiolibCC1101Component::setReceiveMode() {
+void Bresser5in1CC1101Component::setReceiveMode() {
   uint8_t res = this->cmdStrobe(CC1101_SIDLE);
   ESP_LOGD(TAG, "Set IDLE response: %d", res);
 	delay(1);
@@ -373,7 +374,7 @@ void RadiolibCC1101Component::setReceiveMode() {
 
 }
 
-void RadiolibCC1101Component::writeCCreg(uint8_t reg, uint8_t var) { // write CC1101 register
+void Bresser5in1CC1101Component::writeCCreg(uint8_t reg, uint8_t var) { // write CC1101 register
 	if (reg > 1 && reg < 0x40) {
     this->enable();                                // select CC1101
     wait_Miso();                                    // wait until MISO goes low
@@ -394,7 +395,7 @@ void RadiolibCC1101Component::writeCCreg(uint8_t reg, uint8_t var) { // write CC
 
   }
 }
-void RadiolibCC1101Component::commandStrobes(const char* IB_1) {
+void Bresser5in1CC1101Component::commandStrobes(const char* IB_1) {
 	uint8_t reg;
 	uint8_t val;
 	uint8_t val1;
@@ -416,12 +417,12 @@ void RadiolibCC1101Component::commandStrobes(const char* IB_1) {
 	}
 }
 
-void RadiolibCC1101Component::writeReg(const uint8_t regAddr, const uint8_t val) {       // write single register into the CC1101 IC via SPI
+void Bresser5in1CC1101Component::writeReg(const uint8_t regAddr, const uint8_t val) {       // write single register into the CC1101 IC via SPI
 	this->transfer_byte(regAddr);                               // send register address
 	this->transfer_byte(val);                                   // send value
 }
 
-uint8_t RadiolibCC1101Component::readReg(const uint8_t regAddr, const uint8_t regType) {       // read CC1101 register via SPI
+uint8_t Bresser5in1CC1101Component::readReg(const uint8_t regAddr, const uint8_t regType) {       // read CC1101 register via SPI
   this->enable();
 //  delay(10);
 	this->transfer_byte(regAddr | regType);         // send register address
@@ -430,7 +431,7 @@ uint8_t RadiolibCC1101Component::readReg(const uint8_t regAddr, const uint8_t re
 	return val;
 }
 
-uint8_t RadiolibCC1101Component::waitTo_Miso() {
+uint8_t Bresser5in1CC1101Component::waitTo_Miso() {
 	uint8_t i = 255;
 	while(isHigh(misoPin)) {
 		delayMicroseconds(10);
@@ -439,7 +440,7 @@ uint8_t RadiolibCC1101Component::waitTo_Miso() {
 	return i;
 }
 
-uint8_t RadiolibCC1101Component::cmdStrobe(const uint8_t cmd) {
+uint8_t Bresser5in1CC1101Component::cmdStrobe(const uint8_t cmd) {
 	this->enable();                                // select CC1101
 	wait_Miso_rf();                                 // wait until MISO goes low
 	uint8_t ret = this->transfer_byte(cmd);                     // send strobe command
@@ -448,7 +449,7 @@ uint8_t RadiolibCC1101Component::cmdStrobe(const uint8_t cmd) {
 	return ret;                                     // Chip Status Byte
 }
 
-uint8_t RadiolibCC1101Component::cmdStrobeTo(const uint8_t cmd) {
+uint8_t Bresser5in1CC1101Component::cmdStrobeTo(const uint8_t cmd) {
 	this->enable();                                // select CC1101
 	if (waitTo_Miso() == 0) {                       // wait with timeout until MISO goes low
     this->disable();
@@ -460,7 +461,7 @@ uint8_t RadiolibCC1101Component::cmdStrobeTo(const uint8_t cmd) {
 
 }
 
-uint8_t RadiolibCC1101Component::checkParity(const byte* msg) {
+uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg) {
   // First 13 bytes need to match inverse of last 13 bytes
   for (uint8_t startcol = 0; startcol < (CC_MAX_BUF - 13); startcol++ )
   {
@@ -479,13 +480,13 @@ uint8_t RadiolibCC1101Component::checkParity(const byte* msg) {
   return CC_MAX_BUF;
 }
 
-uint8_t RadiolibCC1101Component::bresser_5in1_decode()
+uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
 {
     byte msg[CC_MAX_BUF];
     memcpy(msg,(const byte*) this->_ccBuf,CC_MAX_BUF);
 
     if (checkParity(msg) ==  CC_MAX_BUF) {
-      ESP_LOGD(TAG,"Parity wrong");
+      // ESP_LOGD(TAG,"Parity wrong");
       return 11; // message isn't correct
     }
 /*
@@ -535,11 +536,11 @@ uint8_t RadiolibCC1101Component::bresser_5in1_decode()
     return 1;
 }
 
-uint8_t RadiolibCC1101Component::getMARCSTATE() {
+uint8_t Bresser5in1CC1101Component::getMARCSTATE() {
 	return readReg(CC1101_MARCSTATE_REV00, CC1101_STATUS);  // xFSK, Pruefen ob Umwandung von uint to int den richtigen Wert zurueck gibt
 }
 
-bool RadiolibCC1101Component::flushrx() {
+bool Bresser5in1CC1101Component::flushrx() {
   this->transfer_byte(CC1101_SIDLE);
 
   this->transfer_byte(CC1101_SNOP);
@@ -548,7 +549,7 @@ bool RadiolibCC1101Component::flushrx() {
 
 }
 
-void RadiolibCC1101Component::loop() {
+void Bresser5in1CC1101Component::loop() {
   static unsigned long lastread = millis();
 
   uint8_t totalRead = 0;
@@ -575,9 +576,9 @@ void RadiolibCC1101Component::loop() {
   }
 }
 
-void RadiolibCC1101Component::dump_config(){
+void Bresser5in1CC1101Component::dump_config(){
     ESP_LOGCONFIG(TAG, "bresser-cc1101-reader component");
 }
 
-}  // namespace radiolib_cc1101
+}  // namespace bresser5in1_cc1101
 }  // namespace esphome

@@ -34,7 +34,7 @@ wifi:
 
 external_components:
   - source: /config/components/
-    components: [ radiolib_cc1101 ]
+    components: [ bresser5in1_cc1101 ]
 # packages:
 #   cc1101_controls: !include includes/cc1101-controls.yaml
 
@@ -52,8 +52,8 @@ spi:
   miso_pin: MISO  # CC1001 pin 7
   
 
-radiolib_cc1101:
-  id: mycc1101
+bresser5in1_cc1101:
+  id: bresser5in1cc1101
   spi_mode: 0
   data_rate: 4MHz
 

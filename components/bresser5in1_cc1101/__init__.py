@@ -9,14 +9,14 @@ import os
 
 DEPENDENCIES = ["spi"]
 
-radiolib_cc1101_ns = cg.esphome_ns.namespace("radiolib_cc1101")
-RadiolibCC1101Component = radiolib_cc1101_ns.class_(
-    "RadiolibCC1101Component", cg.Component, spi.SPIDevice
+bresser5in1_cc1101_ns = cg.esphome_ns.namespace("bresser5in1_cc1101")
+Bresser5in1Component = bresser5in1_cc1101_ns.class_(
+    "Bresser5in1CC1101Component", cg.Component, spi.SPIDevice
 )
 
 CONFIG_SCHEMA = (
     cv.Schema({
-        cv.GenerateID(): cv.declare_id(RadiolibCC1101Component),
+        cv.GenerateID(): cv.declare_id(Bresser5in1Component),
         cv.Optional(CONF_RX_PIN): pins.internal_gpio_input_pin_schema,
         })
     .extend(cv.COMPONENT_SCHEMA)
