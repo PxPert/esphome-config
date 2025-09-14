@@ -109,7 +109,6 @@ void RadiolibCC1101Component::setup() {
   this->spi_setup();
 
   this->_gd0_rx->setup();
-  this->_gd0_rx_isr = this->_gd0_rx->to_isr();
   this->_gd0_rx->attach_interrupt(&RadiolibCC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
 
   this->radioInit();
@@ -577,98 +576,7 @@ void RadiolibCC1101Component::loop() {
 }
 
 void RadiolibCC1101Component::dump_config(){
-    ESP_LOGCONFIG(TAG, "RadioLib-cc1101 component");
-}
-
-void RadiolibCC1101Component::set_registers() {
-  /*
-  init_state|=radio.setFrequency(_freq);
-  init_state|=radio.setBitRate(_bitrate);
-  // set rx bw after datarate - and only specific ones make sense...
-  adjustBW(_bandwidth);
-  init_state|=radio.setRxBandwidth(_bandwidth);
-  */
-  /* NEW */
-
-  init_state|=radio.setCrcFiltering(false);
-  ESP_LOGD(TAG, "CC1101 01 init_state =%d", init_state);
-  init_state|=radio.fixedPacketLengthMode(27);
-  ESP_LOGD(TAG, "CC1101 02 init_state =%d", init_state);
-
-  init_state|=radio.setSyncWord(0xAA, 0x2D, 0, false);
-  ESP_LOGD(TAG, "CC1101 03 init_state =%d", init_state);
-  /* END NEW */
-
-/*
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_FREND1,_REG_FREND1);
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_TEST2,_REG_TEST2);
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_TEST1,_REG_TEST1);
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_FIFOTHR, _REG_FIFOTHR);
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_AGCCTRL2,_REG_AGCCTRL2);
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_AGCCTRL1,_REG_AGCCTRL1);
-  init_state|= radio.SPIsetRegValue(RADIOLIB_CC1101_REG_AGCCTRL0,_REG_AGCCTRL0);
-*/
-  ESP_LOGD(TAG, "CC1101 set_registers() complete - freq=%.2f, bitrate=%.2f, bandwidth=%.2f, OOK Modulation=%d registers set, init_state =%d", _freq,_bitrate,_bandwidth,_modulation==OOK_MODULATION, init_state);
-}
-
-void RadiolibCC1101Component::setup_direct_mode() {
-  // init_state|=standby();
-
-  // per DN022 adjust LNA as needed
-  _REG_FREND1=(_bandwidth>101) ? 0xb6 : 0x56;
-  // also per DN022
-  _REG_TEST2= (_bandwidth>325) ? 0x88 : 0x81;
-  _REG_TEST1= (_bandwidth>325) ? 0x31 : 0x35;
-  _REG_FIFOTHR= (_bandwidth>325) ? 0x07 : 0x47;
-
-  set_registers();
-
-  init_state|=radio.setOOK(_modulation==OOK_MODULATION); 
-
-  // start receiving onto GDO
-  // init_state|= recv();
-
-}
-
-int RadiolibCC1101Component::standby() {
-  // standby state: radio in standby
-  init_state|=radio.standby();
-  state=init_state==0 ? CC1101_STANDBY : CC1101_NOINIT;
-  return init_state;
-}
-
-int RadiolibCC1101Component::recv() {
-  // receive state: radio doing receiveDirectAsync
-  if (state==CC1101_XMIT) standby();
-
-  init_state|=radio.receiveDirectAsync();
-  state=init_state==0 ? CC1101_RECV : CC1101_NOINIT;
-  return init_state;
-}
-
-int RadiolibCC1101Component::xmit() {
-  // xmit state: gd0 is output
-  standby(); 
-
-  init_state|=radio.transmitDirectAsync();
-  state=init_state==0 ? CC1101_XMIT : CC1101_NOINIT;
-
-  return init_state;
-}
-
-void RadiolibCC1101Component::adjustBW(float bandwidth) {
-  // set to a valid value
-  float possibles[16] = {58, 68, 81, 102, 116, 135, 162, 203, 232, 270, 325, 406, 464, 541, 650, 812};
-  for(int i=0;i<15;i++) {
-    if ((bandwidth>=possibles[i])&&(bandwidth<=possibles[i+1])) {
-      _bandwidth=bandwidth-possibles[i]<possibles[i+1]-bandwidth ? possibles[i] : possibles[i+1];
-      break;
-    }
-  }
-}
-
-float RadiolibCC1101Component::getRSSI() {
-  return state==CC1101_RECV ? radio.getRSSI() : -1;
+    ESP_LOGCONFIG(TAG, "bresser-cc1101-reader component");
 }
 
 }  // namespace radiolib_cc1101

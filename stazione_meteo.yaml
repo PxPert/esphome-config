@@ -55,15 +55,7 @@ spi:
 radiolib_cc1101:
   id: mycc1101
   spi_mode: 0
-  # bit_order: msb_first
   data_rate: 4MHz
-
-#  filter: 150khz # 58-812khz, default=464kHz
-  frequency: 868.35MHz # 300-348, 387-464, 779-928MHz, default=433.92MHz
-  bitrate: 8.22
-  modulation: FSK
-  filter: 270000.0
-#  bitrate: 270000.0
 
   cs_pin: 5 # CC1101 pin 4
   rx_pin:
@@ -72,9 +64,6 @@ radiolib_cc1101:
     mode:
       input: true
       pullup: true
-#  tx_pin:
-#    number: 4 # This is also GDO0
-#    allow_other_uses: true
 
 button:
   - platform: safe_mode
