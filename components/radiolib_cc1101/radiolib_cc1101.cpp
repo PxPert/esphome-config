@@ -110,7 +110,14 @@ void RadiolibCC1101Component::setup() {
 
   this->_gd0_rx->setup();
   this->_gd0_rx_isr = this->_gd0_rx->to_isr();
+  this->_gd0_rx->attach_interrupt(&RadiolibCC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
 
+  this->radioInit();
+
+}
+
+void RadiolibCC1101Component::radioInit() {
+  this->_setupComplete = false;
   ESP_LOGI(TAG, "CC1101 Setup");
 
   static const char setupCommands[][14] = {
@@ -234,61 +241,22 @@ void RadiolibCC1101Component::setup() {
 
   this->flushrx();                    // Flush the RX FIFO buffer
   delay(1);
-  this->_gd0_rx->attach_interrupt(&RadiolibCC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
   this->setReceiveMode();
-
-
-
-/*
-
-  _millis_ultima_lettura = millis();
-  pinAsOutput(CC1101_CS);
-
-
-  SPI.setDataMode(SPI_MODE0);
-  SPI.setBitOrder(MSBFIRST);
-  SPI.begin();
-  SPI.setClockDivider(SPI_CLOCK_DIV4);
-
-  pinAsInput(PIN_RECEIVE);               // gdo2
-  // pinAsInputPullUp(PIN_RECEIVE);               // gdo2
-
-
-  cc1101::CCinit();                    // CC1101 init
-
-  CCinit();
-
-  for (size_t i = 0; i < sizeof(setupCommands) / sizeof(setupCommands[0]); i++) {
-    writeCfg(setupCommands[i]);
-  }
-  enableReceive();
-
-  digitalWrite(CC1101_CS,HIGH);
-*/
-
-  /*
-  // Use Radiolib CC1101 direct receive ASK-OOK
-  hal = new EH_RL_Hal(this);
-  radio = new Module(hal,RADIOLIB_NC, RADIOLIB_NC,RADIOLIB_NC);
-
-//  init_state = radio.begin();
-  init_state = radio.begin(868.35, 8.22, 57.136417, 270.0, 10, 32);
-
-  ESP_LOGD(TAG, "CC1101 setup begin init_state =%d", state);
-
-  // setup direct receive mode
-  setup_direct_mode();
-
-  ESP_LOGD(TAG, "CC1101 setup end init_state =%d", state);
-*/
+  this->_setupComplete = true;
 }
+
 void IRAM_ATTR HOT RadiolibCC1101Component::handleInterrupt(RadiolibCC1101Component* component) {
+
+  if (! component->_setupComplete) {
+    return;
+  }
+
   ESP_LOGD(TAG, "handleInterrupt");
 	uint8_t fifoBytes;
 	bool dup;                                      // true bei identischen Wiederholungen bei readRXFIFO
 
 
- if (component->ccBufReady) {
+ if (component->_ccBufReady) {
    ESP_LOGD(TAG, "Buffer ready. Return");
    return;
  }
@@ -328,13 +296,13 @@ void IRAM_ATTR HOT RadiolibCC1101Component::handleInterrupt(RadiolibCC1101Compon
  */
 
 			/* if (fifoBytes < 0x80) */ {                // RXoverflow?
-			/*	if (fifoBytes > ccMaxBuf) {
-					fifoBytes = ccMaxBuf;
+			/*	if (fifoBytes > CC_MAX_BUF) {
+					fifoBytes = CC_MAX_BUF;
 				}
        */
 				dup = component->readRXFIFO(fifoBytes);
 				if (dup == false) { // Ralf9: 2 - FIFO ohne dup
-          component->ccBufReady = true;
+          component->_ccBufReady = true;
           ESP_LOGD(TAG, "Buffer ready, Read %d bytes - RSSI: %d",fifoBytes, RSSI);
 
 //				  for (uint8_t i = 0; i < fifoBytes; i++) {
@@ -370,10 +338,10 @@ bool RadiolibCC1101Component::readRXFIFO(uint8_t len) {                         
   this->transfer_byte(CC1101_RXFIFO | CC1101_READ_BURST);    // send register address
   for (uint8_t i = 0; i < len; i++) {
     rx = this->transfer_byte(0x00);                        // read result
-    if (i + 1 < ccMaxBuf) {
-      if (rx != ccBuf[i]) {                              // if Circuit board for more cc110x -> ccBuf expand ( if (rx != ccBuf[radionr][i] ) )
+    if (i + 1 < CC_MAX_BUF) {
+      if (rx != _ccBuf[i]) {                              // if Circuit board for more cc110x -> ccBuf expand ( if (rx != ccBuf[radionr][i] ) )
         dup = false;
-        ccBuf[i] = rx;                                 // if Circuit board for more cc110x -> ccBuf expand ( if (rx != ccBuf[radionr][i] = rx ) )
+        _ccBuf[i] = rx;                                 // if Circuit board for more cc110x -> CC_MAX_BUF expand ( if (rx != _ccBuf[radionr][i] = rx ) )
       }
     }
   }
@@ -520,6 +488,56 @@ uint8_t RadiolibCC1101Component::cmdStrobeTo(const uint8_t cmd) {
 }
 
 
+uint8_t RadiolibCC1101Component::bresser_5in1_decode()
+{
+    byte msg[CC_MAX_BUF];
+    memcpy(msg,(const byte*) this->_ccBuf,CC_MAX_BUF);
+
+    // First 13 bytes need to match inverse of last 13 bytes
+    for (unsigned col = 0; col < sizeof (this->_ccBuf) / 2; ++col) {
+        if ((msg[col] ^ msg[col + 13]) != 0xff) {
+            ESP_LOGD(TAG,"Parity wrong");
+            return 11; // message isn't correct
+        }
+    }
+
+    BresserReading reading;
+    reading.sensor_id = msg[14];
+
+
+    int temp_raw = (msg[20] & 0x0f) + ((msg[20] & 0xf0) >> 4) * 10 + (msg[21] &0x0f) * 100;
+    if (msg[25] & 0x0f)
+        temp_raw = -temp_raw;
+    reading.temperature = (float)temp_raw * 0.1f;
+
+    reading.humidity = (msg[22] & 0x0f) + ((msg[22] & 0xf0) >> 4) * 10;
+
+    reading.wind_direction_deg = (float)((msg[17] & 0xf0) >> 4) * 22.5f;
+
+    int gust_raw = ((msg[17] & 0x0f) << 8) + msg[16]; //fix merbanan/rtl_433#1315
+    reading.wind_gust = (float)gust_raw * 0.1f;
+
+    int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[19] & 0x0f) * 100; //fix merbanan/rtl_433#1315
+    reading.wind_avg = (float)wind_raw * 0.1f;
+
+    int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
+    reading.rain = (float)rain_raw * 0.1f;
+
+    reading.battery_ok = ((msg[25] & 0x80) == 0);
+
+    ESP_LOGD(TAG,"Reading complete. sensor id: %d - Tempera: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
+             reading.sensor_id,
+             reading.temperature,
+             reading.humidity,
+             reading.wind_direction_deg,
+             reading.wind_gust,
+             reading.wind_avg,
+             reading.rain,
+             reading.battery_ok
+    );
+
+    return 1;
+}
 
 uint8_t RadiolibCC1101Component::getMARCSTATE() {
 	return readReg(CC1101_MARCSTATE_REV00, CC1101_STATUS);  // xFSK, Pruefen ob Umwandung von uint to int den richtigen Wert zurueck gibt
@@ -536,20 +554,30 @@ bool RadiolibCC1101Component::flushrx() {
 
 void RadiolibCC1101Component::loop() {
 //  this->enable();
-  /*
-  uint8_t marcstate = this->getMARCSTATE();
+  static unsigned long lastmillis;
 
-  if (marcstate != 13) {
-    ESP_LOGD(TAG,"CC1101 MARC STATE != 13: %d", marcstate);
-    delay(1);
+  if ((false) && (lastmillis < millis() - 1000)) {
+    lastmillis = millis();
+    ESP_LOGD(TAG,"CHECK");
+
+    uint8_t marcstate = this->getMARCSTATE();
+
+    if (marcstate != 13) {
+      ESP_LOGD(TAG,"CC1101 MARC STATE != 13: %d", marcstate);
+      delay(1);
+    }
+
+    if (marcstate == 17) {   // RXoverflow oder nicht ASK/OOK
+      ESP_LOGD(TAG,"CC1101 MARC STATE = 17, flushing and resetting receive mode");
+      if (this->flushrx()) {                    // Flush the RX FIFO buffer
+        delay(1);
+        this->setReceiveMode();
+      }
+    }
   }
 
-  if (marcstate == 17) {   // RXoverflow oder nicht ASK/OOK
-    ESP_LOGD(TAG,"CC1101 MARC STATE = 17, flushing and resetting receive mode");
-    if (this->flushrx()) {                    // Flush the RX FIFO buffer
-      delay(1);
-      this->setReceiveMode();
-    }
+  if (this->_gd0_rx->digital_read()) {
+    this->handleInterrupt(this);
   }
 
   /*
@@ -560,10 +588,11 @@ void RadiolibCC1101Component::loop() {
   */
 
 
-  if (this->ccBufReady) {
+  if (this->_ccBufReady) {
     ESP_LOGD(TAG,"Buffer Ready. Parsing");
+    this->bresser_5in1_decode();
 //    bresser_5in1_decode(cc1101::ccBuf);
-    this->ccBufReady = false;
+    this->_ccBufReady = false;
     // cc1101::getRxFifo();
     this->flushrx();
     delay(1);

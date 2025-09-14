@@ -1,6 +1,6 @@
 #pragma once
 
-#define ccMaxBuf 64                  // for cc1101 FIFO, variable is better to revised
+#define CC_MAX_BUF 64                  // for cc1101 FIFO, variable is better to revised
 
 #include "esphome/core/component.h"
 #include "esphome/components/spi/spi.h"
@@ -14,6 +14,17 @@
 
 namespace esphome {
 namespace radiolib_cc1101 {
+
+struct BresserReading {
+  uint16_t sensor_id;
+  float temperature;
+  int humidity;
+  float wind_direction_deg;
+  float wind_gust;
+  float wind_avg;
+  float rain;
+  int battery_ok;
+};
 
 enum CC1101_state {CC1101_NOINIT,CC1101_STANDBY,CC1101_RECV,CC1101_XMIT};
 enum CC1101Modulation {OOK_MODULATION=0, FSK_MODULATION};
@@ -76,18 +87,21 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
     float last_rx_rssi=0;
 
   protected:
-    volatile uint8_t ccBuf[ccMaxBuf];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][ccMaxBuf] )
-    volatile bool  ccBufReady = false;
+    volatile uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
+    volatile bool  _ccBufReady = false;
+    volatile bool _setupComplete = false;
 
   private:
     InternalGPIOPin* _gd0_rx=nullptr;
     ISRInternalGPIOPin _gd0_rx_isr=nullptr; // Used by ISR
+    uint8_t bresser_5in1_decode();
 
     bool readRXFIFO(uint8_t len);                             // xFSK
     uint8_t getRXBYTES();
     uint8_t getRSSIdev();
 
 
+    void radioInit();
     void setReceiveMode();
     bool flushrx();
     void writeCfg();
@@ -100,8 +114,6 @@ class RadiolibCC1101Component : public Component, public EH_RL_SPI {
     uint8_t waitTo_Miso();
     uint8_t cmdStrobe(const uint8_t cmd);
     uint8_t cmdStrobeTo(const uint8_t cmd);
-
-
     uint8_t getMARCSTATE();                                         // xFSK
 
     static void handleInterrupt(RadiolibCC1101Component* component);
