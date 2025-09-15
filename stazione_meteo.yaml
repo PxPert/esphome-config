@@ -75,6 +75,10 @@ ansluta_cc2500:
   data_rate: 4MHz
   cs_pin: 16
 
+light:
+  - platform: ansluta_cc2500
+    name: "Cucinotto"
+
 bresser5in1_cc1101:
   spi_mode: 0
   data_rate: 4MHz
