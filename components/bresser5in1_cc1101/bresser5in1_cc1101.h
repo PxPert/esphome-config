@@ -44,6 +44,7 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     void set_wind_gusts_speed_sensor(sensor::Sensor *v) { _wind_gusts_speed = v; }
     void set_wind_speed_sensor(sensor::Sensor *v) { _wind_speed = v; }
     void set_rain_level_sensor(sensor::Sensor *v) { _rain_level = v; }
+    void set_rssi_sensor(sensor::Sensor *v) { _RSSI_level = v; }
     void set_battery_sensor(binary_sensor::BinarySensor *sensor) { this->_battery_sensor = sensor; }
 
   private:
@@ -54,18 +55,25 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     sensor::Sensor *_wind_gusts_speed{nullptr};
     sensor::Sensor *_wind_speed{nullptr};
     sensor::Sensor *_rain_level{nullptr};
+    sensor::Sensor *_RSSI_level{nullptr};
     binary_sensor::BinarySensor *_battery_sensor{nullptr};
 
 
-    uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
+    volatile uint8_t _ccBuf[2][CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
+    volatile int8_t _activeBuf = 0;
+    volatile uint8_t _RSSI = 0;
     volatile bool _gpioChanged = false;
+
+
+    unsigned long _last_station_read = 0;
     bool _setupComplete = false;
     InternalGPIOPin* _gd0_rx=nullptr;
+    ISRInternalGPIOPin _gd0_rx_isr;
 
 
     uint8_t bresser_5in1_decode();
 
-    bool readRXFIFO(uint8_t start,uint8_t len);                             // xFSK
+    bool readRXFIFO(uint8_t start, uint8_t index, uint8_t len);                             // xFSK
     uint8_t checkParity(const byte*);
     uint8_t getRXBYTES();
     uint8_t getRSSIdev();

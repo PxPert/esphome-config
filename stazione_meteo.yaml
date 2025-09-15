@@ -40,8 +40,8 @@ external_components:
 ota:
   platform: esphome
   password: !secret ota_pwd_sec
-#  on_begin:
-#    - lambda: id(mycc1101).standby();
+  on_begin:
+    - lambda: noInterrupts();
 
 
 spi:
@@ -82,6 +82,8 @@ sensor:
      name: "Wind speed"
    rain_level:
      name: "Rain level"
+   rssi:
+     name: "RSSI"
 
 #binary_sensor:
 # - platform: bresser5in1_cc1101

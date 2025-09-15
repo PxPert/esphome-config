@@ -19,6 +19,7 @@ from esphome.const import (
     UNIT_PERCENT,
     UNIT_MILLIMETER,
     DEVICE_CLASS_PRECIPITATION,
+    ICON_WIFI,
 
 )
 from . import CONF_BRESSER_5_IN_1_ID, Bresser5in1Component
@@ -29,6 +30,13 @@ DEPENDENCIES = [ "bresser5in1_cc1101" ]
 CONFIG_SCHEMA = (
     cv.Schema({
         cv.GenerateID(CONF_BRESSER_5_IN_1_ID): cv.use_id(Bresser5in1Component),
+
+        cv.Optional("rssi"): sensor.sensor_schema(
+            unit_of_measurement=UNIT_EMPTY,
+            accuracy_decimals=1,
+            icon=ICON_WIFI,
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
 
         cv.Optional(CONF_TEMPERATURE): sensor.sensor_schema(
             unit_of_measurement=UNIT_CELSIUS,
@@ -88,6 +96,11 @@ async def to_code(config):
         conf = config["station_id"]
         sens = await sensor.new_sensor(conf)
         cg.add(var.set_station_id_sensor(sens))
+
+    if "rssi" in config:
+        conf = config["rssi"]
+        sens = await sensor.new_sensor(conf)
+        cg.add(var.set_rssi_sensor(sens))
 
     if temperature_config := config.get(CONF_TEMPERATURE):
         sens = await sensor.new_sensor(temperature_config)

@@ -110,6 +110,7 @@ void Bresser5in1CC1101Component::setup() {
 
   this->_gd0_rx->setup();
   this->_gd0_rx->attach_interrupt(&Bresser5in1CC1101Component::handleInterrupt, this, gpio::INTERRUPT_ANY_EDGE);
+  this->_gd0_rx_isr = this->_gd0_rx->to_isr();
 
   this->radioInit();
 
@@ -241,14 +242,33 @@ void Bresser5in1CC1101Component::radioInit() {
   this->flushrx();                    // Flush the RX FIFO buffer
   delay(1);
   this->setReceiveMode();
+  _last_station_read = millis();
   this->_setupComplete = true;
 }
 
 
 void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101Component* component) {
   if (component->_setupComplete) {
-    component->_gpioChanged = true;
-  }
+    int8_t bufIndex = 1 - component->_activeBuf;
+
+
+    // ESP_LOGD(TAG, "handleInterrupt");
+    uint8_t fifoBytes;
+    bool dup;                                      // true bei identischen Wiederholungen bei readRXFIFO
+
+    // unsigned long readStartMillis = millis();
+    // while ((this->_gd0_rx->digital_read()) && (readStart < CC_MAX_BUF) && (readStartMillis > (millis() - 500) )) {                     // wait for CC1100_FIFOTHR given bytes to arrive in FIFO
+    if (component->_gd0_rx_isr.digital_read())
+      // ESP_LOGD(TAG, "GPIO UP. Reading");
+
+      fifoBytes = component->getRXBYTES();          // & 0x7f; // read len, transfer RX fifo
+      component->_RSSI = component->getRSSIdev();
+      if (fifoBytes > 0) {
+        dup = component->readRXFIFO(0, bufIndex, fifoBytes);
+        component->_gpioChanged = true;
+        component->_activeBuf = bufIndex;
+      }
+    }
 }
 
 uint8_t Bresser5in1CC1101Component::populateBuffer() {
@@ -273,7 +293,7 @@ uint8_t Bresser5in1CC1101Component::populateBuffer() {
         RSSI = this->getRSSIdev();
       }
 
-      dup = this->readRXFIFO(readStart, min((int)fifoBytes, CC_MAX_BUF - readStart) );
+      dup = this->readRXFIFO(readStart, 0, min((int)fifoBytes, CC_MAX_BUF - readStart) );
       delay(1);
       readStart += min((int)fifoBytes, CC_MAX_BUF - readStart);
       if (dup == false) { // Ralf9: 2 - FIFO ohne dup
@@ -303,7 +323,7 @@ uint8_t Bresser5in1CC1101Component::getRSSIdev() {
 	return readReg((revision == 0x01 ? CC1101_RSSI_REV01 : CC1101_RSSI_REV00), CC1101_STATUS);
 }
 
-bool Bresser5in1CC1101Component::readRXFIFO(uint8_t start, uint8_t len) {                             // xFSK
+bool Bresser5in1CC1101Component::readRXFIFO(uint8_t start, uint8_t index, uint8_t len) {                             // xFSK
   bool dup = true;
   uint8_t rx;
 
@@ -312,9 +332,9 @@ bool Bresser5in1CC1101Component::readRXFIFO(uint8_t start, uint8_t len) {       
   for (uint8_t i = start; i < start + len; i++) {
     rx = this->transfer_byte(0x00);                        // read result
     if (i + 1 < CC_MAX_BUF) {
-      if (rx != _ccBuf[i]) {                              // if Circuit board for more cc110x -> ccBuf expand ( if (rx != ccBuf[radionr][i] ) )
+      if (rx != _ccBuf[index][i]) {                              // if Circuit board for more cc110x -> ccBuf expand ( if (rx != ccBuf[radionr][i] ) )
         dup = false;
-        _ccBuf[i] = rx;                                 // if Circuit board for more cc110x -> CC_MAX_BUF expand ( if (rx != _ccBuf[radionr][i] = rx ) )
+        _ccBuf[index][i] = rx;                                 // if Circuit board for more cc110x -> CC_MAX_BUF expand ( if (rx != _ccBuf[radionr][i] = rx ) )
       }
     }
   }
@@ -483,7 +503,7 @@ uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg) {
 uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
 {
     byte msg[CC_MAX_BUF];
-    memcpy(msg,(const byte*) this->_ccBuf,CC_MAX_BUF);
+    memcpy(msg,(const byte*) this->_ccBuf[_activeBuf],CC_MAX_BUF);
 
     uint8_t startIndex = checkParity(msg);
 
@@ -558,7 +578,12 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
       this->_station_id->publish_state(reading.sensor_id);
     }
 
-    ESP_LOGD(TAG,"Reading complete. sensor id: %d - Temp: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
+    if (this->_RSSI_level != nullptr) {
+      this->_RSSI_level->publish_state(_RSSI);
+    }
+
+    ESP_LOGD(TAG,"Reading complete. RSSI: %d, sensor id: %d - Temp: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
+             _RSSI,
              reading.sensor_id,
              reading.temperature,
              reading.humidity,
@@ -586,26 +611,16 @@ bool Bresser5in1CC1101Component::flushrx() {
 }
 
 void Bresser5in1CC1101Component::loop() {
-  static unsigned long lastread = millis();
-
-  uint8_t totalRead = 0;
   if (this->_gpioChanged) {
+    this->bresser_5in1_decode();
     this->_gpioChanged = false;
-    totalRead = this->populateBuffer();
-  }
-
-  if (totalRead) {
-    ESP_LOGD(TAG,"Buffer Read complete. Parsing");
     this->flushrx();
     delay(1);
     this->setReceiveMode();
-    this->bresser_5in1_decode();
-    lastread = millis();
-
+    _last_station_read = millis();
   } else {
-    if (millis() - lastread > 900000) {
+    if (millis() - _last_station_read > 900000) {
       ESP_LOGW(TAG,"No Data from CC1101 since 15 minutes. Reinit");
-      lastread = millis();
       this->radioInit();
       return;
     }
