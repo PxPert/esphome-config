@@ -40,8 +40,8 @@ external_components:
 ota:
   platform: esphome
   password: !secret ota_pwd_sec
-  on_begin:
-    - lambda: noInterrupts();
+#  on_begin:
+#    - lambda: noInterrupts();
 
 
 spi:

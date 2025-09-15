@@ -92,7 +92,6 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     uint8_t cmdStrobe(const uint8_t cmd);
     uint8_t cmdStrobeTo(const uint8_t cmd);
     uint8_t getMARCSTATE();                                         // xFSK
-    uint8_t populateBuffer();
 
     static void handleInterrupt(Bresser5in1CC1101Component* component);
 

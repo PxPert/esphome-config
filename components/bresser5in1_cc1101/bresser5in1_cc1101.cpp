@@ -261,6 +261,8 @@ void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101
     if (component->_gd0_rx_isr.digital_read())
       // ESP_LOGD(TAG, "GPIO UP. Reading");
 
+      memset((void*)component->_ccBuf[bufIndex],0,CC_MAX_BUF); // Zero out memory
+
       fifoBytes = component->getRXBYTES();          // & 0x7f; // read len, transfer RX fifo
       component->_RSSI = component->getRSSIdev();
       if (fifoBytes > 0) {
@@ -271,49 +273,6 @@ void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101
     }
 }
 
-uint8_t Bresser5in1CC1101Component::populateBuffer() {
-  uint8_t readStart = 0;
-  uint8_t RSSI = 0;
-
-  if (! this->_setupComplete) {
-    return 0;
-  }
-
-  // ESP_LOGD(TAG, "handleInterrupt");
-  uint8_t fifoBytes;
-  bool dup;                                      // true bei identischen Wiederholungen bei readRXFIFO
-
-  unsigned long readStartMillis = millis();
-  while ((this->_gd0_rx->digital_read()) && (readStart < CC_MAX_BUF) && (readStartMillis > (millis() - 500) )) {                     // wait for CC1100_FIFOTHR given bytes to arrive in FIFO
-    // ESP_LOGD(TAG, "GPIO UP. Reading");
-
-		fifoBytes = this->getRXBYTES();          // & 0x7f; // read len, transfer RX fifo
-		if (fifoBytes > 0) {
-      if (! readStart) {
-        RSSI = this->getRSSIdev();
-      }
-
-      dup = this->readRXFIFO(readStart, 0, min((int)fifoBytes, CC_MAX_BUF - readStart) );
-      delay(1);
-      readStart += min((int)fifoBytes, CC_MAX_BUF - readStart);
-      if (dup == false) { // Ralf9: 2 - FIFO ohne dup
-        ESP_LOGD(TAG, "Buffer ready, Read %d bytes, next start: %d - RSSI: %d",fifoBytes, readStart, RSSI);
-      } else {
-        ESP_LOGD(TAG, "Buffer read error");
-      }
-		} else {
-      ESP_LOGD(TAG, "Error: 0 fifo bytes");
-      return 0;
-    }
-	}
-/*
-	if (!readStart) {
-    ESP_LOGD(TAG, "GPIO Down");
-  }
-*/
-  return readStart;
-
-}
 uint8_t Bresser5in1CC1101Component::getRXBYTES() {                             // xFSK
 	return readReg(CC1101_SFTX,CC1101_STATUS);
 }
@@ -493,8 +452,17 @@ uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg) {
       }
     }
     if (col == 13) {
-      ESP_LOGD(TAG,"Parity found at %d", startcol);
-      return startcol;
+      uint8_t pops_check = msg[startcol + 13];
+      uint8_t pops_count = 0;
+      for (size_t i = startcol + 14; i < startcol + 25; i++) {
+        pops_count += __builtin_popcount(msg[i]);
+      }
+      if (pops_check == pops_count) {
+        ESP_LOGD(TAG,"Parity found at %d", startcol);
+        return startcol;
+      } else {
+        ESP_LOGD(TAG,"Parity found but pops check fail. Pops TO CHECK: %d - Counted: %d", pops_check, pops_count);
+      }
     }
   }
   return CC_MAX_BUF;
@@ -520,9 +488,28 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
         }
     }
 */
+    ESP_LOGD(TAG,
+      "Parsing the followind hex values:"
+      "%02X %02X %02X %02X %02X %02X "
+      "%02X %02X %02X %02X %02X %02X "
+      "%02X %02X %02X %02X %02X %02X "
+      "%02X %02X %02X %02X %02X %02X "
+      "%02X %02X",
+      msg[startIndex + 0], msg[startIndex + 1], msg[startIndex + 2], msg[startIndex + 3], msg[startIndex + 4], msg[startIndex + 5],
+      msg[startIndex + 6], msg[startIndex + 7], msg[startIndex + 8], msg[startIndex + 9], msg[startIndex + 10], msg[startIndex + 11],
+      msg[startIndex + 12], msg[startIndex + 13], msg[startIndex + 14], msg[startIndex + 15], msg[startIndex + 16], msg[startIndex + 17],
+      msg[startIndex + 18], msg[startIndex + 19], msg[startIndex + 20], msg[startIndex + 21], msg[startIndex + 22], msg[startIndex + 23],
+      msg[startIndex + 24], msg[startIndex + 25]
+    );
+
     BresserReading reading;
     reading.sensor_id = msg[startIndex + 14];
 
+
+
+//    if (reading.sensor_id != 185) {
+//      return 10;
+//    }
 
     int temp_raw = (msg[startIndex + 20] & 0x0f) + ((msg[startIndex + 20] & 0xf0) >> 4) * 10 + (msg[startIndex + 21] &0x0f) * 100;
     if (msg[startIndex + 25] & 0x0f)
