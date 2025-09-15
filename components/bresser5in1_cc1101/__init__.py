@@ -29,6 +29,7 @@ CONFIG_SCHEMA = (
     cv.Schema({
         cv.GenerateID(): cv.declare_id(Bresser5in1Component),
         cv.Required(CONF_RX_PIN): pins.internal_gpio_input_pin_schema,
+        cv.Optional("filter_station_id", default=0): cv.int_range(0, 255),
         cv.Optional(CONF_ON_STATE): automation.validate_automation(
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(StateTrigger),
@@ -45,6 +46,8 @@ async def to_code(config):
 
     pin = await gpio_pin_expression(config[CONF_RX_PIN])
     cg.add(var.set_rx_pin(pin))
+
+    cg.add(var.set_filter_station_id(config["filter_station_id"]))
 
     for conf in config.get(CONF_ON_STATE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)

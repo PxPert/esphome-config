@@ -30,6 +30,7 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     void loop() override;
     void dump_config() override;
     void radioInit();
+    void stopInterrupts();
 
     void set_rx_pin(InternalGPIOPin *rx_pin) { _gd0_rx = rx_pin; }
 
@@ -47,6 +48,8 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     void set_rssi_sensor(sensor::Sensor *v) { _RSSI_level = v; }
     void set_battery_sensor(binary_sensor::BinarySensor *sensor) { this->_battery_sensor = sensor; }
 
+    void set_filter_station_id(uint8_t v) { this->_filter_station_id = v; }
+
   private:
     sensor::Sensor *_temperature{nullptr};
     sensor::Sensor *_station_id{nullptr};
@@ -60,6 +63,7 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
 
 
     volatile uint8_t _ccBuf[2][CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
+    volatile uint8_t _readBytes[2];
     volatile int8_t _activeBuf = 0;
     volatile uint8_t _RSSI = 0;
     volatile bool _gpioChanged = false;
@@ -70,11 +74,13 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     InternalGPIOPin* _gd0_rx=nullptr;
     ISRInternalGPIOPin _gd0_rx_isr;
 
+    uint8_t _filter_station_id{0};
+
 
     uint8_t bresser_5in1_decode();
 
     bool readRXFIFO(uint8_t start, uint8_t index, uint8_t len);                             // xFSK
-    uint8_t checkParity(const byte*);
+    uint8_t checkParity(const byte* msg, uint8_t readBytes);
     uint8_t getRXBYTES();
     uint8_t getRSSIdev();
 

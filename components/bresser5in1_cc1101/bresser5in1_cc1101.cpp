@@ -116,6 +116,10 @@ void Bresser5in1CC1101Component::setup() {
 
 }
 
+void Bresser5in1CC1101Component::stopInterrupts() {
+  this->_gd0_rx->detach_interrupt();
+}
+
 void Bresser5in1CC1101Component::radioInit() {
   this->_setupComplete = false;
   ESP_LOGI(TAG, "CC1101 Setup");
@@ -258,7 +262,7 @@ void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101
 
     // unsigned long readStartMillis = millis();
     // while ((this->_gd0_rx->digital_read()) && (readStart < CC_MAX_BUF) && (readStartMillis > (millis() - 500) )) {                     // wait for CC1100_FIFOTHR given bytes to arrive in FIFO
-    if (component->_gd0_rx_isr.digital_read())
+    if (component->_gd0_rx_isr.digital_read()) {
       // ESP_LOGD(TAG, "GPIO UP. Reading");
 
       memset((void*)component->_ccBuf[bufIndex],0,CC_MAX_BUF); // Zero out memory
@@ -267,10 +271,12 @@ void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101
       component->_RSSI = component->getRSSIdev();
       if (fifoBytes > 0) {
         dup = component->readRXFIFO(0, bufIndex, fifoBytes);
+        component->_readBytes[bufIndex] = fifoBytes;
         component->_gpioChanged = true;
         component->_activeBuf = bufIndex;
       }
     }
+  }
 }
 
 uint8_t Bresser5in1CC1101Component::getRXBYTES() {                             // xFSK
@@ -440,9 +446,14 @@ uint8_t Bresser5in1CC1101Component::cmdStrobeTo(const uint8_t cmd) {
 
 }
 
-uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg) {
+uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg, uint8_t readBytes) {
   // First 13 bytes need to match inverse of last 13 bytes
-  for (uint8_t startcol = 0; startcol < (CC_MAX_BUF - 13); startcol++ )
+  if (readBytes < 26) {
+    ESP_LOGD(TAG,"Read %d bytes, not enough.", readBytes);
+    return CC_MAX_BUF;
+  }
+
+  for (uint8_t startcol = 0; startcol < (readBytes - 25); startcol++ )
   {
     uint8_t col = 0;
     for (col = 0; col < 13; ++col) {
@@ -473,7 +484,7 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
     byte msg[CC_MAX_BUF];
     memcpy(msg,(const byte*) this->_ccBuf[_activeBuf],CC_MAX_BUF);
 
-    uint8_t startIndex = checkParity(msg);
+    uint8_t startIndex = checkParity(msg, _readBytes[_activeBuf]);
 
     if (startIndex ==  CC_MAX_BUF) {
       // ESP_LOGD(TAG,"Parity wrong");
@@ -506,10 +517,11 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
     reading.sensor_id = msg[startIndex + 14];
 
 
-
-//    if (reading.sensor_id != 185) {
-//      return 10;
-//    }
+    if ( (this->_filter_station_id) && (reading.sensor_id != this->_filter_station_id) )
+    {
+      ESP_LOGD(TAG,"Station ID not selected. Read value from: %d - selected: %d", reading.sensor_id, this->_filter_station_id);
+      return 10;
+    }
 
     int temp_raw = (msg[startIndex + 20] & 0x0f) + ((msg[startIndex + 20] & 0xf0) >> 4) * 10 + (msg[startIndex + 21] &0x0f) * 100;
     if (msg[startIndex + 25] & 0x0f)

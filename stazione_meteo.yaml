@@ -1,8 +1,13 @@
 esphome:
   name: stazione-meteo
   friendly_name: Stazione meteo
-  platformio_options:
-    build_flags: -DRADIOLIB_EXCLUDE_LORAWAN=true -DRADIOLIB_EXCLUDE_PAGER=true
+
+  devices:
+    - id: meteo_station
+      name: "Stazione meteo"
+    - id: leds_cucinotto
+      name: "Luci cucinotto"
+
 esp8266:
   board: esp01_1m
 
@@ -34,15 +39,15 @@ wifi:
 external_components:
   - source: /config/components/
     components: [ bresser5in1_cc1101 ]
+  - source: github://PxPert/ikea-ansluta-esphome
 # packages:
 #   cc1101_controls: !include includes/cc1101-controls.yaml
 
 ota:
   platform: esphome
   password: !secret ota_pwd_sec
-#  on_begin:
-#    - lambda: noInterrupts();
-
+  on_begin:
+    - lambda: id(weather_station)->stopInterrupts();
 
 spi:
   # these are the default SPI pins to use on ESP8266
@@ -50,9 +55,29 @@ spi:
   mosi_pin: MOSI  # CC1001 pin 6
   miso_pin: MISO  # CC1001 pin 7
 
+ikea_ansluta:
+  cs_pin: GPIO16
+  on_remote_click:
+    address: 0x8BB1
+    # If the remote has the same address as the light
+    # Then there is no need to turn the light on/off
+    # I wouldn't recommend this though, since (at least for me)
+    # the performance/stability is actually worse using the remote.
+    then:
+      - logger.log: "Remote clicked!"
+
+light:
+  - platform: ikea_ansluta
+    device_id: leds_cucinotto
+    name: 'Luci'
+    address: 0x8BB1 # Same adress as remote
+
+
 bresser5in1_cc1101:
   spi_mode: 0
   data_rate: 4MHz
+  filter_station_id: 185
+
   id: weather_station
 
   cs_pin: 5 # CC1101 pin 4
@@ -67,35 +92,37 @@ bresser5in1_cc1101:
       ESP_LOGD("bresser5in1","NEW READ! Temp: %.2f", x->temperature);
 
 sensor:
- - platform: bresser5in1_cc1101
-   temperature:
-     name: "Temperature"
-   station_id:
-     name: "Station ID"
-   humidity:
-     name: "Humidity"
-   wind_direction_degrees:
-     name: "Wind direction"
-   wind_gusts_speed:
-     name: "Wind gust speed"
-   wind_speed:
-     name: "Wind speed"
-   rain_level:
-     name: "Rain level"
-   rssi:
-     name: "RSSI"
+  - platform: bresser5in1_cc1101
+    temperature:
+      device_id: meteo_station
+      name: "Temperature"
+    station_id:
+      device_id: meteo_station
+      name: "Station ID"
+    humidity:
+      device_id: meteo_station
+      name: "Humidity"
+    wind_direction_degrees:
+      device_id: meteo_station
+      name: "Wind direction"
+    wind_gusts_speed:
+      device_id: meteo_station
+      name: "Wind gust speed"
+    wind_speed:
+      device_id: meteo_station
+      name: "Wind speed"
+    rain_level:
+      device_id: meteo_station
+      name: "Rain level"
+    rssi:
+      device_id: meteo_station
+      name: "RSSI"
 
-#binary_sensor:
-# - platform: bresser5in1_cc1101
-#   battery_low:
-#     name: "Battery Low"
-
-# sensor:
-#   - platform: template
-#     name: "Song duration"
-#     id: song_duration
-# binary_sensor:
-#   - platform: template
+binary_sensor:
+  - platform: bresser5in1_cc1101
+    battery_low:
+      device_id: meteo_station
+      name: "Battery Low"
     
 button:
   - platform: safe_mode
@@ -103,6 +130,7 @@ button:
   - platform: restart
     name: "Restart"
   - platform: template
+    device_id: meteo_station
     name: Reset CC1101
     id: reset_cc1101
     on_press:
