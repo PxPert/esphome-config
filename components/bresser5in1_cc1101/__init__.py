@@ -9,6 +9,10 @@ from esphome.core import CORE
 import os
 
 DEPENDENCIES = ["spi"]
+AUTO_LOAD = [ "binary_sensor", "sensor"]
+
+CONF_BRESSER_5_IN_1_ID = "bresser5in1_cc1101_id"
+
 
 bresser5in1_cc1101_ns = cg.esphome_ns.namespace("bresser5in1_cc1101")
 Bresser5in1Component = bresser5in1_cc1101_ns.class_(
@@ -24,12 +28,13 @@ BresserReadingConstPtr = BresserReading.operator("ptr").operator("const")
 CONFIG_SCHEMA = (
     cv.Schema({
         cv.GenerateID(): cv.declare_id(Bresser5in1Component),
-        cv.Optional(CONF_RX_PIN): pins.internal_gpio_input_pin_schema,
+        cv.Required(CONF_RX_PIN): pins.internal_gpio_input_pin_schema,
         cv.Optional(CONF_ON_STATE): automation.validate_automation(
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(StateTrigger),
             }
         ),
+
         })
     .extend(cv.COMPONENT_SCHEMA)
     .extend(spi.spi_device_schema(cs_pin_required=True))

@@ -50,10 +50,8 @@ spi:
   clk_pin: SCK   # CC1001 pin 5
   mosi_pin: MOSI  # CC1001 pin 6
   miso_pin: MISO  # CC1001 pin 7
-  
 
 bresser5in1_cc1101:
-  id: bresser5in1cc1101
   spi_mode: 0
   data_rate: 4MHz
 
@@ -68,6 +66,23 @@ bresser5in1_cc1101:
     lambda: |-
       ESP_LOGD("bresser5in1","NEW READ! Temp: %.2f", x->temperature);
 
+sensor:
+ - platform: bresser5in1_cc1101
+   temperature:
+     name: "Stazione meteo temperature"
+
+binary_sensor:
+ - platform: bresser5in1_cc1101
+   battery_low:
+     name: "Battery Low"
+
+# sensor:
+#   - platform: template
+#     name: "Song duration"
+#     id: song_duration
+# binary_sensor:
+#   - platform: template
+    
 button:
   - platform: safe_mode
     name: "Restart (Safe Mode)"

@@ -259,13 +259,13 @@ uint8_t Bresser5in1CC1101Component::populateBuffer() {
     return 0;
   }
 
-  ESP_LOGD(TAG, "handleInterrupt");
+  // ESP_LOGD(TAG, "handleInterrupt");
   uint8_t fifoBytes;
   bool dup;                                      // true bei identischen Wiederholungen bei readRXFIFO
 
   unsigned long readStartMillis = millis();
   while ((this->_gd0_rx->digital_read()) && (readStart < CC_MAX_BUF) && (readStartMillis > (millis() - 500) )) {                     // wait for CC1100_FIFOTHR given bytes to arrive in FIFO
-    ESP_LOGD(TAG, "GPIO UP. Reading");
+    // ESP_LOGD(TAG, "GPIO UP. Reading");
 
 		fifoBytes = this->getRXBYTES();          // & 0x7f; // read len, transfer RX fifo
 		if (fifoBytes > 0) {
@@ -277,7 +277,7 @@ uint8_t Bresser5in1CC1101Component::populateBuffer() {
       delay(1);
       readStart += min((int)fifoBytes, CC_MAX_BUF - readStart);
       if (dup == false) { // Ralf9: 2 - FIFO ohne dup
-        ESP_LOGD(TAG, "Buffer ready, Read %d bytes, start: %d - RSSI: %d",fifoBytes, readStart, RSSI);
+        ESP_LOGD(TAG, "Buffer ready, Read %d bytes, next start: %d - RSSI: %d",fifoBytes, readStart, RSSI);
       } else {
         ESP_LOGD(TAG, "Buffer read error");
       }
@@ -362,7 +362,7 @@ void Bresser5in1CC1101Component::writeCfg(const char* IB_1) {
 
 void Bresser5in1CC1101Component::setReceiveMode() {
   uint8_t res = this->cmdStrobe(CC1101_SIDLE);
-  ESP_LOGD(TAG, "Set IDLE response: %d", res);
+  // ESP_LOGD(TAG, "Set IDLE response: %d", res);
 	delay(1);
 
   uint8_t maxloop = 0xff;
@@ -524,7 +524,15 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
 
     state_callback_.call(&reading);
 
-    ESP_LOGD(TAG,"Reading complete. sensor id: %d - Tempera: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
+    if (this->temperature_ != nullptr) {
+      this->temperature_->publish_state(reading.temperature);
+    }
+
+    if (this->battery_sensor_ != nullptr) {
+      this->battery_sensor_->publish_state(reading.battery_ok == 0);
+    }
+
+    ESP_LOGD(TAG,"Reading complete. sensor id: %d - Temp: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
              reading.sensor_id,
              reading.temperature,
              reading.humidity,
@@ -561,7 +569,7 @@ void Bresser5in1CC1101Component::loop() {
   }
 
   if (totalRead) {
-    ESP_LOGD(TAG,"Buffer Ready. Parsing");
+    ESP_LOGD(TAG,"Buffer Read complete. Parsing");
     this->bresser_5in1_decode();
     this->flushrx();
     delay(1);
@@ -580,6 +588,8 @@ void Bresser5in1CC1101Component::loop() {
 
 void Bresser5in1CC1101Component::dump_config(){
     ESP_LOGCONFIG(TAG, "bresser-cc1101-reader component");
+    LOG_SENSOR("  ", "Temperature", this->temperature_);
+
 }
 
 }  // namespace bresser5in1_cc1101

@@ -4,6 +4,8 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/spi/spi.h"
+#include "esphome/components/sensor/sensor.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 
 namespace esphome {
 namespace bresser5in1_cc1101 {
@@ -33,7 +35,14 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
       this->state_callback_.add(std::move(callback));
     }
 
+    void set_temperature(sensor::Sensor *temperature) { temperature_ = temperature; }
+    void set_battery_sensor(binary_sensor::BinarySensor *sensor) { this->battery_sensor_ = sensor; }
+
   private:
+    sensor::Sensor *temperature_{nullptr};
+    binary_sensor::BinarySensor *battery_sensor_{nullptr};
+
+
     uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
     volatile bool _gpioChanged = false;
     bool _setupComplete = false;
