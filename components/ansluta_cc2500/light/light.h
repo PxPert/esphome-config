@@ -19,10 +19,11 @@ class AnslutaCC2500Light : public Component, public light::LightOutput {
   void set_parent(AnslutaCC2500Component *parent) { this->parent_ = parent; };
 
 
- protected:
+ private:
   AnslutaCC2500Component *parent_;
   light::LightState *state_{nullptr};
-
+  void handle_remote_command_(uint8_t command);
+  bool ignore_state_{false};
 
 };
 

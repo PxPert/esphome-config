@@ -18,6 +18,9 @@ class AnslutaCC2500Component : public Component, public EH_RL_SPI {
 
     void setLight(uint8_t state);
 
+    void add_on_remote_click_callback(std::function<void(uint8_t)> &&callback){
+      this->on_remote_click_callback_.add(std::move(callback));
+    }
   private:
     bool _setupComplete = false;
 
@@ -31,6 +34,9 @@ class AnslutaCC2500Component : public Component, public EH_RL_SPI {
     void sendCommand(byte AddressByteA, byte AddressByteB, byte Command);
     uint8_t getRXBYTES();
     uint8_t sendStrobe(uint8_t strobe);
+
+    CallbackManager<void(uint8_t)> on_remote_click_callback_{};
+
 };
 
 

@@ -282,8 +282,9 @@ void AnslutaCC2500Component::loop() {
       uint8_t command= this->readRemoteCommand();
       if (command!= 0) {
         ESP_LOGD(TAG,"Data received from CC2500");
-        this->enableRead();
+        this->on_remote_click_callback_.call(command);
       }
+      this->enableRead();
     break;
   }
 }

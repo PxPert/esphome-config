@@ -6,15 +6,12 @@ namespace ansluta_cc2500 {
 static const char *TAG = "ansluta_cc2500.light";
 
 void AnslutaCC2500Light::setup() {
-  /*
   this->parent_->add_on_remote_click_callback(
-      [this](uint16_t address, uint8_t command) {
-        // Remote and light and has same addr, i.e not paired directly with the light
-        if (this->address_ == address) {
-          this->handle_remote_command_((Command) command);
-        }
-      });
-      */
+    [this](uint8_t command) {
+      // Remote and light and has same addr, i.e not paired directly with the light
+      this->handle_remote_command_(command);
+    }
+  );
 }
 
 void AnslutaCC2500Light::dump_config() {
@@ -33,8 +30,40 @@ light::LightTraits AnslutaCC2500Light::get_traits() {
   return traits;
 }
 
+void AnslutaCC2500Light::handle_remote_command_(uint8_t command) {
+  // If we get commands from the remote, we don't want to send commands
+  ESP_LOGD(TAG,"Handling remote command");
+
+  auto call = this->state_->make_call();
+  switch (command) {
+    case 3:
+      call.set_brightness(1.0f);
+      call.set_state(true);
+      break;
+    case 2:
+      call.set_brightness(0.5);
+      call.set_state(true);
+      break;
+    case 1:
+      call.set_state(false);
+      break;
+    default:
+      ESP_LOGD(TAG,"Remote command %d not recognized", command);
+      // Ignore pairing commands
+      return;
+      break;
+  }
+  this->ignore_state_ = true;
+  call.perform();
+}
+
 
 void AnslutaCC2500Light::write_state(light::LightState *state) {
+  if (this->ignore_state_) {
+    this->ignore_state_ = false;
+    return;
+  }
+
   float brightness;
   state->current_values_as_brightness(&brightness);
   ESP_LOGD(TAG,"Requested set light to %.2f", brightness);
