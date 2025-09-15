@@ -25,12 +25,11 @@ wifi:
   ssid: !secret wifi_dmz_ssid
   password: !secret wifi_dmz_password
   use_address: 192.168.2.12
-#  use_address: 192.168.2.237
-  manual_ip:
-    static_ip: 192.168.2.12
-    gateway: 192.168.2.1
-    subnet: 255.255.255.0
-    dns1: 192.168.2.1
+#  manual_ip:
+#    static_ip: 192.168.2.12
+#    gateway: 192.168.2.1
+#    subnet: 255.255.255.0
+#    dns1: 192.168.2.1
 
 external_components:
   - source: /config/components/
@@ -54,6 +53,7 @@ spi:
 bresser5in1_cc1101:
   spi_mode: 0
   data_rate: 4MHz
+  id: weather_station
 
   cs_pin: 5 # CC1101 pin 4
   rx_pin:
@@ -69,12 +69,24 @@ bresser5in1_cc1101:
 sensor:
  - platform: bresser5in1_cc1101
    temperature:
-     name: "Stazione meteo temperature"
+     name: "Temperature"
+   station_id:
+     name: "Station ID"
+   humidity:
+     name: "Humidity"
+   wind_direction_degrees:
+     name: "Wind direction"
+   wind_gusts_speed:
+     name: "Wind gust speed"
+   wind_speed:
+     name: "Wind speed"
+   rain_level:
+     name: "Rain level"
 
-binary_sensor:
- - platform: bresser5in1_cc1101
-   battery_low:
-     name: "Battery Low"
+#binary_sensor:
+# - platform: bresser5in1_cc1101
+#   battery_low:
+#     name: "Battery Low"
 
 # sensor:
 #   - platform: template
@@ -88,3 +100,9 @@ button:
     name: "Restart (Safe Mode)"
   - platform: restart
     name: "Restart"
+  - platform: template
+    name: Reset CC1101
+    id: reset_cc1101
+    on_press:
+      - lambda: |-
+          id(weather_station).radioInit();

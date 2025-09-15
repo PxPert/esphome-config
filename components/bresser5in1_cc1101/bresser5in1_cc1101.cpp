@@ -354,7 +354,7 @@ void Bresser5in1CC1101Component::writeCfg(const char* IB_1) {
     memcpy(b, &IB_1[3], 2);
     uint8_t val = strtol(b, nullptr, 16);
 
-    // ESP_LOGD(TAG, "Setting reg %d=%d",reg,val);
+    ESP_LOGD(TAG, "Setting reg %d=%d",reg,val);
 
     this->writeCCreg(reg, val);
   }
@@ -485,7 +485,9 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
     byte msg[CC_MAX_BUF];
     memcpy(msg,(const byte*) this->_ccBuf,CC_MAX_BUF);
 
-    if (checkParity(msg) ==  CC_MAX_BUF) {
+    uint8_t startIndex = checkParity(msg);
+
+    if (startIndex ==  CC_MAX_BUF) {
       // ESP_LOGD(TAG,"Parity wrong");
       return 11; // message isn't correct
     }
@@ -499,37 +501,61 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
     }
 */
     BresserReading reading;
-    reading.sensor_id = msg[14];
+    reading.sensor_id = msg[startIndex + 14];
 
 
-    int temp_raw = (msg[20] & 0x0f) + ((msg[20] & 0xf0) >> 4) * 10 + (msg[21] &0x0f) * 100;
-    if (msg[25] & 0x0f)
+    int temp_raw = (msg[startIndex + 20] & 0x0f) + ((msg[startIndex + 20] & 0xf0) >> 4) * 10 + (msg[startIndex + 21] &0x0f) * 100;
+    if (msg[startIndex + 25] & 0x0f)
         temp_raw = -temp_raw;
     reading.temperature = (float)temp_raw * 0.1f;
 
-    reading.humidity = (msg[22] & 0x0f) + ((msg[22] & 0xf0) >> 4) * 10;
+    reading.humidity = (msg[startIndex + 22] & 0x0f) + ((msg[startIndex + 22] & 0xf0) >> 4) * 10;
 
-    reading.wind_direction_deg = (float)((msg[17] & 0xf0) >> 4) * 22.5f;
+    reading.wind_direction_deg = (float)((msg[startIndex + 17] & 0xf0) >> 4) * 22.5f;
 
-    int gust_raw = ((msg[17] & 0x0f) << 8) + msg[16]; //fix merbanan/rtl_433#1315
+    int gust_raw = ((msg[startIndex + 17] & 0x0f) << 8) + msg[startIndex + 16]; //fix merbanan/rtl_433#1315
     reading.wind_gust = (float)gust_raw * 0.1f;
 
-    int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[19] & 0x0f) * 100; //fix merbanan/rtl_433#1315
+    int wind_raw = (msg[startIndex + 18] & 0x0f) + ((msg[startIndex + 18] & 0xf0) >> 4) * 10 + (msg[startIndex + 19] & 0x0f) * 100; //fix merbanan/rtl_433#1315
     reading.wind_avg = (float)wind_raw * 0.1f;
 
-    int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
+    int rain_raw = (msg[startIndex + 23] & 0x0f) + ((msg[startIndex + 23] & 0xf0) >> 4) * 10 + (msg[startIndex + 24] & 0x0f) * 100;
     reading.rain = (float)rain_raw * 0.1f;
 
-    reading.battery_ok = ((msg[25] & 0x80) == 0);
+    reading.battery_ok = ((msg[startIndex + 25] & 0x80) == 0);
 
     state_callback_.call(&reading);
 
-    if (this->temperature_ != nullptr) {
-      this->temperature_->publish_state(reading.temperature);
+    if (this->_temperature != nullptr) {
+      this->_temperature->publish_state(reading.temperature);
     }
 
-    if (this->battery_sensor_ != nullptr) {
-      this->battery_sensor_->publish_state(reading.battery_ok == 0);
+    if (this->_battery_sensor != nullptr) {
+      this->_battery_sensor->publish_state(reading.battery_ok == 0);
+    }
+
+    if (this->_humidity != nullptr) {
+      this->_humidity->publish_state(reading.humidity);
+    }
+
+    if (this->_wind_direction_degrees != nullptr) {
+      this->_wind_direction_degrees->publish_state(reading.wind_direction_deg);
+    }
+
+    if (this->_wind_gusts_speed != nullptr) {
+      this->_wind_gusts_speed->publish_state(reading.wind_gust);
+    }
+
+    if (this->_wind_speed != nullptr) {
+      this->_wind_speed->publish_state(reading.wind_avg);
+    }
+
+    if (this->_rain_level != nullptr) {
+      this->_rain_level->publish_state(reading.rain);
+    }
+
+    if (this->_station_id != nullptr) {
+      this->_station_id->publish_state(reading.sensor_id);
     }
 
     ESP_LOGD(TAG,"Reading complete. sensor id: %d - Temp: %.2f - Humidity: %d - Wind direction: %.2f - Wind gust: %.2f - Wind avg: %.2f - Rain: %.2f - Battery ok: %d",
@@ -570,10 +596,10 @@ void Bresser5in1CC1101Component::loop() {
 
   if (totalRead) {
     ESP_LOGD(TAG,"Buffer Read complete. Parsing");
-    this->bresser_5in1_decode();
     this->flushrx();
     delay(1);
     this->setReceiveMode();
+    this->bresser_5in1_decode();
     lastread = millis();
 
   } else {
@@ -588,7 +614,14 @@ void Bresser5in1CC1101Component::loop() {
 
 void Bresser5in1CC1101Component::dump_config(){
     ESP_LOGCONFIG(TAG, "bresser-cc1101-reader component");
-    LOG_SENSOR("  ", "Temperature", this->temperature_);
+    LOG_SENSOR("  ", "Station ID", this->_station_id);
+    LOG_SENSOR("  ", "Temperature", this->_temperature);
+    LOG_SENSOR("  ", "Humidity", this->_humidity);
+    LOG_SENSOR("  ", "Wind direction", this->_wind_direction_degrees);
+    LOG_SENSOR("  ", "Wind gusts speed", this->_wind_gusts_speed);
+    LOG_SENSOR("  ", "Wind avg speed", this->_wind_speed);
+    LOG_SENSOR("  ", "Rain level", this->_rain_level);
+    LOG_BINARY_SENSOR("  ", "Battery low", this->_battery_sensor);
 
 }
 

@@ -18,6 +18,7 @@ from esphome.const import (
     UNIT_CELSIUS,
     UNIT_PERCENT,
     UNIT_MILLIMETER,
+    DEVICE_CLASS_PRECIPITATION,
 
 )
 from . import CONF_BRESSER_5_IN_1_ID, Bresser5in1Component
@@ -55,6 +56,28 @@ CONFIG_SCHEMA = (
             device_class=DEVICE_CLASS_WIND_DIRECTION,
             accuracy_decimals=1,
         ),
+        cv.Optional(CONF_HUMIDITY): sensor.sensor_schema(
+            unit_of_measurement=UNIT_PERCENT,
+            accuracy_decimals=1,
+            device_class=DEVICE_CLASS_HUMIDITY,
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
+
+        cv.Optional("rain_level"): sensor.sensor_schema(
+            unit_of_measurement=UNIT_MILLIMETER,
+            accuracy_decimals=1,
+            device_class=DEVICE_CLASS_PRECIPITATION,
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
+
+        cv.Optional("station_id"): sensor.sensor_schema(
+            unit_of_measurement=UNIT_EMPTY,
+            accuracy_decimals=1,
+            device_class=DEVICE_CLASS_HUMIDITY,
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
+
+
     })
 )
 
@@ -68,7 +91,7 @@ async def to_code(config):
 
     if temperature_config := config.get(CONF_TEMPERATURE):
         sens = await sensor.new_sensor(temperature_config)
-        cg.add(var.set_temperature(sens))
+        cg.add(var.set_temperature_sensor(sens))
 
     if CONF_HUMIDITY in config:
         sens = await sensor.new_sensor(config[CONF_HUMIDITY])

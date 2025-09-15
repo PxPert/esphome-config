@@ -29,18 +29,32 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     void setup() override;
     void loop() override;
     void dump_config() override;
+    void radioInit();
+
     void set_rx_pin(InternalGPIOPin *rx_pin) { _gd0_rx = rx_pin; }
 
     void add_on_state_callback(std::function<void(const BresserReading*)> &&callback){
       this->state_callback_.add(std::move(callback));
     }
 
-    void set_temperature(sensor::Sensor *temperature) { temperature_ = temperature; }
-    void set_battery_sensor(binary_sensor::BinarySensor *sensor) { this->battery_sensor_ = sensor; }
+    void set_temperature_sensor(sensor::Sensor *v) { _temperature = v; }
+    void set_station_id_sensor(sensor::Sensor *v) { _station_id = v; }
+    void set_humidity(sensor::Sensor *v) { _humidity = v; }
+    void set_wind_direction_degrees_sensor(sensor::Sensor *v) { _wind_direction_degrees = v; }
+    void set_wind_gusts_speed_sensor(sensor::Sensor *v) { _wind_gusts_speed = v; }
+    void set_wind_speed_sensor(sensor::Sensor *v) { _wind_speed = v; }
+    void set_rain_level_sensor(sensor::Sensor *v) { _rain_level = v; }
+    void set_battery_sensor(binary_sensor::BinarySensor *sensor) { this->_battery_sensor = sensor; }
 
   private:
-    sensor::Sensor *temperature_{nullptr};
-    binary_sensor::BinarySensor *battery_sensor_{nullptr};
+    sensor::Sensor *_temperature{nullptr};
+    sensor::Sensor *_station_id{nullptr};
+    sensor::Sensor *_humidity{nullptr};
+    sensor::Sensor *_wind_direction_degrees{nullptr};
+    sensor::Sensor *_wind_gusts_speed{nullptr};
+    sensor::Sensor *_wind_speed{nullptr};
+    sensor::Sensor *_rain_level{nullptr};
+    binary_sensor::BinarySensor *_battery_sensor{nullptr};
 
 
     uint8_t _ccBuf[CC_MAX_BUF];             // for cc1101 FIFO, if Circuit board for more cc110x -> ccBuf expand ( ccBuf[radionr][CC_MAX_BUF] )
@@ -57,7 +71,6 @@ class Bresser5in1CC1101Component : public Component, public EH_RL_SPI {
     uint8_t getRSSIdev();
 
 
-    void radioInit();
     void setReceiveMode();
     bool flushrx();
     void writeCfg();
