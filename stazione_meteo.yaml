@@ -38,10 +38,8 @@ wifi:
 
 external_components:
   - source: /config/components/
-    components: [ bresser5in1_cc1101 ]
-  - source: github://PxPert/ikea-ansluta-esphome
-# packages:
-#   cc1101_controls: !include includes/cc1101-controls.yaml
+    components: [ bresser5in1_cc1101, ansluta_cc2500 ]
+#  - source: github://PxPert/ikea-ansluta-esphome
 
 ota:
   platform: esphome
@@ -55,23 +53,27 @@ spi:
   mosi_pin: MOSI  # CC1001 pin 6
   miso_pin: MISO  # CC1001 pin 7
 
-ikea_ansluta:
-  cs_pin: GPIO16
-  on_remote_click:
-    address: 0x8BB1
+#ikea_ansluta:
+#  cs_pin: GPIO16
+#  on_remote_click:
+#    address: 0x8BB1
     # If the remote has the same address as the light
     # Then there is no need to turn the light on/off
     # I wouldn't recommend this though, since (at least for me)
     # the performance/stability is actually worse using the remote.
-    then:
-      - logger.log: "Remote clicked!"
+#    then:
+#      - logger.log: "Remote clicked!"
 
-light:
-  - platform: ikea_ansluta
-    device_id: leds_cucinotto
-    name: 'Luci'
-    address: 0x8BB1 # Same adress as remote
+#light:
+#  - platform: ikea_ansluta
+#    device_id: leds_cucinotto
+#    name: 'Luci'
+#    address: 0x8BB1 # Same adress as remote
 
+ansluta_cc2500:
+  spi_mode: 0
+  data_rate: 4MHz
+  cs_pin: 16
 
 bresser5in1_cc1101:
   spi_mode: 0
@@ -123,7 +125,12 @@ binary_sensor:
     battery_low:
       device_id: meteo_station
       name: "Battery Low"
-    
+
+#switch:
+#  - platform: gpio
+#    pin: GPIO16
+#    name: "CC2500 CS"
+
 button:
   - platform: safe_mode
     name: "Restart (Safe Mode)"
