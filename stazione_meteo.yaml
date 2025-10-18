@@ -71,7 +71,7 @@ light:
 bresser5in1_cc1101:
   spi_mode: 0
   data_rate: 4MHz
-  filter_station_id: 185
+  # filter_station_id: 185
 
   id: weather_station
 

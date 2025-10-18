@@ -1,0 +1,141 @@
+esphome:
+  name: pmcpanel
+  friendly_name: PMCPanel
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+  level: VERBOSE
+#  baud_rate: 115200
+  baud_rate: 0
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  password: !secret ota_pwd_sec
+  platform: esphome
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.107
+
+mqtt:
+  id: mqtt_client
+  broker: !secret mqtt_server
+  username: !secret mqtt_user
+  password: !secret mqtt_pwd
+  discovery: false
+  client_id: ${name}
+#  log_topic: null
+
+power_supply:
+  - id: 'lights_power_supply'
+    pin:
+      number: 2
+      inverted: true
+      
+switch:
+#  - platform: gpio
+#    pin: GPIO2
+#    inverted: True
+#    name: "Light Switch"
+  - platform: gpio
+    pin: 
+      allow_other_uses: True
+      number: 0
+    name: "PixelControlLight0"
+    inverted: True
+
+  - platform: gpio
+    pin: 
+      allow_other_uses: True
+      number: 3
+    inverted: True
+    name: "PixelControlLight1"
+
+    
+light:
+  - platform: neopixelbus
+    type: BRG
+    variant: WS2811
+    power_supply: lights_power_supply
+    pin: 
+      allow_other_uses: True
+      number: 0
+    
+    num_leds: 160
+    name: "NeoPixel Light0"
+    id: light0
+    effects: 
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+          min_brightness: 0%
+          max_brightness: 100%
+      - addressable_rainbow:
+          name: Rainbow Effect With Custom Values
+          speed: 10
+          width: 50    
+      - addressable_flicker:
+
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2811
+    power_supply: lights_power_supply
+    pin: 
+      allow_other_uses: True
+      number: 3
+    method:
+      type: bit_bang
+    num_leds: 33
+    name: "NeoPixel Light1"
+    id: light1
+    effects: 
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 0.5s
+          update_interval: 0.5s
+          min_brightness: 0%
+          max_brightness: 100%
+      - addressable_rainbow:
+          name: Rainbow Effect With Custom Values
+          speed: 10
+          width: 50
+      - addressable_flicker:
+
+  - platform: partition
+    name: "Name"
+    segments:
+      # Use first 10 LEDs from the light with ID light0
+      - id: light0
+        from: 0
+        to: 9
+
+  - platform: partition
+    name: "ClockNumbers"
+    segments:
+      # Use LEDs 11-20 from the light with ID light0
+      - id: light0
+        from: 10
+        to: 19
+  - platform: partition
+    name: "ClockHands"
+    segments:
+      # Use LEDs 11-20 from the light with ID light0
+      - id: light0
+        from: 20
+        to: 21
+
+
+button:
+  - platform: safe_mode
+    name: "${friendly_name} (Safe Mode)"
+  - platform: restart
+    name: "${friendly_name} Restart"

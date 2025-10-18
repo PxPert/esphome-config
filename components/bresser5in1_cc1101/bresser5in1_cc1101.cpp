@@ -243,9 +243,12 @@ void Bresser5in1CC1101Component::radioInit() {
     this->writeCfg(setupCommands[i]);
   }
 
+	this->enable();
   this->flushrx();                    // Flush the RX FIFO buffer
   delay(1);
   this->setReceiveMode();
+	this->disable();
+
   _last_station_read = millis();
   this->_setupComplete = true;
 }
@@ -275,6 +278,12 @@ void IRAM_ATTR HOT Bresser5in1CC1101Component::handleInterrupt(Bresser5in1CC1101
         component->_gpioChanged = true;
         component->_activeBuf = bufIndex;
       }
+      /*
+      component->enable();
+      component->flushrx();
+      component->setReceiveMode();
+      component->disable();
+      */
     }
   }
 }
@@ -611,11 +620,15 @@ bool Bresser5in1CC1101Component::flushrx() {
 
 void Bresser5in1CC1101Component::loop() {
   if (this->_gpioChanged) {
-    this->bresser_5in1_decode();
-    this->_gpioChanged = false;
+    this->enable();
     this->flushrx();
     delay(1);
     this->setReceiveMode();
+    this->disable();
+
+
+    this->bresser_5in1_decode();
+    this->_gpioChanged = false;
     _last_station_read = millis();
   } else {
     if (millis() - _last_station_read > 900000) {
