@@ -8,6 +8,8 @@
 
 #define PMC_LETTER(arr) { arr, sizeof(arr) }
 
+bool letters_ready = false;
+
 struct PMCLetter {
     const byte *pixels;
     byte pixels_count;
@@ -380,6 +382,7 @@ static void neon_startup(AddressableLight &it,
 
   if (initial_run) {
     active = true;
+    letters_ready = false;
   }
 
   if (!active) return; // effetto non attivo
@@ -404,6 +407,7 @@ static void neon_startup(AddressableLight &it,
 
   // fase 2: fade in verso luminosità massima con piccoli jitter
   float progress = (step - (FIRST_RUN_STEPS + ALL_OFF_STEPS)) / FADE_STEPS;
+  letters_ready = true;
   if (progress > 1.0) progress = 1.0;
 
   // aggiunge piccole variazioni casuali

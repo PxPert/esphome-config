@@ -56,32 +56,115 @@ power_supply:
       inverted: true
       
 switch:
+  - platform: template
+    name: "Panel light"
+    optimistic: True
+    turn_on_action:
+      - lambda: |-
+          letters_ready = false;          
+#       Letters
+      - light.turn_on:
+          id: light0
+          brightness: 0.9
+          red: 1
+          green: 0.55
+          blue: 0.5
+          effect: "Neon Startup"
+#       Internal ring
+      - light.turn_on:
+          id: internal_ring
+          brightness: 0.5
+          red: 1
+          green: 0.43
+          blue: 0.33
+          effect: "Fast Pulse"
+#       External ring
+      - light.turn_on:
+          id: external_ring
+          brightness: 1
+          red: 1
+          green: 1
+          blue: 1
+          effect: "Color Wipe White"
+#       Numbers
+      - light.turn_on:
+          id: clock_numbers
+          brightness: 0.9
+          red: 1
+          green: 0.55
+          blue: 0.5
+          effect: "Color Wipe 1"
+      - wait_until:
+          lambda: |-
+            return letters_ready;
+      - script.execute: reset_leds
+      
+    turn_off_action:
+      - light.turn_off: light0
+      - light.turn_off: internal_ring
+      - light.turn_off: external_ring
+      - light.turn_off: clock_numbers
 #  - platform: gpio
 #    pin: GPIO2
 #    inverted: True
 #    name: "Light Switch"
-  - platform: gpio
-    pin: 
-      allow_other_uses: True
-      number: 0
-    name: "PixelControlLight0"
-    inverted: True
+#  - platform: gpio
+#    pin: 
+#      allow_other_uses: True
+#      number: 0
+#    name: "PixelControlLight0"
+#    inverted: True
+#
+#  - platform: gpio
+#    pin: 
+#      allow_other_uses: True
+#      number: 3
+#    inverted: True
+#    name: "PixelControlLight1"
 
-  - platform: gpio
-    pin: 
-      allow_other_uses: True
-      number: 3
-    inverted: True
-    name: "PixelControlLight1"
-
-    
+script:
+  - id: reset_leds
+    then:
+#       Internal ring
+      - light.turn_on:
+          id: internal_ring
+          brightness: 0.5
+          red: 1
+          green: 0.43
+          blue: 0.33
+          effect: "none"
+#       External ring
+      - light.turn_on:
+          id: external_ring
+          brightness: 1
+          red: 1
+          green: 1
+          blue: 1
+          effect: "Current Time"
+#       Numbers
+      - light.turn_on:
+          id: clock_numbers
+          brightness: 0.9
+          red: 1
+          green: 0.55
+          blue: 0.5
+          effect: "None"
+      - delay: 3s
+#       Letters
+      - light.turn_on:
+          id: light0
+          brightness: 0.9
+          red: 1
+          green: 0.55
+          blue: 0.5
+          effect: "Broken Letters"
 light:
   - platform: neopixelbus
     type: BRG
     variant: WS2811
     power_supply: lights_power_supply
     pin: 
-      allow_other_uses: True
+#      allow_other_uses: True
       number: 0
     
     num_leds: 194
@@ -168,7 +251,7 @@ light:
     power_supply: lights_power_supply
     internal: True
     pin: 
-      allow_other_uses: True
+#      allow_other_uses: True
       number: 3
     method:
       type: bit_bang
@@ -194,6 +277,7 @@ light:
 
   - platform: partition
     name: "Internal ring"
+    id: internal_ring
     segments:
       - id: light1
         from: 0
@@ -208,6 +292,7 @@ light:
 
   - platform: partition
     name: "External ring"
+    id: external_ring
     segments:
       - id: light1
         from: 8
@@ -266,6 +351,7 @@ light:
             current_time_external_ring(it, current_color, initial_run);
   - platform: partition
     name: "Clock numbers"
+    id: clock_numbers
     segments:
       - id: light1
         from: 46
@@ -371,6 +457,11 @@ number:
     step: 1
     
 button:
+  - platform: template
+    name: "Reset leds"
+    on_press: 
+      then:
+      - script.execute: reset_leds
   - platform: safe_mode
     name: "Safe Mode Restart"
   - platform: restart
