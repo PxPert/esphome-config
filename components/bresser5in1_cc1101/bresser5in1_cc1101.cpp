@@ -535,8 +535,9 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
     int temp_raw = (msg[startIndex + 20] & 0x0f) + ((msg[startIndex + 20] & 0xf0) >> 4) * 10 + (msg[startIndex + 21] &0x0f) * 100;
     if (msg[startIndex + 25] & 0x0f)
         temp_raw = -temp_raw;
-    reading.temperature = (float)temp_raw * 0.1f;
 
+    reading.temperature = (float)temp_raw * 0.1f;
+    ESP_LOGD(TAG,"Temp raw: %d - Calculated: %.6f", temp_raw, reading.temperature);
     reading.humidity = (msg[startIndex + 22] & 0x0f) + ((msg[startIndex + 22] & 0xf0) >> 4) * 10;
 
     reading.wind_direction_deg = (float)((msg[startIndex + 17] & 0xf0) >> 4) * 22.5f;

@@ -1,0 +1,91 @@
+substitutions:
+  name: atomecho02voice
+  friendly_name: Atom Echo Voice 02
+  static_ip: 192.168.2.187
+  micro_wake_word_model: okay_nabu  # alexa, hey_jarvis, hey_mycroft are also supported
+
+
+
+esphome:
+  name: "${name}"
+  friendly_name: "${friendly_name}"
+  name_add_mac_suffix: false
+  project:
+    name: m5stack.atom-echo-voice-assistant
+    version: "1.0"
+  min_version: 2024.6.0
+#  includes:
+#    - audio/timer_finished.h
+#    - audio/wake_word_triggered.h
+
+esp32:
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+#    version: 4.4.8
+#    platform_version: 5.4.0
+
+logger:
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+    password: !secret ota_pwd_sec
+#  - platform: http_request
+#    id: ota_http_request
+#
+#update:
+#  - platform: http_request
+#    id: update_http_request
+#    name: Firmware
+#    source: https://firmware.esphome.io/wake-word-voice-assistant/m5stack-atom-echo/manifest.json
+
+# dashboard_import:
+#   package_import_url: github://esphome/firmware/voice-assistant/m5stack-atom-echo.yaml@main
+
+wifi:
+  networks:
+  - ssid: !secret wifi_dmz_ssid
+    password: !secret wifi_dmz_password
+  use_address: "${static_ip}"
+
+uart:
+  tx_pin: 25
+  rx_pin: 21
+  baud_rate: 9600
+  stop_bits: 1
+
+modbus:
+  id: modbus1
+  role: server
+  disable_crc: True
+
+modbus_controller:
+  - id: modbus_server
+    address: 0x1   # indirizzo slave
+    modbus_id: modbus1
+    server_registers:
+      - address: 0x0002
+        value_type: S_DWORD_R
+        read_lambda: |-
+          return id(temperature_value).state;
+      - address: 0x15
+        value_type: U_WORD
+        read_lambda: |-
+          return false;
+        write_lambda: |-
+          return true;
+
+number:
+  - platform: template
+    name: temp_test
+    max_value: 99
+    min_value: 1
+    optimistic: True
+    internal: False
+    id: temperature_value
+    step: 1
+

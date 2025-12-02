@@ -26,6 +26,7 @@ light:
     num_leds: 32
     name: "Leds"
     id: leds
+    internal: true
     default_transition_length: ${transition_length}
     effects:
       - addressable_rainbow:
