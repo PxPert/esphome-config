@@ -3,32 +3,11 @@ media_player:
   - platform: speaker
     id: va_media_player
     name: Media Player
-    codec_support_enabled: true
-    buffer_size: 250000
+    codec_support_enabled: false
+    buffer_size: 6000
     task_stack_in_psram: false
     announcement_pipeline:
       format: WAV
-      speaker: announcement_mixing_input
+      speaker: audio_out
       num_channels: 1
       sample_rate: ${play_sample_rate}000
-    media_pipeline:
-      format: FLAC
-      speaker: media_mixing_input
-      num_channels: 1
-      sample_rate: ${play_sample_rate}000
-    on_announcement:
-      - mixer_speaker.apply_ducking:
-          id: media_mixing_input
-          decibel_reduction: 20
-          duration: 0.0s
-    on_state:
-      if:
-        condition:
-          - not:
-              media_player.is_announcing:
-        then:
-          - mixer_speaker.apply_ducking:
-              id: media_mixing_input
-              decibel_reduction: 0
-              duration: 1.0s
-

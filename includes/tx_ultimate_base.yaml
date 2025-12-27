@@ -72,16 +72,16 @@ esp32:
   cpu_frequency: 80MHz
   framework:
     type: esp-idf
-    advanced:
-      compiler_optimization: PERF
-      enable_lwip_mdns_queries: false
+#    advanced:
+#      compiler_optimization: PERF
+#      enable_lwip_mdns_queries: false
 #    version: 4.4.8
 #    platform_version: 5.4.0
 
 
 psram:
 #  mode: octal
-  speed: 80MHz
+  speed: 40MHz
 
 external_components:
   - source: /config/components

@@ -6,7 +6,9 @@ esphome:
 # Select chipset and board configuration - in this case M5STACK
 esp32:
   board: m5stack-atom
-
+  framework: 
+    type: arduino
+    
 # [Optional] - Create web interface where you can control the AC from your web browser (without Home Assistant)
 web_server:
   port: 80

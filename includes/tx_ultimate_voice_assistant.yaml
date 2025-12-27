@@ -25,6 +25,13 @@ esp32:
 #      - nabu_microphone
 #      - voice_assistant
 #    refresh: 0s
+speaker:
+  - platform: mixer
+    id: mixer_speaker_id
+    output_speaker: audio_out
+    source_speakers:
+      - id: announcement_mixing_input
+      - id: media_mixing_input
 
 micro_wake_word:
 #  model: okay_nabu

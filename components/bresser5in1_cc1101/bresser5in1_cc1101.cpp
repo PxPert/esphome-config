@@ -472,6 +472,9 @@ uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg, uint8_t readByt
       }
     }
     if (col == 13) {
+      ESP_LOGD(TAG,"Parity found at %d", startcol);
+      return startcol;
+      /*
       uint8_t pops_check = msg[startcol + 13];
       uint8_t pops_count = 0;
       for (size_t i = startcol + 14; i < startcol + 25; i++) {
@@ -483,6 +486,7 @@ uint8_t Bresser5in1CC1101Component::checkParity(const byte* msg, uint8_t readByt
       } else {
         ESP_LOGD(TAG,"Parity found but pops check fail. Pops TO CHECK: %d - Counted: %d", pops_check, pops_count);
       }
+      */
     }
   }
   return CC_MAX_BUF;
@@ -531,10 +535,14 @@ uint8_t Bresser5in1CC1101Component::bresser_5in1_decode()
       ESP_LOGD(TAG,"Station ID not selected. Read value from: %d - selected: %d", reading.sensor_id, this->_filter_station_id);
       return 10;
     }
+    int temp_ok = (msg[20] & 0x0f) <= 9; // BCD, 0x0f on error
 
-    int temp_raw = (msg[startIndex + 20] & 0x0f) + ((msg[startIndex + 20] & 0xf0) >> 4) * 10 + (msg[startIndex + 21] &0x0f) * 100;
-    if (msg[startIndex + 25] & 0x0f)
-        temp_raw = -temp_raw;
+    static int temp_raw = 0;
+    if (temp_ok) {
+      temp_raw = (msg[startIndex + 20] & 0x0f) + ((msg[startIndex + 20] & 0xf0) >> 4) * 10 + (msg[startIndex + 21] &0x0f) * 100;
+      if (msg[startIndex + 25] & 0x0f)
+          temp_raw = -temp_raw;
+    }
 
     reading.temperature = (float)temp_raw * 0.1f;
     ESP_LOGD(TAG,"Temp raw: %d - Calculated: %.6f", temp_raw, reading.temperature);

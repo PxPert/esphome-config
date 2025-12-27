@@ -28,6 +28,10 @@ esp8266:
 logger:
   level: INFO
 
+packages:
+  # Log su loki
+  syslog: !include includes/syslog.yaml
+  
 preferences:
   flash_write_interval: 6h
 

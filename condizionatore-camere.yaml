@@ -11,6 +11,10 @@ esphome:
 #    then:
 #      - switch.turn_on: relay
 
+packages:
+  # Log su loki
+  syslog: !include includes/syslog.yaml
+  
 esp32:
   board: nodemcu-32s
   framework:
