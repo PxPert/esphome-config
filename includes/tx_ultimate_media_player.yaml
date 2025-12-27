@@ -5,7 +5,7 @@ media_player:
     name: Media Player
     codec_support_enabled: false
     buffer_size: 6000
-    task_stack_in_psram: false
+    task_stack_in_psram: true
     announcement_pipeline:
       format: WAV
       speaker: audio_out
