@@ -19,13 +19,16 @@ packages:
   # Configurazione di base
   device_base: !include includes/tx_ultimate_base.yaml
 
-  # Supporto Voice Assistant
-  va: !include
-    file: includes/tx_ultimate_voice_assistant.yaml
-    vars:
-      mic_lrclk_pin: GPIO1
-      mic_bclk_pin: GPIO3
-      mic_sdata_pin: GPIO0
+  # Supporto Voice Assistant 
+#  va: !include
+#    file: includes/tx_ultimate_voice_assistant.yaml
+#    vars:
+#      mic_lrclk_pin: GPIO1
+#      mic_bclk_pin: GPIO3
+#      mic_sdata_pin: GPIO0
+
+  # Media Player 
+  mediaplayer: !include includes/tx_ultimate_media_player.yaml
 
   # Configurazione leds
   leds: !include includes/tx_ultimate_leds_1_zone.yaml
