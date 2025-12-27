@@ -1,0 +1,164 @@
+substitutions:
+  name: "int-camera-matrimoniale"
+  friendly_name: "Camera matrimoniale"
+
+  audio_lrclk_pin: GPIO4
+  audio_bclk_pin: GPIO2
+  audio_sdata_pin: GPIO15
+  play_sample_rate: "48"
+
+  use_ip_address: 192.168.2.144
+
+  wifi_ssid: !secret wifi_dmz_ssid
+  wifi_password: !secret wifi_dmz_password
+
+  mic_lrclk_pin: GPIO1
+  mic_bclk_pin: GPIO3
+  mic_sdata_pin: GPIO0
+
+  vibra_time: 75ms
+
+  vibra_motor_pin: GPIO21
+  pa_power_pin: GPIO26
+
+  touchpanel_power_pin: GPIO5
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  project:
+    name: Sonoff.TxUltimate
+    version: "2.0"
+
+
+esp32:
+  board: esp32dev
+  flash_size: 8MB
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+
+#psram:
+#  mode: octal
+#  speed: 40MHz
+
+logger:
+#  hardware_uart: UART2
+  level: DEBUG
+  baud_rate: 0
+
+
+api:
+#  encryption:
+#    key: !secret api_key
+
+ota:
+  platform: esphome
+  password: !secret ota_pwd
+
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  use_address: ${use_ip_address}
+  ap:
+    password: !secret ap_pwd
+
+output:
+  - platform: gpio
+    pin: ${vibra_motor_pin}
+    id: vibra_output
+
+
+speaker:
+  - id: audio_out
+    platform: i2s_audio
+    dac_type: external
+    i2s_dout_pin: ${audio_sdata_pin}
+    i2s_audio_id: audio_i2s
+    i2s_comm_fmt: stand_msb
+    timeout: never
+    channel: mono
+    bits_per_sample: 16bit
+    sample_rate: ${play_sample_rate}000
+    buffer_duration: 500ms
+
+button:
+  - id: vibra
+    platform: output
+    name: "${friendly_name} Vibration"
+    output: vibra_output
+    duration: ${vibra_time}
+    entity_category: config
+  - platform: safe_mode
+    name: "${friendly_name} (Safe Mode)"
+  - platform: restart
+    name: "${friendly_name} Restart"
+  - platform: template
+    name: Start/Stop assistant
+    id: start_assistant
+    entity_category: config
+    on_press:
+      - if:
+          condition:
+            voice_assistant.is_running
+          then:
+            - voice_assistant.stop
+          else:
+            - voice_assistant.start
+
+switch:
+  - platform: gpio
+    id: pa_power
+    pin: ${pa_power_pin}
+    name: "PA Power"
+    internal: true
+    restore_mode: ALWAYS_ON
+
+  - platform: gpio
+    name: "touch panel power"
+    pin:
+      number: ${touchpanel_power_pin}
+      inverted: true
+    id: touch_power
+    internal: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+i2s_audio:
+  - id: audio_i2s
+    i2s_lrclk_pin: ${audio_lrclk_pin}
+    i2s_bclk_pin: ${audio_bclk_pin}
+  - id: audio_mic_i2s
+    i2s_lrclk_pin: ${mic_lrclk_pin}
+    i2s_bclk_pin: ${mic_bclk_pin}
+
+microphone:
+  - platform: i2s_audio
+    i2s_audio_id: audio_mic_i2s
+    i2s_din_pin: ${mic_sdata_pin}
+    adc_type: external
+    id: asr_mic
+    pdm: false
+    channel: left
+    sample_rate: 16000
+
+voice_assistant:
+  id: va
+  microphone: asr_mic
+  speaker: audio_out
+#  media_player: va_media_player
+  use_wake_word: false
+  noise_suppression_level: 4
+  auto_gain: 31dBFS
+  volume_multiplier: 15.0
+
+#media_player:
+#  - platform: speaker
+#    id: va_media_player
+#    name: Media Player
+#    codec_support_enabled: false
+#    buffer_size: 6000
+##    task_stack_in_psram: false
+#    volume_initial: 100%
+#    announcement_pipeline:
+#      format: WAV
+#      speaker: audio_out
