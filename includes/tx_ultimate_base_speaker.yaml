@@ -2,7 +2,7 @@ substitutions:
   audio_lrclk_pin: GPIO4
   audio_bclk_pin: GPIO2
   audio_sdata_pin: GPIO15
-  play_sample_rate: "48"
+  play_sample_rate: "16"
 
 i2s_audio:
   - id: audio_i2s
