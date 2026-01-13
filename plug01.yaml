@@ -1,0 +1,138 @@
+# Basic Config
+substitutions:
+  friendly_name: Plug 01
+  device_name: plug01
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+#  platformio_options:
+#    board_build.ldscript: eagle.flash.4m.ld
+
+esp8266:
+  board: esp12e
+
+# Enable logging
+logger:
+#  level: DEBUG
+  level: INFO
+  baud_rate: 0
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+#optional
+web_server:
+  port: 80
+
+
+packages:
+  # Log su loki
+  syslog: !include includes/syslog.yaml
+
+ota:
+  password: !secret ota_pwd
+  id: my_ota
+  platform: esphome
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  use_address: 192.168.2.81
+
+sensor:
+  - platform: hlw8012
+    model: BL0937
+    sel_pin:
+      number: GPIO13
+      inverted: true
+    cf_pin: GPIO12
+    cf1_pin: GPIO14
+    # Higher value gives lower watt readout
+    #current_resistor: "0.003"
+    # Lower value gives lower voltage readout
+    #voltage_divider: "10051"
+    current:
+      name: ${friendly_name} Current
+      accuracy_decimals: 2
+      # filters:
+      #   # Map from sensor -> measured value
+      #   - calibrate_linear:
+      #       - 2.45905 -> 0.0
+      #       - 2.25141 -> 5.9
+      #       - 2.24197 -> 4.3
+      #       - 2.41786 -> 10.0
+
+    voltage:
+      name: ${friendly_name} Voltage
+      # filters:
+      #   # Map from sensor -> measured value
+      #   - calibrate_linear:
+      #       - 33.46 -> 238.02
+      #       - 33.11665 -> 235.24
+      #       - 33.35223 -> 237.70
+      #       - 33.30263 -> 238.82
+
+    power:
+      name: ${friendly_name} Power
+      # filters:
+      #   # Map from sensor -> measured value
+      #   - calibrate_linear:
+      #       - 364.00403 -> 0
+      #       - 363.19363 -> 1402.43
+      #       - 362.51831 -> 1026.926
+      #       - 360.49231 -> 2352.4            
+    update_interval: 15s
+
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 600s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+
+output:
+  - platform: esp8266_pwm
+    id: led
+    pin:
+      number: GPIO0
+      inverted: True
+
+light:
+  - platform: status_led
+    name: "Switch state"
+    id: switch_led
+    output: led
+    internal: True
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO5
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    # name: "Button"
+    id: relay_button
+    internal: True
+    on_press:
+      - switch.toggle: relay
+
+switch:
+  - platform: gpio
+    name: Relay Switch
+    pin: GPIO4
+    id: relay
+    on_turn_on:
+      then:
+        - light.turn_on: switch_led
+    on_turn_off:
+      then:
+        - light.turn_off: switch_led

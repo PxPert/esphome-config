@@ -9,7 +9,19 @@ substitutions:
   text_not_understood: "Mi dispiace, non ho capito"
 
 esp32:
-  cpu_frequency: 240MHz
+  cpu_frequency: 160MHz
+  framework:
+    sdkconfig_options:
+      # Moves instructions and read only data from flash into PSRAM on boot.
+      # Both enabled allows instructions to execute while a flash operation is in progress without needing to be placed in IRAM.
+      # Considerably speeds up mWW at the cost of using more PSRAM.
+      CONFIG_SPIRAM_RODATA: "y"
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: "y"
+    advanced:
+      assertion_level: DISABLE
+      compiler_optimization: PERF
+      enable_lwip_assert: false
+#      loop_task_stack_size: 32768
 #esphome:
 #  includes:
 #    - audio/wake_word_triggered.h
@@ -53,7 +65,10 @@ micro_wake_word:
                 lambda: return (wake_word != "Stop");
               then:
                 - script.execute: sound_beep
-            #    - micro_wake_word.stop
+                - wait_until:
+                    not:
+                      media_player.is_announcing:            #    - micro_wake_word.stop
+                - delay: 700ms
                 - voice_assistant.start:
                     wake_word: !lambda return wake_word;
                 - light.turn_on:
@@ -62,6 +77,7 @@ micro_wake_word:
                     green: 0
                     blue: 1
                     brightness: 1
+                    transition_length: 0s
               else:
                 - script.execute: restore_wake_word
 
@@ -221,13 +237,15 @@ microphone:
 
 voice_assistant:
   id: va
-  microphone: asr_mic
+  microphone:
+    microphone: asr_mic
+    gain_factor: 15
 #  speaker: audio_out
   media_player: va_media_player
   use_wake_word: false
   noise_suppression_level: 4
   auto_gain: 31dBFS
-  volume_multiplier: 15.0
+  volume_multiplier: 50.0
   on_stt_vad_start:
     - globals.set:
         id: suspend_refresh
@@ -318,9 +336,10 @@ media_player:
   - platform: speaker
     id: va_media_player
     name: Media Player
-    codec_support_enabled: true
-    buffer_size: 250000
-    task_stack_in_psram: false
+    codec_support_enabled: false
+#    buffer_size: 250000
+    buffer_size: 6000
+    task_stack_in_psram: true
     volume_initial: 100%
     announcement_pipeline:
       format: WAV
@@ -328,7 +347,7 @@ media_player:
       num_channels: 1
       sample_rate: ${play_sample_rate}000
     media_pipeline:
-      format: FLAC
+      format: WAV
       speaker: media_mixing_input
       num_channels: 1
       sample_rate: ${play_sample_rate}000
