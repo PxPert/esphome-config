@@ -207,9 +207,9 @@ script:
 
 button:
   - platform: safe_mode
-    name: "Restart (Safe Mode)"
+    name: "Selettore Hi-IF Restart (Safe Mode)"
   - platform: restart
-    name: "Restart"
+    name: "Selettore Hi-IF Restart"
   - platform: template
     name: "Send RC5"
     on_press: 
