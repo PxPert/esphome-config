@@ -16,7 +16,8 @@ esp8266:
 logger:
 #  level: DEBUG
   level: NONE
-  baud_rate: 115200
+#  baud_rate: 115200
+  baud_rate: 0
 
 # Enable Home Assistant API
 # api:
@@ -50,7 +51,7 @@ external_components:
     components: [ atapi, rc5x ]
 
 rc5x:
-  pin: 12
+  receive_pin: 12
   on_press:
     lambda: |-
       ESP_LOGD("rc5x-yaml","IR Press From yaml. %d - %lu", t,x);
@@ -598,13 +599,13 @@ debug:
 sensor:
   - platform: debug
     free:
-      name: "Heap Free"
+      name: "CD Reader Heap Free"
     fragmentation:
-      name: "Heap Fragmentation"
+      name: "CD Reader Heap Fragmentation"
     block:
-      name: "Heap Max Block"
+      name: "CD Reader Heap Max Block"
     loop_time:
-      name: "Loop Time"
+      name: "CD Reader Loop Time"
   - platform: template
     name: "Song duration"
     id: song_duration
@@ -682,6 +683,7 @@ binary_sensor:
       mode: INPUT_PULLUP
       inverted: true
     on_press:
+      - logger.log: "GPIO0 - Stop Eject - Pressed"
       - script.execute: stop_eject
 
 # Fast Forward
@@ -809,9 +811,9 @@ light:
 
 button:
   - platform: safe_mode
-    name: "Restart (Safe Mode)"
+    name: "CD Reader Restart (Safe Mode)"
   - platform: restart
-    name: "Restart"
+    name: "CD Reader Restart"
   - platform: template
     name: Reset IDE Device
     id: reset_device
