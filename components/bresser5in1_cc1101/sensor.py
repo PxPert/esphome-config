@@ -81,8 +81,6 @@ CONFIG_SCHEMA = (
         cv.Optional("station_id"): sensor.sensor_schema(
             unit_of_measurement=UNIT_EMPTY,
             accuracy_decimals=1,
-            device_class=DEVICE_CLASS_HUMIDITY,
-            state_class=STATE_CLASS_MEASUREMENT,
         ),
 
 
