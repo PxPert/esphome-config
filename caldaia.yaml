@@ -4,10 +4,10 @@ esphome:
   project:
     name: Riello.Residence
     version: "1.0"
-  platformio_options:
-    board_build.ldscript: eagle.flash.4m.ld
-    lib_deps:  # required by freebear-nc/esphome-opentherm
-      - https://github.com/PxPert/opentherm_library.git
+#  platformio_options:
+#    board_build.ldscript: eagle.flash.4m.ld
+#    lib_deps:  # required by freebear-nc/esphome-opentherm
+#      - https://github.com/PxPert/opentherm_library.git
   on_boot:
     priority: -100.0
     then:
@@ -52,8 +52,8 @@ wifi:
   password: !secret wifi_dmz_password
   use_address: 192.168.2.13
 
-external_components:
-  - source: github://PxPert/esphome-opentherm
+#external_components:
+#  - source: github://PxPert/esphome-opentherm
 
 # external_components:
 #   source: 
@@ -70,8 +70,9 @@ opentherm:
 #  ch2_active: false
 #  sync_mode: false
 
-dallas:
-  - pin: GPIO13
+one_wire:
+  - platform: gpio
+    pin: GPIO13
 
 #output:
 #  - platform: opentherm
@@ -157,19 +158,23 @@ switch:
     ch_enable:
       id: ch_enable
       name: "Riscaldamento"
-      mode: restore_default_off
+      restore_mode: RESTORE_DEFAULT_OFF
+#      mode: restore_default_off
     dhw_enable:
       id: dhw_enable
       name: "Acqua calda"
-      mode: restore_default_on
-    sm_active:
+      restore_mode: RESTORE_DEFAULT_OFF
+#      mode: restore_default_on
+    summer_mode_active:
       id: sm_active
       name: "Summer mode"
-      mode: restore_default_off
+#      mode: restore_default_off
+      restore_mode: RESTORE_DEFAULT_OFF
     dhw_block:
       id: dhw_block
       name: "Blocca Acqua calda"
-      mode: restore_default_off
+      restore_mode: RESTORE_DEFAULT_OFF
+#      mode: restore_default_off
 #  - platform: template
 #    name: Test Error1
 #    id: test_1
@@ -318,7 +323,7 @@ binary_sensor:
           - lambda: |-
               id(error_text) = id(air_pressure_fault).state?"Air Press fault":NULL;
           - component.update: lcd_display
-    water_over_temperature:
+    water_over_temp:
       id: water_over_temperature
       name: "Water Over Temperature"
       on_state:
@@ -424,7 +429,7 @@ sensor:
 #    min_mod_level:
 #      name: "Minimum modulation level (%)"
 
-  - platform: dallas
+  - platform: dallas_temp
     address: 0xed0622700cacb928
     name: "Temperatura cucina"
 
