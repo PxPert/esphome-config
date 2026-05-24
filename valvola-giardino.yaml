@@ -1,0 +1,51 @@
+substitutions:
+  device_name: valvola-giardino
+  device_comment: "Dispositivo per irrigazione giardino e lettura umidita"
+  friendly_name: "Valvola giardino"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  min_version: 2025.5.0
+  comment: ${device_comment}
+  
+esp8266:
+  board: esp12e
+
+wifi:
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  ap:
+    ssid: "${friendly_name} AP"
+    password: !secret ap_pwd
+
+captive_portal:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  platform: esphome
+  password: !secret api_key
+
+logger:
+
+packages:
+  syslog: !include includes/syslog.yaml
+
+switch:
+  - platform: gpio
+    id: valve_open_gpio
+    pin: GPIO12
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+    - switch.turn_off: valve_close_gpio
+    on_turn_off:
+    - switch.turn_on: valve_close_gpio
+
+  - platform: gpio
+    id: valve_close_gpio
+    internal: true
+    pin: GPIO13
+    restore_mode: ALWAYS_ON
