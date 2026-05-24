@@ -2,6 +2,7 @@ substitutions:
   device_name: valvola-giardino
   device_comment: "Dispositivo per irrigazione giardino e lettura umidita"
   friendly_name: "Valvola giardino"
+  moltiplicatore_voltaggio: 11.111
 
 esphome:
   name: ${device_name}
@@ -11,6 +12,11 @@ esphome:
   
 esp8266:
   board: esp12e
+  restore_from_flash: True
+
+factory_reset:
+  resets_required: 5
+  max_delay: 10s
 
 wifi:
   ssid: !secret wifi_dmz_ssid
@@ -29,6 +35,9 @@ ota:
   platform: esphome
   password: !secret api_key
 
+web_server:
+  port: 80
+
 logger:
 
 packages:
@@ -40,12 +49,41 @@ switch:
     pin: GPIO12
     restore_mode: ALWAYS_OFF
     on_turn_on:
-    - switch.turn_off: valve_close_gpio
+      - switch.turn_off: valve_close_gpio
+      - output.turn_on: blue_led_output
     on_turn_off:
-    - switch.turn_on: valve_close_gpio
+      - switch.turn_on: valve_close_gpio
+      - output.turn_off: blue_led_output
 
   - platform: gpio
     id: valve_close_gpio
     internal: true
     pin: GPIO13
     restore_mode: ALWAYS_ON
+
+
+status_led:
+  pin: GPIO4
+
+output:
+  - platform: gpio
+    id: blue_led_output
+    pin: GPIO5
+
+sensor:
+  - platform: adc
+    id: adc_raw
+    pin: A0
+    name: "adc_raw"
+    filters:
+      - multiply: ${moltiplicatore_voltaggio}
+      - lambda: |-
+          return (x / 1024.0) * 1.0;
+
+binary_sensor:
+  - platform: gpio
+    id: push_button
+    pin: GPIO14
+    internal: true
+    on_press:
+      - switch.toggle: valve_open_gpio
