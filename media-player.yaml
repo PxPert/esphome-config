@@ -41,6 +41,7 @@ media_source:
     id: sendspin_media_source
 #    task_stack_in_psram: true
     decode_memory: internal
+    buffer_size: 192000
     
 
 media_player:
