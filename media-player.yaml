@@ -9,7 +9,7 @@ esphome:
 
 psram:
   mode: quad
-  speed: 80MHZ
+  speed: 120MHZ
   
 mdns:
   disabled: false
