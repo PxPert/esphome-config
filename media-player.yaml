@@ -46,6 +46,9 @@ media_player:
     id: external_media_player
     name: Media Player
     media_pipeline:
+      format: FLAC     # FLAC is the least processor intensive codec
+      num_channels: 2
+      sample_rate: 48000
       speaker: spdif_speaker
       sources:
         - sendspin_media_source
