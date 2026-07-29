@@ -30,24 +30,24 @@ api:
 ota:
   platform: esphome
   
-sendspin:
-  task_stack_in_psram: true
+#sendspin:
+#  task_stack_in_psram: true
 
 media_source:
   - platform: audio_http
     id: http_source
-  - platform: sendspin
-    fixed_delay: 1ms
-    id: sendspin_media_source
-    task_stack_in_psram: true
-    decode_memory: psram
-    buffer_size: 192000
-    static_delay_adjustable: true
+#  - platform: sendspin
+#    fixed_delay: 1ms
+#    id: sendspin_media_source
+#    task_stack_in_psram: true
+#    decode_memory: psram
+#    buffer_size: 192000
+#    static_delay_adjustable: true
     
 
 media_player:
-  - platform: sendspin
-    id: sendspin_group_media_player
+#  - platform: sendspin
+#    id: sendspin_group_media_player
   - platform: speaker_source
     id: external_media_player
     name: Media Player
@@ -57,7 +57,7 @@ media_player:
       sample_rate: 48000
       speaker: spdif_speaker
       sources:
-        - sendspin_media_source
+#        - sendspin_media_source
         - http_source
   
 #optional
@@ -85,23 +85,23 @@ sensor:
   - platform: wifi_signal
     name: "WiFi Signal"
     update_interval: 600s
-  - platform: sendspin
-    type: track
-    name: traccia
-    id: sensor_sendspin_1
+#  - platform: sendspin
+#    type: track
+#    name: traccia
+#    id: sensor_sendspin_1
 
 text_sensor:
   - platform: wifi_info
     ip_address:
       name: "IP Address"
-  - platform: sendspin
-    type: title
-    name: titolo
-    id: text_sensor_sendspin_1
-  - platform: sendspin
-    type: artist
-    name: artista
-    id: text_sensor_sendspin_2
+#  - platform: sendspin
+#    type: title
+#    name: titolo
+#    id: text_sensor_sendspin_1
+#  - platform: sendspin
+#    type: artist
+#    name: artista
+#    id: text_sensor_sendspin_2
 
 button:
   - platform: restart
