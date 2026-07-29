@@ -11,6 +11,8 @@ psram:
   mode: quad
   speed: 80MHZ
   
+mdns:
+  disabled: false
   
 esp32:
   variant: esp32
