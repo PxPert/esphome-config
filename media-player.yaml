@@ -40,6 +40,8 @@ media_source:
     id: sendspin_media_source
 
 media_player:
+  - platform: sendspin
+    id: sendspin_group_media_player
   - platform: speaker_source
     id: external_media_player
     name: Media Player
