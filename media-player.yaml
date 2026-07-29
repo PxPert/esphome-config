@@ -37,7 +37,11 @@ media_source:
   - platform: audio_http
     id: http_source
   - platform: sendspin
+    fixed_delay: 1ms
     id: sendspin_media_source
+#    task_stack_in_psram: true
+    decode_memory: internal
+    
 
 media_player:
   - platform: sendspin
