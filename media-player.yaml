@@ -79,11 +79,23 @@ sensor:
   - platform: wifi_signal
     name: "WiFi Signal"
     update_interval: 600s
+  - platform: sendspin
+    type: track
+    name: traccia
+    id: sensor_sendspin_1
 
 text_sensor:
   - platform: wifi_info
     ip_address:
       name: "IP Address"
+  - platform: sendspin
+    type: title
+    name: titolo
+    id: text_sensor_sendspin_1
+  - platform: sendspin
+    type: artist
+    name: artista
+    id: text_sensor_sendspin_2
 
 button:
   - platform: restart
