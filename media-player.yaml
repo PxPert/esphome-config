@@ -1,0 +1,41 @@
+# Basic Config
+substitutions:
+  friendly_name: media-player
+  device_name: media-player
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  variant: esp32
+  framework:
+    type: esp-idf
+    
+wifi:
+  ap:
+    ssid: ${device_name}
+    password: "00000000"
+
+captive_portal:
+
+logger:
+
+api:
+
+ota:
+
+#optional
+web_server:
+  port: 80
+
+sensor:
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 600s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
