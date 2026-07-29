@@ -31,7 +31,7 @@ ota:
   platform: esphome
   
 sendspin:
-  task_stack_in_psram: true
+  task_stack_in_psram: false
 
 media_source:
   - platform: audio_http
@@ -69,6 +69,7 @@ speaker:
     sample_rate: 48000
     channel: stereo
     timeout: never
+    buffer_duration: 2000ms
   
 sensor:
 
