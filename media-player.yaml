@@ -87,4 +87,5 @@ text_sensor:
 
 button:
   - platform: restart
+    name: "restart"
     id: button_restart_1
