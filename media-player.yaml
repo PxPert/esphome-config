@@ -80,3 +80,7 @@ text_sensor:
   - platform: wifi_info
     ip_address:
       name: "IP Address"
+
+button:
+  - platform: restart
+    id: button_restart_1
