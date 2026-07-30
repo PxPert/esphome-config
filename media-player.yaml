@@ -67,7 +67,8 @@ media_source:
 #    buffer_size: 192000
 #    static_delay_adjustable: true
     
-
+a2dp_sink:
+  
 media_player:
 #  - platform: sendspin
 #    id: sendspin_group_media_player
