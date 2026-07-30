@@ -33,10 +33,14 @@ api:
 
 ota:
   platform: esphome
-  
+
+external_components:
+  - source: /config/components/
+    components: [ a2dp_sink ]
+    
 #sendspin:
 #  task_stack_in_psram: true
-
+    
 media_source:
   - platform: audio_http
     id: http_source
