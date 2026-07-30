@@ -66,8 +66,8 @@ media_source:
 #    decode_memory: psram
 #    buffer_size: 192000
 #    static_delay_adjustable: true
-    
-a2dp_sink:
+  - platform: a2dp_sink
+    id: bluetooth
   
 media_player:
 #  - platform: sendspin
