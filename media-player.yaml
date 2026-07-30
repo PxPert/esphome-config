@@ -6,7 +6,11 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  libraries:
+    - uFire BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
 
+  includes:
+    - includes/advanced_bt_component.h
 psram:
   mode: quad
   speed: 80MHZ
