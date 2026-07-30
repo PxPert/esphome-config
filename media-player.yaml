@@ -8,7 +8,11 @@ esphome:
   friendly_name: ${friendly_name}
   libraries:
     - uFire BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
-
+  platformio_options:
+    build_flags: 
+      - -include
+      - ${PROJECT_DIR}/compat_delay.h
+    
   includes:
     - includes/advanced_bt_component.h
 psram:
@@ -17,9 +21,11 @@ psram:
   
 mdns:
   disabled: false
+
   
 esp32:
   variant: esp32
+  
   framework:
     type: esp-idf
     version: 6.0.2
