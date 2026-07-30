@@ -28,7 +28,7 @@ esp32:
   
   framework:
     type: esp-idf
-    version: 6.0.2
+#    version: 6.0.2
     sdkconfig_options:
       CONFIG_BT_ENABLED: y
       CONFIG_BT_CONTROLLER_ENABLED: y
