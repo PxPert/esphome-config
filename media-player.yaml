@@ -49,9 +49,9 @@ wifi:
   password: !secret wifi_password
   
 logger:
-#  hardware_uart: UART0
+  hardware_uart: UART0
   level: DEBUG
-  baud_rate: 0
+  baud_rate: 115200
 
 api:
 
@@ -64,7 +64,9 @@ external_components:
     
 #sendspin:
 #  task_stack_in_psram: true
-    
+
+a2dp_sink:
+  
 media_source:
   - platform: audio_http
     id: http_source
@@ -77,8 +79,8 @@ media_source:
 #    decode_memory: psram
 #    buffer_size: 192000
 #    static_delay_adjustable: true
-  - platform: a2dp_sink
-    id: bluetooth
+#  - platform: a2dp_sink
+#    id: bluetooth
   
 media_player:
 #  - platform: sendspin
