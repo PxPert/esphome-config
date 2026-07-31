@@ -7,8 +7,8 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   libraries:
-    - BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
     - AudioTools=https://github.com/pschatzmann/arduino-audio-tools
+    - BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
   platformio_options:
     build_flags: 
       - -include
