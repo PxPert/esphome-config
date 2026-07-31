@@ -49,9 +49,9 @@ wifi:
   password: !secret wifi_password
   
 logger:
-  hardware_uart: UART0
+#  hardware_uart: UART0
   level: DEBUG
-  baud_rate: 115200
+  baud_rate: 0
 
 api:
 
