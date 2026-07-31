@@ -13,8 +13,7 @@ esphome:
     - BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
   platformio_options:
     build_flags: 
-      - -include
-      - ${PROJECT_DIR}/compat_delay.h
+      - -DUSE_DEFAULT_STDLIB
     
   includes:
     - includes/advanced_bt_component.h
