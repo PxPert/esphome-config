@@ -96,7 +96,7 @@ media_player:
       sources:
 #        - sendspin_media_source
         - http_source
-        - bluetooth
+#        - bluetooth
   
 #optional
 #web_server:
