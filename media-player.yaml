@@ -15,9 +15,9 @@ esphome:
     
   includes:
     - includes/advanced_bt_component.h
-#psram:
-#  mode: quad
-#  speed: 80MHZ
+psram:
+  mode: quad
+  speed: 80MHZ
   
 mdns:
   disabled: false
@@ -39,8 +39,8 @@ esp32:
       CONFIG_BT_NIMBLE_ENABLED: n
       CONFIG_BTDM_CTRL_MODE_BTDM: y
     version: 6.0.2
-#    advanced:
-#      sram1_as_iram: true
+    advanced:
+      sram1_as_iram: true
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -66,7 +66,7 @@ media_source:
   - platform: audio_http
     id: http_source
     buffer_size: 100000
-    task_stack_in_psram: false
+    task_stack_in_psram: true
 #  - platform: sendspin
 #    fixed_delay: 1ms
 #    id: sendspin_media_source
@@ -84,7 +84,7 @@ media_player:
     id: external_media_player
     name: Media Player
     media_pipeline:
-      format: FLAC     # FLAC is the least processor intensive codec
+      format: WAV     # FLAC is the least processor intensive codec
       num_channels: 2
       sample_rate: 48000
       speaker: spdif_speaker
