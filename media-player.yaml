@@ -30,6 +30,8 @@ esp32:
     type: esp-idf
     sdkconfig_options:
       CONFIG_BT_ENABLED: y
+      CONFIG_BT_BLE_ENABLED: n
+      CONFIG_BT_GATTS_ENABLE: n
       CONFIG_BT_CLASSIC_ENABLED: y
       CONFIG_BT_A2DP_ENABLE: y
       CONFIG_BT_SPP_ENABLED: y
