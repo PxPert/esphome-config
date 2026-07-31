@@ -2,7 +2,10 @@ substitutions:
   device_name: valvola-giardino
   device_comment: "Dispositivo per irrigazione giardino e lettura umidita"
   friendly_name: "Valvola giardino"
-  moltiplicatore_voltaggio: 11.111
+#  moltiplicatore_voltaggio: 10.477
+#  moltiplicatore_voltaggio: 3 # Lettura voltaggio scala da 0-1 -> 0-3.3V
+  moltiplicatore_voltaggio: 7.14
+  offset_voltaggio: 0.8
 
 esphome:
   name: ${device_name}
@@ -19,11 +22,15 @@ factory_reset:
   max_delay: 10s
 
 wifi:
-  ssid: !secret wifi_dmz_ssid
-  password: !secret wifi_dmz_password
+#  ssid: !secret wifi_dmz_ssid
+#  password: !secret wifi_dmz_password
+  ssid: !secret wifi_garage_ssid
+  password: !secret wifi_garage_password
+  use_address: 192.168.2.224
+
   ap:
     ssid: "${friendly_name} AP"
-    password: !secret ap_pwd
+    password: !secret wifi_hotspot_password
 
 captive_portal:
 
@@ -39,6 +46,7 @@ web_server:
   port: 80
 
 logger:
+  baud_rate: 0
 
 packages:
   syslog: !include includes/syslog.yaml
@@ -46,6 +54,7 @@ packages:
 switch:
   - platform: gpio
     id: valve_open_gpio
+    name: "Valvola"
     pin: GPIO12
     restore_mode: ALWAYS_OFF
     on_turn_on:
@@ -62,6 +71,7 @@ switch:
     restore_mode: ALWAYS_ON
 
 
+
 status_led:
   pin: GPIO4
 
@@ -70,15 +80,27 @@ output:
     id: blue_led_output
     pin: GPIO5
 
+  - platform: gpio
+    id: moisture_sensor
+#    name: "Moisture sensor"
+    pin: GPIO3
+#    restore_mode: ALWAYS_ON
+
 sensor:
   - platform: adc
-    id: adc_raw
+    id: adc_moisture
     pin: A0
-    name: "adc_raw"
+    name: "Umidita terreno"
+    update_interval: never
+    samples: 5
     filters:
       - multiply: ${moltiplicatore_voltaggio}
       - lambda: |-
-          return (x / 1024.0) * 1.0;
+          return 1.0 - x;
+      - offset: ${offset_voltaggio}
+    on_value: 
+      then:
+        - output.turn_off: moisture_sensor
 
 binary_sensor:
   - platform: gpio
@@ -87,3 +109,21 @@ binary_sensor:
     internal: true
     on_press:
       - switch.toggle: valve_open_gpio
+
+button:
+  - platform: safe_mode
+    name: "Restart (Safe Mode)"
+  - platform: restart
+    name: "Restart"
+
+interval:
+  - interval: 10s
+    then:
+      - script.execute: read_moisture
+
+script:
+  - id: read_moisture
+    then: 
+      - output.turn_on: moisture_sensor   # accendi alimentazione
+      - delay: 500ms                      # aspetta stabilizzazione
+      - component.update: adc_moisture

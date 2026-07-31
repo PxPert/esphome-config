@@ -39,11 +39,11 @@ packages:
     vars:
       id: relay_1
       relay_index: 0
-      subscribe_topic: "sonoff_r3_03/stat/RESULT"
+      subscribe_topic: "lampada-emanuele/light/luce/state"
       value_on: "ON"
-      mqtt_json_key: "POWER"
-      command_topic: "sonoff_r3_03/cmnd/POWER"
-      command_toggle: "TOGGLE"
+      mqtt_json_key: "state"
+      command_topic: "lampada-emanuele/light/luce/command"
+      command_toggle: "{ \"state\": \"TOGGLE\" }"
 
   light_2: !include
     file: includes/tx_ultimate_light.yaml

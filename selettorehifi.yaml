@@ -51,7 +51,7 @@ mqtt:
 
     
 i2c:
-  scan: False
+  scan: True
   frequency: 100kHz
 #  sda: GPIO5
 #  scl: GPIO4
