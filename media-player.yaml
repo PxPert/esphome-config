@@ -15,9 +15,9 @@ esphome:
     
   includes:
     - includes/advanced_bt_component.h
-psram:
-  mode: quad
-  speed: 80MHZ
+#psram:
+#  mode: quad
+#  speed: 80MHZ
   
 mdns:
   disabled: false
@@ -36,8 +36,8 @@ esp32:
       CONFIG_BT_A2DP_ENABLE: y
       CONFIG_BT_SPP_ENABLED: y
 #      CONFIG_BT_NIMBLE_ENABLED: n
-    advanced:
-      sram1_as_iram: true
+#    advanced:
+#      sram1_as_iram: true
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -91,8 +91,8 @@ media_player:
         - bluetooth
   
 #optional
-web_server:
-  port: 80
+#web_server:
+#  port: 80
 
 i2s_audio:
   - id: i2s_output
