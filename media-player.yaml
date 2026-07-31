@@ -15,7 +15,7 @@ esphome:
     build_flags: 
       - -DUSE_DEFAULT_STDLIB
       - -DUSE_IDF_LOGGER
-    
+      - -DEXIT_ON_STOP
   includes:
     - includes/advanced_bt_component.h
 psram:
