@@ -158,6 +158,17 @@ text_sensor:
 #    id: text_sensor_sendspin_2
 
 button:
+  - platform: template
+    name: next
+    on_press:
+      - then:
+          - media_player.next: external_media_player
+  - platform: template
+    name: previous
+    on_press:
+      - then:
+          - media_player.previous: external_media_player
+            
   - platform: restart
     name: "restart"
     id: button_restart_1
