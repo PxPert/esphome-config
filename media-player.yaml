@@ -166,6 +166,7 @@ switch:
     type: bluetooth
     name: "Bluetooth state"
     id: "btState"
+    restore_mode: ALWAYS_ON
     
 button:
   - platform: template
