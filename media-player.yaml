@@ -133,6 +133,9 @@ sensor:
 #    id: sensor_sendspin_1
 
 text_sensor:
+  - platform: a2dp_sink
+    type: "artist"
+    name: "Artist"
   - platform: wifi_info
     ip_address:
       name: "IP Address"
