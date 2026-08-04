@@ -157,6 +157,11 @@ text_sensor:
 #    name: artista
 #    id: text_sensor_sendspin_2
 
+switch:
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    
 button:
   - platform: template
     name: next
