@@ -66,7 +66,15 @@ namespace esphome
                 this->playback_position_callbacks_.add(std::forward<F>(callback));
             }
 
+            template<typename F> void add_connection_state_callbacks(F &&callback) {
+                this->connection_state_callbacks_.add(std::forward<F>(callback));
+            }
+
             BluetoothA2DPSink* a2dp_sink() const;
+
+            void start();
+
+            void stop();
 
         protected:
             std::string name_;
@@ -78,6 +86,7 @@ namespace esphome
             // Playback status callbacks
             void avrc_rn_playstatus_callback(esp_avrc_playback_stat_t playback);
             void avrc_rn_play_pos_callback(uint32_t play_pos);
+            void on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data);
 
 
             // Callback fan-out to child components; they filter as needed
@@ -85,6 +94,8 @@ namespace esphome
 
             CallbackManager<void(esp_avrc_playback_stat_t playback)> playback_status_callbacks_{};
             CallbackManager<void(uint32_t pos)> playback_position_callbacks_{};
+
+            CallbackManager<void(esp_a2d_connection_state_t, void*)> connection_state_callbacks_{};
 
 
         }; // class A2DPSinkHub

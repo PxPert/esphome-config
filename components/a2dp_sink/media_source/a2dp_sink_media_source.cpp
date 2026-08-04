@@ -57,6 +57,11 @@ namespace esphome::a2dp_sink {
                 ESP_LOGE(TAG, "Play position: %d", pos);
             });
 
+            this->parent_->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {
+                this->set_state_(media_source::MediaSourceState::IDLE);
+                this->pause_.store(false, std::memory_order_relaxed);
+            });
+
             this->pause_.store(false, std::memory_order_relaxed);
 
             ESP_LOGW(TAG, "A2DPSink is initialized");
@@ -103,29 +108,54 @@ namespace esphome::a2dp_sink {
             ESP_LOGE(TAG, "handle_command requested: %d", command);
             switch (command) {
                 case media_source::MediaSourceCommand::STOP:
-                    ESP_LOGE(TAG, "Stop requested");
+                    if (
+                        (this->get_state() == media_source::MediaSourceState::PLAYING) 
+                        ||
+                        (this->get_state() == media_source::MediaSourceState::PAUSED)
+                    )
+                    {
+                        ESP_LOGW(TAG, "Cannot stop: source is not playing playing or paused");
+                        return;
+                    }
+                    ESP_LOGD(TAG, "Stop requested");
                     this->parent_->a2dp_sink()->stop();
                     this->pause_.store(false, std::memory_order_relaxed);
                     this->set_state_(media_source::MediaSourceState::IDLE);
                 break;
                 case media_source::MediaSourceCommand::PAUSE:
-                    ESP_LOGE(TAG, "Pause requested");
+                    if (this->get_state() != media_source::MediaSourceState::PLAYING) {
+                        ESP_LOGW(TAG, "Cannot pause: source is not playing");
+                        return;
+                    }
+                    ESP_LOGD(TAG, "Pause requested");
                     this->parent_->a2dp_sink()->pause();
                     this->pause_.store(true, std::memory_order_relaxed);
                     this->set_state_(media_source::MediaSourceState::PAUSED);
                 break;
                 case media_source::MediaSourceCommand::PLAY:
-                    ESP_LOGE(TAG, "Play requested");
+                    if (this->parent_->a2dp_sink()->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                        ESP_LOGW(TAG, "Cannot play: A2DP is not connected");
+                        return;
+                    }
+                    ESP_LOGD(TAG, "Play requested");
                     this->parent_->a2dp_sink()->play();
                     this->set_state_(media_source::MediaSourceState::PLAYING);
                     this->pause_.store(false, std::memory_order_relaxed);
                 break;
                 case media_source::MediaSourceCommand::NEXT:
-                    ESP_LOGE(TAG, "Play requested");
+                    if (this->parent_->a2dp_sink()->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                        ESP_LOGW(TAG, "Cannot go to next: A2DP is not connected");
+                        return;
+                    }
+                    ESP_LOGD(TAG, "Next requested");
                     this->parent_->a2dp_sink()->next();
                 break;
                 case media_source::MediaSourceCommand::PREVIOUS:
-                    ESP_LOGE(TAG, "Play requested");
+                    if (this->parent_->a2dp_sink()->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                        ESP_LOGE(TAG, "Cannot go to previous: A2DP is not connected");
+                        return;
+                    }
+                    ESP_LOGD(TAG, "Previous requested");
                     this->parent_->a2dp_sink()->previous();
                 break;
                 default:

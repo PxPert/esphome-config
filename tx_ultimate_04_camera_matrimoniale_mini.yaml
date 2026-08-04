@@ -1,0 +1,92 @@
+substitutions:
+  name: "int-camera-matrimoniale-mini"
+  friendly_name: "Camera matrimoniale"
+
+  use_ip_address: 192.168.2.144 # Usato da esphome per monitor e upload
+
+  wifi_ssid: !secret wifi_dmz_ssid
+  wifi_password: !secret wifi_dmz_password
+
+#esp32_ble_tracker:
+#  scan_parameters:
+#    active: True
+#    continuous: false
+
+packages:
+  # Connessione MQTT
+  mqtt_client: !include includes/mqtt_client.yaml
+
+  # Configurazione di base
+  device_base: !include includes/tx_ultimate_base.yaml
+
+  # Supporto Voice Assistant 
+#  va: !include
+#    file: includes/tx_ultimate_voice_assistant.yaml
+#    vars:
+#      mic_lrclk_pin: GPIO1
+#      mic_bclk_pin: GPIO3
+#      mic_sdata_pin: GPIO0
+
+  # Media Player 
+  mediaplayer: !include includes/tx_ultimate_media_player.yaml
+
+  # Configurazione leds
+  leds: !include includes/tx_ultimate_leds_3_zone.yaml
+
+  # Relè e luci locali
+  light_1: !include
+    file: includes/tx_ultimate_light.yaml
+    vars:
+      id: relay_1
+      relay_index: 0
+      name: "Luce"
+      pin: ${relay_1_pin}
+  light_2: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_2
+      relay_index: 1
+      subscribe_topic: "zigbee2mqtt/lampada_comodino_destra"
+      value_on: "ON"
+      mqtt_json_key: "state"
+      command_topic: "zigbee2mqtt/lampada_comodino_destra/set"
+      command_toggle: "TOGGLE"
+  light_3: !include
+    file: includes/tx_ultimate_mqtt_relay.yaml
+    vars:
+      id: relay_3
+      relay_index: 2
+      subscribe_topic: "zigbee2mqtt/lampada_comodino_sinistra"
+      value_on: "ON"
+      mqtt_json_key: "state"
+      command_topic: "zigbee2mqtt/lampada_comodino_sinistra/set"
+      command_toggle: "TOGGLE"
+
+script:
+  - id: !extend on_release
+    then:
+      - if:
+          condition:
+            lambda: "return index == 0;"
+          then:
+            - light.toggle: relay_1
+          else:
+            - if:
+                condition:
+                  lambda: "return index == 1;"
+                then:
+                  - script.execute: mqtt_toggle_relay_2
+                else:
+                  - script.execute: mqtt_toggle_relay_3
+
+  - id: !extend on_swipe_right
+    then:
+      - mqtt.publish:
+          topic: sonoff_dualr2_07/cmnd/ShutterStopOpen1
+          payload: ""
+  - id: !extend on_swipe_left
+    then:
+      - mqtt.publish:
+          topic: sonoff_dualr2_07/cmnd/ShutterStopClose1
+          payload: ""
+

@@ -35,6 +35,11 @@ namespace esphome
             this->playback_position_callbacks_.call(play_pos);
         }
 
+        void A2DPSinkHub::on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data) {
+            ESP_LOGD(TAG, "A2DP connection state changed: %d", (uint8_t)state);
+            this->connection_state_callbacks_.call(state, user_data);
+        }
+
 
         void A2DPSinkHub::setup()
         {
@@ -78,14 +83,26 @@ namespace esphome
                 }
             );
 
-
-
-            a2dp_sink_.start(this->name().c_str(), this->auto_reconnect());
-
-
-
+            /* 
+             * Connection state callback
+             */
+            a2dp_sink_.set_on_connection_state_changed(
+                [](esp_a2d_connection_state_t state, void *user_data) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->on_connection_state_changed(state, user_data);
+                    }
+                }
+            );
 
             ESP_LOGW(TAG, "%s", "A2DPSink is initialized");
+        }
+
+        void A2DPSinkHub::start() {
+            a2dp_sink_.start(this->name().c_str(), this->auto_reconnect());
+        }
+
+        void A2DPSinkHub::stop() {
+            a2dp_sink_.end();
         }
 
         void A2DPSinkHub::loop()
