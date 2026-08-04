@@ -19,7 +19,7 @@ namespace esphome::a2dp_sink {
 
         void A2DPSinkMediaSource::setup()
         {
-            ESP_LOGW("log", "%s", "A2DPSink initializing");
+            ESP_LOGW(TAG, "A2DPSink initializing");
 
             this->disable_loop();
 
@@ -34,8 +34,32 @@ namespace esphome::a2dp_sink {
                 false  // i2s_output: false = gestisci tu l'audio, la libreria non fa output I2S automatico
             );
 
-            ESP_LOGW("log", "%s", "A2DPSink is initialized");
+
+            this->parent_->add_playback_status_callbacks([this](esp_avrc_playback_stat_t playback) {
+                ESP_LOGE(TAG, "Play status: %d", playback);
+                switch (playback) {
+                    case ESP_AVRC_PLAYBACK_PLAYING:
+                        this->set_state_(media_source::MediaSourceState::PLAYING);
+                        this->pause_.store(false, std::memory_order_relaxed);
+                        break;
+                    case ESP_AVRC_PLAYBACK_STOPPED:
+                        this->set_state_(media_source::MediaSourceState::IDLE);
+                        this->pause_.store(false, std::memory_order_relaxed);
+                        break;
+                    case ESP_AVRC_PLAYBACK_PAUSED:
+                        this->set_state_(media_source::MediaSourceState::PAUSED);
+                        this->pause_.store(true, std::memory_order_relaxed);
+                        break;
+                }
+            });
+
+            this->parent_->add_playback_position_callbacks([this](uint32_t pos) {
+                ESP_LOGE(TAG, "Play position: %d", pos);
+            });
+
             this->pause_.store(false, std::memory_order_relaxed);
+
+            ESP_LOGW(TAG, "A2DPSink is initialized");
         }
 
         void A2DPSinkMediaSource::loop()
@@ -47,6 +71,9 @@ namespace esphome::a2dp_sink {
         {
             ESP_LOGCONFIG(TAG, "A2DP Sink Media Source");
         }
+
+
+
 
         bool A2DPSinkMediaSource::play_uri(const std::string &uri) {
             ESP_LOGE(TAG, "Play URI: '%s'", uri.c_str());
@@ -77,18 +104,29 @@ namespace esphome::a2dp_sink {
             switch (command) {
                 case media_source::MediaSourceCommand::STOP:
                     ESP_LOGE(TAG, "Stop requested");
+                    this->parent_->a2dp_sink()->stop();
                     this->pause_.store(false, std::memory_order_relaxed);
                     this->set_state_(media_source::MediaSourceState::IDLE);
                 break;
                 case media_source::MediaSourceCommand::PAUSE:
                     ESP_LOGE(TAG, "Pause requested");
+                    this->parent_->a2dp_sink()->pause();
                     this->pause_.store(true, std::memory_order_relaxed);
                     this->set_state_(media_source::MediaSourceState::PAUSED);
                 break;
                 case media_source::MediaSourceCommand::PLAY:
                     ESP_LOGE(TAG, "Play requested");
+                    this->parent_->a2dp_sink()->play();
                     this->set_state_(media_source::MediaSourceState::PLAYING);
                     this->pause_.store(false, std::memory_order_relaxed);
+                break;
+                case media_source::MediaSourceCommand::NEXT:
+                    ESP_LOGE(TAG, "Play requested");
+                    this->parent_->a2dp_sink()->next();
+                break;
+                case media_source::MediaSourceCommand::PREVIOUS:
+                    ESP_LOGE(TAG, "Play requested");
+                    this->parent_->a2dp_sink()->previous();
                 break;
                 default:
                     ESP_LOGE(TAG, "Unhandled command requested: %d", command);

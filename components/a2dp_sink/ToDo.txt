@@ -16,13 +16,17 @@ Sensor:
 Slider:
 - Volume
 
+Buttons:
+- Next
+- Prev
+
 MediaPayer Override:
 - Play
 - Pause
-- Next
-- Prev
 - Stop
 - AutoPlay on device play
+
+- A2DP Pairing via Pin
 
 
 - Selective compilation of handlers/masks based on selected sensors or switches

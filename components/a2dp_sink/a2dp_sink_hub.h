@@ -58,16 +58,34 @@ namespace esphome
                 this->metadata_update_callbacks_.add(std::forward<F>(callback));
             }
 
+            template<typename F> void add_playback_status_callbacks(F &&callback) {
+                this->playback_status_callbacks_.add(std::forward<F>(callback));
+            }
+
+            template<typename F> void add_playback_position_callbacks(F &&callback) {
+                this->playback_position_callbacks_.add(std::forward<F>(callback));
+            }
+
             BluetoothA2DPSink* a2dp_sink() const;
 
         protected:
             std::string name_;
             bool auto_reconnect_;
 
+            // Metadata Callback
             void avrc_metadata_callback(uint8_t id, const uint8_t *text);
+
+            // Playback status callbacks
+            void avrc_rn_playstatus_callback(esp_avrc_playback_stat_t playback);
+            void avrc_rn_play_pos_callback(uint32_t play_pos);
+
 
             // Callback fan-out to child components; they filter as needed
             CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
+
+            CallbackManager<void(esp_avrc_playback_stat_t playback)> playback_status_callbacks_{};
+            CallbackManager<void(uint32_t pos)> playback_position_callbacks_{};
+
 
         }; // class A2DPSinkHub
 
