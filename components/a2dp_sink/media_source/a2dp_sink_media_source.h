@@ -3,17 +3,15 @@
 #include "esphome/components/audio/audio.h"
 #include "esphome/components/media_source/media_source.h"
 #include "esphome/core/component.h"
-#include "BluetoothA2DPSink.h"
+#include "../a2dp_sink_hub.h"
+
 #include <atomic>
 
 
-namespace esphome
-{
-    namespace a2dp_sink
-    {
+namespace esphome::a2dp_sink {
 
 
-        class A2DPSink : public Component, public media_source::MediaSource
+        class A2DPSinkMediaSource : public A2DPSinkChild, public media_source::MediaSource
         {
         public:
             void setup() override;
@@ -30,11 +28,9 @@ namespace esphome
 
 
         protected:
-            BluetoothA2DPSink a2dp_sink_;
             std::atomic<bool> pause_{false};
 
 
         }; // class A2DPSink
 
-    } // namespace a2dp_sink
-} // namespace esphome
+} // namespace esphome::a2dp_sink

@@ -1,0 +1,25 @@
+Switch:
+- Connected
+- Discoverable
+
+
+TextSensor:
+- Device Name
+- Device MAC
+
+Sensor:
+- Track num
+- Track duration
+- Track position
+- RSSI
+
+Slider:
+- Volume
+
+MediaPayer Override:
+- Play
+- Pause
+- Next
+- Prev
+- Stop
+- AutoPlay on device play

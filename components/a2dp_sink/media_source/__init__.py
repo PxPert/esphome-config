@@ -7,21 +7,27 @@ from esphome.const import (
 
 from esphome import automation
 
+from .. import (
+    CONF_A2DP_SINK_ID,
+    A2DPSinkHub,
+    a2dp_sink_ns,
+)
+
 AUTO_LOAD = ["audio"]
 CODEOWNERS = ["@PxPert"]
 # DEPENDENCIES = ['uart']
+DOMAIN = "a2dpsink"
 
 # CONFIG-IDs
+CONF_A2DPSINK_ID = "a2dp_sink_id"
 
 
 # ------------------------------
 # ------------------------------
 
-a2dp_sink_ns = cg.esphome_ns.namespace('a2dp_sink')
 
-
-A2DPSink = a2dp_sink_ns.class_(
-    'A2DPSink',
+A2DPSinkMediaSource = a2dp_sink_ns.class_(
+    'A2DPSinkMediaSource',
     cg.Component,
     media_source.MediaSource,
 )
@@ -32,9 +38,13 @@ A2DPSink = a2dp_sink_ns.class_(
 # ------------------------------
 CONFIG_SCHEMA = cv.All(
     media_source.media_source_schema(
-        A2DPSink,
+        A2DPSinkMediaSource,
     )
-    .extend(cv.COMPONENT_SCHEMA),
+    .extend(
+        {
+            cv.GenerateID(CONF_A2DP_SINK_ID): cv.use_id(A2DPSinkHub),
+        }
+    ),
     cv.only_on_esp32,
 )
 
@@ -47,4 +57,7 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await media_source.register_media_source(var, config)
+
+    a2dpsink_hub = await cg.get_variable(config[CONF_A2DP_SINK_ID])
+    await cg.register_parented(var, a2dpsink_hub)
 

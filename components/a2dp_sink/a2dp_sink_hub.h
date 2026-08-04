@@ -1,0 +1,88 @@
+#pragma once
+
+#include "esphome/core/component.h"
+#include "BluetoothA2DPSink.h"
+#include <atomic>
+
+
+namespace esphome
+{
+    namespace a2dp_sink
+    {
+
+        namespace a2dp_sink_priority {
+        // AFTER_WIFI so the hub runs after the wifi/ethernet drivers are up and we can read the active
+        // interface's MAC for client_id.
+        inline constexpr float HUB = esphome::setup_priority::AFTER_WIFI;
+        inline constexpr float CHILD = HUB - 1.0f;
+        }  // namespace sendspin_priority
+
+        enum class A2DPSinkTextMetadataTypes {
+        TITLE = ESP_AVRC_MD_ATTR_TITLE,
+        ARTIST = ESP_AVRC_MD_ATTR_ARTIST,
+        ALBUM = ESP_AVRC_MD_ATTR_ALBUM,
+        GENRE = ESP_AVRC_MD_ATTR_GENRE,
+        };
+
+        class A2DPSinkMetadata
+        {
+        public:
+            A2DPSinkMetadata(uint8_t type, const uint8_t *text) {
+                type_ = type;
+                text_ = text;
+            }
+
+            uint8_t type() const { return type_; }
+            const uint8_t *text() const { return text_; }
+
+        private:
+            uint8_t type_;
+            const uint8_t *text_;
+        };
+
+        class A2DPSinkHub : public Component
+        {
+        public:
+            float get_setup_priority() const override { return a2dp_sink_priority::HUB; }
+            void setup() override;
+            void loop() override;
+            void dump_config() override;
+
+            void set_name(std::string &&v) { this->name_ = std::move(v); }
+            std::string& name() { return this->name_; };
+
+            void set_auto_reconnect(bool v) { this->auto_reconnect_ = v; }
+            bool auto_reconnect() { return this->auto_reconnect_; };
+
+            template<typename F> void add_metadata_update_callback(F &&callback) {
+                this->metadata_update_callbacks_.add(std::forward<F>(callback));
+            }
+
+            BluetoothA2DPSink* a2dp_sink() const;
+
+        protected:
+            std::string name_;
+            bool auto_reconnect_;
+
+            void avrc_metadata_callback(uint8_t id, const uint8_t *text);
+
+            // Callback fan-out to child components; they filter as needed
+            CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
+
+        }; // class A2DPSinkHub
+
+        /// @brief Base class for all sendspin subcomponents.
+        ///
+        /// Consolidates the Component + Parented<A2DPSinkHub> inheritance and pins the setup
+        /// priority so the hub's setup() always runs before any child. Subcomponents should
+        /// inherit from this instead of listing Component/Parented individually and must not
+        /// override get_setup_priority().
+        class A2DPSinkChild : public Component, public Parented<A2DPSinkHub> {
+        public:
+            float get_setup_priority() const override { return a2dp_sink_priority::CHILD; }
+
+        };
+
+
+    } // namespace a2dp_sink
+} // namespace esphome
