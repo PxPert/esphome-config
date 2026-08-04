@@ -23,3 +23,6 @@ MediaPayer Override:
 - Prev
 - Stop
 - AutoPlay on device play
+
+
+- Selective compilation of handlers/masks based on selected sensors or switches
