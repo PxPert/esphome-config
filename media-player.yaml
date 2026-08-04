@@ -68,7 +68,7 @@ external_components:
 #  task_stack_in_psram: true
 
 a2dp_sink:
-  discover_name: test
+  name: test
   
 media_source:
   - platform: audio_http
