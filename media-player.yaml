@@ -137,6 +137,14 @@ text_sensor:
     id: "bt_artist"
     type: "artist"
     name: "Artist"
+  - platform: a2dp_sink
+    id: "bt_album"
+    type: "album"
+    name: "Album"
+  - platform: a2dp_sink
+    id: "bt_title"
+    type: "title"
+    name: "Title"
   - platform: wifi_info
     ip_address:
       name: "IP Address"
