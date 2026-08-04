@@ -18,10 +18,12 @@ namespace esphome
         }  // namespace sendspin_priority
 
         enum class A2DPSinkTextMetadataTypes {
-        TITLE = ESP_AVRC_MD_ATTR_TITLE,
-        ARTIST = ESP_AVRC_MD_ATTR_ARTIST,
-        ALBUM = ESP_AVRC_MD_ATTR_ALBUM,
-        GENRE = ESP_AVRC_MD_ATTR_GENRE,
+            TITLE = ESP_AVRC_MD_ATTR_TITLE,
+            ARTIST = ESP_AVRC_MD_ATTR_ARTIST,
+            ALBUM = ESP_AVRC_MD_ATTR_ALBUM,
+            GENRE = ESP_AVRC_MD_ATTR_GENRE,
+            PEERNAME,
+            PEERADDR,
         };
 
         class A2DPSinkMetadata
@@ -70,11 +72,19 @@ namespace esphome
                 this->connection_state_callbacks_.add(std::forward<F>(callback));
             }
 
+            template<typename F> void add_peer_name_callback(F &&callback) {
+                this->peer_name_callbacks_.add(std::forward<F>(callback));
+            }
+
             BluetoothA2DPSink* a2dp_sink() const;
 
             void start();
 
             void stop();
+
+            /// Converts an esp_bd_addr_t (6-byte Bluetooth address) to a human-readable
+            /// string like "AA:BB:CC:DD:EE:FF".
+            static std::string bd_addr_to_string(const esp_bd_addr_t& addr);
 
         protected:
             std::string name_;
@@ -88,6 +98,8 @@ namespace esphome
             void avrc_rn_play_pos_callback(uint32_t play_pos);
             void on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data);
 
+            void peer_name_callback(const char* name);
+
 
             // Callback fan-out to child components; they filter as needed
             CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
@@ -96,6 +108,10 @@ namespace esphome
             CallbackManager<void(uint32_t pos)> playback_position_callbacks_{};
 
             CallbackManager<void(esp_a2d_connection_state_t, void*)> connection_state_callbacks_{};
+
+            CallbackManager<void(const char*)> peer_name_callbacks_{};
+
+
 
 
         }; // class A2DPSinkHub

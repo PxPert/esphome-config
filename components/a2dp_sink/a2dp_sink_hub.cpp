@@ -40,6 +40,9 @@ namespace esphome
             this->connection_state_callbacks_.call(state, user_data);
         }
 
+        void A2DPSinkHub::peer_name_callback(const char* name) {
+            this->peer_name_callbacks_.call(name);
+        }
 
         void A2DPSinkHub::setup()
         {
@@ -94,6 +97,14 @@ namespace esphome
                 }
             );
 
+            a2dp_sink_.set_peer_name_callback(
+                [](char* name) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->peer_name_callback(name);
+                    }
+                }
+            );
+
             ESP_LOGW(TAG, "%s", "A2DPSink is initialized");
         }
 
@@ -116,6 +127,12 @@ namespace esphome
         void A2DPSinkHub::dump_config()
         {
             ESP_LOGCONFIG(TAG, "A2DP Sink");
+        }
+
+        std::string A2DPSinkHub::bd_addr_to_string(const esp_bd_addr_t& addr) {
+            char buf[18]; // "XX:XX:XX:XX:XX:XX\0" = 17 chars max
+            snprintf(buf, sizeof(buf), ESP_BD_ADDR_STR, ESP_BD_ADDR_HEX(addr));
+            return std::string(buf);
         }
 
 

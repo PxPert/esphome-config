@@ -8,10 +8,10 @@
 
 namespace esphome::a2dp_sink {
 
-class A2DPSinkTextSensor final : public A2DPSinkChild, public text_sensor::TextSensor {
+class A2DPSinkTextSensor : public A2DPSinkChild, public text_sensor::TextSensor {
  public:
   void dump_config() override;
-  void setup() override;
+  void setup() override {};
 
   void set_metadata_type(A2DPSinkTextMetadataTypes metadata_type) { this->metadata_type_ = metadata_type; }
 
@@ -21,6 +21,19 @@ class A2DPSinkTextSensor final : public A2DPSinkChild, public text_sensor::TextS
 
   A2DPSinkTextMetadataTypes metadata_type_;
 };
+
+
+class A2DPMetadataTextSensor : public A2DPSinkTextSensor {
+ public:
+  void setup() override;
+};
+
+class A2DPSinkPeerTextSensor : public A2DPSinkTextSensor
+{
+ public:
+  void setup() override;
+};
+
 
 }  // namespace esphome::a2dp_sink
 

@@ -1,11 +1,11 @@
 Switch:
-- Connected
-- Discoverable
+- Connected - Done
+- Discoverable - Done
 
 
 TextSensor:
-- Device Name
-- Device MAC
+- Device Name - Done
+- Device MAC - Done
 
 Sensor:
 - Track num

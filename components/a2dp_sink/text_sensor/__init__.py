@@ -14,8 +14,14 @@ from .. import (
 
 CODEOWNERS = ["@PxPert"]
 
-A2DPSinkTextSensor = a2dp_sink_ns.class_(
-    "A2DPSinkTextSensor",
+A2DPMetadataTextSensor = a2dp_sink_ns.class_(
+    "A2DPMetadataTextSensor",
+    text_sensor.TextSensor,
+    cg.Component,
+)
+
+A2DPSinkPeerTextSensor = a2dp_sink_ns.class_(
+    "A2DPSinkPeerTextSensor",
     text_sensor.TextSensor,
     cg.Component,
 )
@@ -26,17 +32,34 @@ A2DPSINK_TEXT_METADATA_TYPES = {
     "artist": A2DPSinkTextMetadataTypes.ARTIST,
     "album": A2DPSinkTextMetadataTypes.ALBUM,
     "genre": A2DPSinkTextMetadataTypes.GENRE,
+    "peername": A2DPSinkTextMetadataTypes.PEERNAME,
+    "peeraddr": A2DPSinkTextMetadataTypes.PEERADDR,
 }
+
+A2DPSINK_TEXT_TYPES = {
+    "title": A2DPMetadataTextSensor,
+    "artist": A2DPMetadataTextSensor,
+    "album": A2DPMetadataTextSensor,
+    "genre": A2DPMetadataTextSensor,
+    "peername": A2DPSinkPeerTextSensor,
+    "peeraddr": A2DPSinkPeerTextSensor,
+}
+
+def _validate_type(config):
+    """Select the text sensor class based on CONF_TYPE and bake it into CONF_ID."""
+    sensor_class = A2DPSINK_TEXT_TYPES[config[CONF_TYPE]]
+    config[CONF_ID] = cv.declare_id(sensor_class)(config[CONF_ID])
+    return config
 
 
 CONFIG_SCHEMA = cv.All(
     text_sensor.text_sensor_schema().extend(
         {
-            cv.GenerateID(): cv.declare_id(A2DPSinkTextSensor),
             cv.GenerateID(CONF_A2DP_SINK_ID): cv.use_id(A2DPSinkHub),
-            cv.Required(CONF_TYPE): cv.enum(A2DPSINK_TEXT_METADATA_TYPES),
+            cv.Required(CONF_TYPE): cv.enum(A2DPSINK_TEXT_METADATA_TYPES, lower=True),
         }
     ),
+    _validate_type,
     cv.only_on_esp32,
 )
 
