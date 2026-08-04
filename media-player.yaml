@@ -162,6 +162,10 @@ switch:
     type: connection
     name: "Bluetooth connection"
     id: "btConnection"
+  - platform: a2dp_sink
+    type: bluetooth
+    name: "Bluetooth state"
+    id: "btState"
     
 button:
   - platform: template
