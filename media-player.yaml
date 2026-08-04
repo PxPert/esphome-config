@@ -145,6 +145,14 @@ text_sensor:
     id: "bt_title"
     type: "title"
     name: "Title"
+  - platform: a2dp_sink
+    id: "bt_peername"
+    type: "peername"
+    name: "Peer name"
+  - platform: a2dp_sink
+    id: "bt_peeraddr"
+    type: "peeraddr"
+    name: "Peer address"
   - platform: wifi_info
     ip_address:
       name: "IP Address"
