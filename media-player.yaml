@@ -45,6 +45,7 @@ esp32:
     advanced:
       sram1_as_iram: true
 wifi:
+  power_save_mode: none
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   
