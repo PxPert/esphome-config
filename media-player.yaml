@@ -134,6 +134,7 @@ sensor:
 
 text_sensor:
   - platform: a2dp_sink
+    id: "bt_artist"
     type: "artist"
     name: "Artist"
   - platform: wifi_info
