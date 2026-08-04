@@ -162,6 +162,9 @@ button:
     name: next
     on_press:
       - then:
+          - logger.log:
+              level: INFO
+              format: Next
           - media_player.next: external_media_player
   - platform: template
     name: previous
