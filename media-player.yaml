@@ -162,6 +162,8 @@ switch:
     type: connection
     name: "Bluetooth connection"
     id: "btConnection"
+    restore_mode: ALWAYS_OFF
+    
   - platform: a2dp_sink
     type: bluetooth
     name: "Bluetooth state"
