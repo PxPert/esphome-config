@@ -84,7 +84,7 @@ media_source:
 #    task_stack_in_psram: true
     decode_memory: internal
     buffer_size: 192000
-#    static_delay_adjustable: true
+    static_delay_adjustable: true
 #  - platform: a2dp_sink
 #    id: bluetooth
   
