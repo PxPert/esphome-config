@@ -64,6 +64,8 @@ logger:
   hardware_uart: UART0
   level: DEBUG
   baud_rate: 115200
+  task_log_buffer_size: 0B
+  tx_buffer_size: 160B
 
 api:
 
@@ -130,7 +132,7 @@ speaker:
     sample_rate: 48000
     channel: stereo
     timeout: never
-    buffer_duration: 100ms
+    buffer_duration: 50ms
     
   
 sensor:
