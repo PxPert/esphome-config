@@ -46,7 +46,7 @@ esp32:
 #    version: 6.1-beta1
     advanced:
       sram1_as_iram: true
-  cpu_frequency: 160MHZ
+  cpu_frequency: 240MHZ
 wifi:
   power_save_mode: none
   ssid: !secret wifi_ssid
@@ -56,8 +56,8 @@ wifi:
   
 logger:
   hardware_uart: UART0
-  level: DEBUG
-  baud_rate: 115200
+  level: ERROR
+  baud_rate: 0
 
 api:
 
@@ -80,11 +80,11 @@ media_source:
     buffer_size: 1000000
     task_stack_in_psram: true
   - platform: sendspin
-#    fixed_delay: 1ms
+    fixed_delay: 10ms
     id: sendspin_media_source
 #    task_stack_in_psram: true
     decode_memory: internal
-    buffer_size: 192000
+    buffer_size: 1000000
     static_delay_adjustable: true
 #  - platform: a2dp_sink
 #    id: bluetooth
