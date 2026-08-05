@@ -132,7 +132,7 @@ speaker:
     sample_rate: 48000
     channel: stereo
     timeout: 2s
-#    buffer_duration: 100ms
+    buffer_duration: 2s
     
   
 sensor:
