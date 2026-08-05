@@ -45,7 +45,7 @@ esp32:
 #    version: 6.1-beta1
     advanced:
       sram1_as_iram: true
-  cpu_frequency: 240MHZ
+  cpu_frequency: 160MHZ
 wifi:
   power_save_mode: none
   ssid: !secret wifi_ssid
