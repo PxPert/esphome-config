@@ -124,15 +124,15 @@ i2c:
     sda: GPIO18
     scl: GPIO23
     
-audio_dac:
- - platform: es8388
+#audio_dac:
+# - platform: es8388
 
 external_components:
   - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
     components: [es8388]
     refresh: 0s
 
-#es8388:
+es8388:
   
 i2s_audio:
 #  - id: i2s_spdif
