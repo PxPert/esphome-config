@@ -19,9 +19,9 @@ esphome:
 #  includes:
 #    - includes/advanced_bt_component.h
 
-#psram:
-#  mode: quad
-#  speed: 80MHZ
+psram:
+  mode: quad
+  speed: 40MHZ
   
 mdns:
   disabled: false
@@ -132,7 +132,7 @@ speaker:
     sample_rate: 48000
     channel: stereo
     timeout: 2s
-    buffer_duration: 100ms
+#    buffer_duration: 100ms
     
   
 sensor:
