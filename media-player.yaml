@@ -61,8 +61,8 @@ wifi:
     
 logger:
   hardware_uart: UART0
-  level: INFO
-  baud_rate: 0
+  level: DEBUG
+  baud_rate: 115200
 
 api:
 
