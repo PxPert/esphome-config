@@ -64,8 +64,8 @@ external_components:
   - source: /config/components/
     components: [ a2dp_sink ]
     
-#sendspin:
-#  task_stack_in_psram: true
+sendspin:
+  task_stack_in_psram: false
 
 a2dp_sink:
   name: test
@@ -75,13 +75,13 @@ media_source:
     id: http_source
     buffer_size: 100000
     task_stack_in_psram: true
-#  - platform: sendspin
-#    fixed_delay: 1ms
-#    id: sendspin_media_source
-#    task_stack_in_psram: true
-#    decode_memory: psram
-#    buffer_size: 192000
-#    static_delay_adjustable: true
+  - platform: sendspin
+    fixed_delay: 1ms
+    id: sendspin_media_source
+    task_stack_in_psram: true
+    decode_memory: psram
+    buffer_size: 192000
+    static_delay_adjustable: true
   - platform: a2dp_sink
     id: bluetooth
   
