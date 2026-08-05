@@ -158,6 +158,7 @@ speaker:
     dac_type: external
     i2s_dout_pin: GPIO26
     channel: stereo
+    sample_rate: 48000
   
 sensor:
 
