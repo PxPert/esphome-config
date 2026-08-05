@@ -118,35 +118,36 @@ media_player:
 #optional
 #web_server:
 #  port: 80
+external_components:
+  - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
+    components: [es8388]
+    refresh: 0s
 
-i2c:
-  - id: i2c_bus
-    sda: GPIO18
-    scl: GPIO23
-    
-audio_dac:
- - platform: es8388
+es8388:
+
    
 i2s_audio:
-#  - id: i2s_spdif
+  - id: i2s_spdif
+    
   - id: i2s_audio_bus
     i2s_lrclk_pin: GPIO25
     i2s_bclk_pin: GPIO5
     
 speaker:
-#  - platform: i2s_audio
-#    id: spdif_speaker
-#    dac_type: external
-#    i2s_audio_id: i2s_spdif
-#    i2s_dout_pin: GPIO25
-#    spdif_mode: true
-#    use_apll: true
-#    sample_rate: 48000
-#    channel: stereo
-#    timeout: never
-#    buffer_duration: 2s
+  - platform: i2s_audio
+    id: spdif_speaker
+    dac_type: external
+    i2s_audio_id: i2s_spdif
+    i2s_dout_pin: GPIO18
+    spdif_mode: true
+    use_apll: true
+    sample_rate: 48000
+    channel: stereo
+    timeout: never
+    buffer_duration: 2s
   - platform: i2s_audio
     id: luxe_speaker
+    i2s_audio_id: i2s_audio_bus
     dac_type: external
     i2s_dout_pin: GPIO26
     channel: stereo
