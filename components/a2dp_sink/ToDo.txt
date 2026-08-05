@@ -37,5 +37,6 @@ A2DP Pairing via Pin + callback
   - Refactor the metadata enum
   - Add ESP_LOGD all around and overall ESP_LOG* Cleanup
 
+- Move sensors to the correct sections (For example diagnostic sensors like RSSI or device name)
 
 - Add documentation to each component
