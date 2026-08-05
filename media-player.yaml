@@ -131,7 +131,22 @@ sensor:
 #    type: track
 #    name: traccia
 #    id: sensor_sendspin_1
-
+  - platform: a2dp_sink
+    type: tracknum
+    name: "Track Number"
+  - platform: a2dp_sink
+    type: playingtime
+    name: "Playing Time"
+  - platform: a2dp_sink
+    type: num_tracks
+    name: "Total Tracks"
+  - platform: a2dp_sink
+    type: trackposition
+    name: "Track Position"
+  - platform: a2dp_sink
+    type: rssi
+    name: "RSSI"
+    
 text_sensor:
   - platform: a2dp_sink
     id: "bt_artist"
