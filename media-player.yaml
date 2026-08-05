@@ -61,7 +61,7 @@ wifi:
     
 logger:
   hardware_uart: UART0
-  level: ERROR
+  level: INFO
   baud_rate: 0
 
 api:
@@ -74,7 +74,7 @@ ota:
 #    components: [ a2dp_sink ]
     
 sendspin:
-  task_stack_in_psram: false
+#  task_stack_in_psram: false
 
 #a2dp_sink:
 #  name: test
@@ -85,12 +85,12 @@ media_source:
 #    buffer_size: 1000000
 #    task_stack_in_psram: true
   - platform: sendspin
-    fixed_delay: 10ms
+#    fixed_delay: 10ms
     id: sendspin_media_source
 #    task_stack_in_psram: true
 #    decode_memory: internal
 #    buffer_size: 1000000
-    static_delay_adjustable: true
+#    static_delay_adjustable: true
 #  - platform: a2dp_sink
 #    id: bluetooth
   
@@ -209,19 +209,19 @@ sensor:
 #    restore_mode: RESTORE_DEFAULT_OFF
     
 button:
-  - platform: template
-    name: next
-    on_press:
-      - then:
-          - logger.log:
-              level: INFO
-              format: Next
-          - media_player.next: external_media_player
-  - platform: template
-    name: previous
-    on_press:
-      - then:
-          - media_player.previous: external_media_player
+#  - platform: template
+#    name: next
+#    on_press:
+#      - then:
+#          - logger.log:
+#              level: INFO
+#              format: Next
+#          - media_player.next: external_media_player
+#  - platform: template
+#    name: previous
+#    on_press:
+#      - then:
+#          - media_player.previous: external_media_player
             
   - platform: restart
     name: "restart"
