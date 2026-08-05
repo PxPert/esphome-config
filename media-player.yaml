@@ -50,6 +50,8 @@ wifi:
   power_save_mode: none
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  enable_btm: true
+  enable_rrm: true
   
 logger:
   hardware_uart: UART0
@@ -77,12 +79,12 @@ media_source:
 #    buffer_size: 100000
 #    task_stack_in_psram: true
   - platform: sendspin
-    fixed_delay: 1ms
+#    fixed_delay: 1ms
     id: sendspin_media_source
-    task_stack_in_psram: true
-    decode_memory: internal
-    buffer_size: 192000
-    static_delay_adjustable: true
+#    task_stack_in_psram: true
+#    decode_memory: internal
+#    buffer_size: 192000
+#    static_delay_adjustable: true
   - platform: a2dp_sink
     id: bluetooth
   
@@ -94,7 +96,7 @@ media_player:
     id: external_media_player
     name: Media Player
     media_pipeline:
-      format: FLAC
+      # format: FLAC
       num_channels: 2
       sample_rate: 48000
       speaker: spdif_speaker
@@ -120,14 +122,14 @@ speaker:
     sample_rate: 48000
     channel: stereo
     timeout: 2s
-    buffer_duration: 1s
+#    buffer_duration: 1s
     
   
 sensor:
 
-  - platform: wifi_signal
-    name: "WiFi Signal"
-    update_interval: 600s
+#  - platform: wifi_signal
+#    name: "WiFi Signal"
+#    update_interval: 600s
 #  - platform: sendspin
 #    type: track
 #    name: traccia
