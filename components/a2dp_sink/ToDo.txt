@@ -8,10 +8,10 @@ TextSensor:
 - Device MAC - Done
 
 Sensor:
-- Track num
-- Track duration
-- Track position
-- RSSI
+- Track num - Done
+- Track duration - Done
+- Track position - Done
+- RSSI - Done
 
 Slider:
 - Volume
@@ -21,12 +21,21 @@ Buttons:
 - Prev
 
 MediaPayer Override:
-- Play
-- Pause
-- Stop
-- AutoPlay on device play
+- Play - Done
+- Pause - Done
+- Stop - Done
+- AutoPlay on device play - Done
+- Check race conditions when media player is already playing from a different source
+- Stop when media player wants to switch to a different source
 
-- A2DP Pairing via Pin
+A2DP Pairing via Pin + callback
 
 
-- Selective compilation of handlers/masks based on selected sensors or switches
+- General code cleanup
+  - Selective compilation of handlers/masks based on selected sensors or switches
+  - Optimize text_sensors and sensors to not use set_metadata for non-native metadata components
+  - Refactor the metadata enum
+  - Add ESP_LOGD all around and overall ESP_LOG* Cleanup
+
+
+- Add documentation to each component

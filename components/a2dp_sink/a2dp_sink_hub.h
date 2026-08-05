@@ -22,8 +22,13 @@ namespace esphome
             ARTIST = ESP_AVRC_MD_ATTR_ARTIST,
             ALBUM = ESP_AVRC_MD_ATTR_ALBUM,
             GENRE = ESP_AVRC_MD_ATTR_GENRE,
+            TRACKNUM = ESP_AVRC_MD_ATTR_TRACK_NUM,
+            PLAYINGTIME = ESP_AVRC_MD_ATTR_PLAYING_TIME,
+            NUM_TRACKS = ESP_AVRC_MD_ATTR_NUM_TRACKS,
             PEERNAME,
             PEERADDR,
+            TRACKPOSITION,
+            RSSI,
         };
 
         class A2DPSinkMetadata

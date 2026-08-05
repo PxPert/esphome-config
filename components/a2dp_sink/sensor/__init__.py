@@ -1,9 +1,8 @@
 import esphome.codegen as cg
-from esphome.components import text_sensor
+from esphome.components import sensor
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_TYPE
+from esphome.const import CONF_ID, CONF_TYPE, UNIT_EMPTY, ICON_EMPTY
 from esphome.types import ConfigType
-
 
 from .. import (
     CONF_A2DP_SINK_ID,
@@ -11,32 +10,58 @@ from .. import (
     a2dp_sink_ns,
 )
 
-
 CODEOWNERS = ["@PxPert"]
 
-A2DPSinkTextSensor = a2dp_sink_ns.class_(
-    "A2DPSinkTextSensor",
-    text_sensor.TextSensor,
+A2DPMetadataNumericSensor = a2dp_sink_ns.class_(
+    "A2DPMetadataNumericSensor",
+    sensor.Sensor,
     cg.Component,
 )
 
-A2DPSinkTextMetadataTypes = a2dp_sink_ns.enum("A2DPSinkTextMetadataTypes", is_class=True)
-A2DPSINK_TEXT_METADATA_TYPES = {
-    "title": ESP_AVRC_MD_ATTR_TITLE,
-    "artist": ESP_AVRC_MD_ATTR_ARTIST,
-    "album": ESP_AVRC_MD_ATTR_ALBUM,
-    "genre": ESP_AVRC_MD_ATTR_GENRE,
+A2DPSinkTrackPositionSensor = a2dp_sink_ns.class_(
+    "A2DPSinkTrackPositionSensor",
+    sensor.Sensor,
+    cg.Component,
+)
+
+A2DPSinkRssiSensor = a2dp_sink_ns.class_(
+    "A2DPSinkRssiSensor",
+    sensor.Sensor,
+    cg.Component,
+)
+
+A2DPSinkNumericMetadataTypes = a2dp_sink_ns.enum("A2DPSinkTextMetadataTypes", is_class=True)
+A2DPSINK_NUMERIC_METADATA_TYPES = {
+    "tracknum": A2DPSinkNumericMetadataTypes.TRACKNUM,
+    "playingtime": A2DPSinkNumericMetadataTypes.PLAYINGTIME,
+    "num_tracks": A2DPSinkNumericMetadataTypes.NUM_TRACKS,
+    "trackposition": A2DPSinkNumericMetadataTypes.TRACKPOSITION,
+    "rssi": A2DPSinkNumericMetadataTypes.RSSI,
 }
+
+A2DPSINK_NUMERIC_TYPES = {
+    "tracknum": A2DPMetadataNumericSensor,
+    "playingtime": A2DPMetadataNumericSensor,
+    "num_tracks": A2DPMetadataNumericSensor,
+    "trackposition": A2DPSinkTrackPositionSensor,
+    "rssi": A2DPSinkRssiSensor,
+}
+
+def _validate_type(config):
+    """Select the sensor class based on CONF_TYPE and bake it into CONF_ID."""
+    sensor_class = A2DPSINK_NUMERIC_TYPES[config[CONF_TYPE]]
+    config[CONF_ID] = cv.declare_id(sensor_class)(config[CONF_ID])
+    return config
 
 
 CONFIG_SCHEMA = cv.All(
-    text_sensor.text_sensor_schema().extend(
+    sensor.sensor_schema().extend(
         {
-            cv.GenerateID(): cv.declare_id(A2DPSinkTextSensor),
             cv.GenerateID(CONF_A2DP_SINK_ID): cv.use_id(A2DPSinkHub),
-            cv.Required(CONF_TYPE): cv.enum(A2DPSINK_TEXT_METADATA_TYPES),
+            cv.Required(CONF_TYPE): cv.enum(A2DPSINK_NUMERIC_METADATA_TYPES, lower=True),
         }
     ),
+    _validate_type,
     cv.only_on_esp32,
 )
 
@@ -45,6 +70,6 @@ async def to_code(config: ConfigType) -> None:
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await cg.register_parented(var, config[CONF_A2DP_SINK_ID])
-    await text_sensor.register_text_sensor(var, config)
+    await sensor.register_sensor(var, config)
 
     cg.add(var.set_metadata_type(config[CONF_TYPE]))

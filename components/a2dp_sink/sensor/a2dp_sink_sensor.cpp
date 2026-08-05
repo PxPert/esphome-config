@@ -1,33 +1,45 @@
-#include "a2dp_sink_text_sensor.h"
+#include "a2dp_sink_sensor.h"
 
 #include <string>
 
 namespace esphome::a2dp_sink {
 
-static const char *const TAG = "sendspin.text_sensor";
+static const char *const TAG = "a2dp_sink.sensor";
 
-void A2DPSinkTextSensor::dump_config() { LOG_TEXT_SENSOR("", "A2DPSink", this); }
+void A2DPSinkNumericSensor::dump_config() { LOG_SENSOR("", "A2DPSink Numeric", this); }
 
 
-// THREAD CONTEXT: Main loop. The registered metadata callback also fires on the main loop
-// (SendspinHub dispatches metadata from client_->loop()).
-void A2DPSinkTextSensor::setup() {
-  this->disable_loop();
-  this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
-    ESP_LOGW(TAG, "Callback Text sensor!!");
-    if (metadata.type() == this->metadata_type_ ) {
-      this->publish_if_changed_(metadata.value());
-    }
-  });
-
-}
-
-// Dedup to avoid frontend churn; TextSensor::publish_state already dedups the string assign but still notifies.
-void A2DPSinkTextSensor::publish_if_changed_(const char *value) {
+// Dedup to avoid frontend churn; Sensor::publish_state already dedups the float assign but still notifies.
+void A2DPSinkNumericSensor::publish_if_changed_(float value) {
   if (this->get_raw_state() != value) {
     this->publish_state(value);
   }
 }
 
-}  // namespace esphome::a2dp_sink
 
+// THREAD CONTEXT: Main loop. The registered metadata callback also fires on the main loop
+// (A2DPSinkHub dispatches metadata from the A2DP sink callbacks).
+void A2DPMetadataNumericSensor::setup() {
+  this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
+    if (metadata.type() == (uint8_t)this->metadata_type_) {
+      // Metadata values come as strings, parse them to float
+      float value = 0.0f;
+      if (sscanf((const char*)metadata.text(), "%f", &value) == 1) {
+        this->publish_if_changed_(value);
+      }
+    }
+  });
+}
+
+void A2DPSinkTrackPositionSensor::setup() {
+  this->parent_->add_playback_position_callbacks([this](uint32_t pos) {
+    this->publish_if_changed_((float)pos);
+  });
+}
+
+void A2DPSinkRssiSensor::setup() {
+  this->parent_->add_rssi_callback([this](esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
+    this->publish_if_changed_((float)rssi.rssi_delta);
+  });
+}
+}  // namespace esphome::a2dp_sink
