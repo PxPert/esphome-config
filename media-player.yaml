@@ -74,8 +74,8 @@ a2dp_sink:
   name: test
   
 media_source:
-#  - platform: audio_http
-#    id: http_source
+  - platform: audio_http
+    id: http_source
 #    buffer_size: 100000
 #    task_stack_in_psram: true
   - platform: sendspin
@@ -96,13 +96,14 @@ media_player:
     id: external_media_player
     name: Media Player
     media_pipeline:
-      # format: FLAC
+      format: FLAC
       num_channels: 2
       sample_rate: 48000
       speaker: spdif_speaker
       sources:
         - sendspin_media_source
         - bluetooth
+        - http_source
   
 #optional
 #web_server:
@@ -121,7 +122,7 @@ speaker:
     use_apll: true
     sample_rate: 48000
     channel: stereo
-#    timeout: 2s
+    timeout: never
 #    buffer_duration: 1s
     
   
