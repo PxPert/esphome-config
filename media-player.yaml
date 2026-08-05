@@ -102,7 +102,7 @@ media_player:
       speaker: spdif_speaker
       sources:
         - sendspin_media_source
-        - bluetooth
+#        - bluetooth
         - http_source
   
 #optional
