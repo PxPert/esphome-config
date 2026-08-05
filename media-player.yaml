@@ -55,10 +55,10 @@ wifi:
   password: !secret wifi_password
   enable_btm: true
   enable_rrm: true
-  manual_ip:
-    static_ip: 192.168.1.102
-    subnet: 255.255.255.0
-    gateway: 192.168.1.1
+#  manual_ip:
+#    static_ip: 192.168.1.102
+#    subnet: 255.255.255.0
+#    gateway: 192.168.1.1
     
 logger:
   hardware_uart: UART0
