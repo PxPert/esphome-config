@@ -162,7 +162,7 @@ text_sensor:
     name: "Album"
   - platform: a2dp_sink
     id: "bt_titlea"
-    type: "titlea"
+    type: "title"
     name: "Titlea"
   - platform: a2dp_sink
     id: "bt_peername"
