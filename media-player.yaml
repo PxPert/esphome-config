@@ -28,7 +28,7 @@ mdns:
 
   
 esp32:
-  variant: esp32
+  board: esp-wrover-kit
   
   framework:
     type: esp-idf
