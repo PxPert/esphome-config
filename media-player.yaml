@@ -83,10 +83,10 @@ sendspin:
 #  name: test
   
 media_source:
-#  - platform: audio_http
-#    id: http_source
-#    buffer_size: 1000000
-#    task_stack_in_psram: true
+  - platform: audio_http
+    id: http_source
+    buffer_size: 1000000
+    task_stack_in_psram: true
   - platform: sendspin
 #    fixed_delay: 10ms
     id: sendspin_media_source
@@ -113,7 +113,7 @@ media_player:
       sources:
         - sendspin_media_source
 #        - bluetooth
-#        - http_source
+        - http_source
   
 #optional
 #web_server:
