@@ -45,6 +45,7 @@ esp32:
 #    version: 6.1-beta1
     advanced:
       sram1_as_iram: true
+  cpu_frequency: 240MHZ
 wifi:
   power_save_mode: none
   ssid: !secret wifi_ssid
@@ -86,8 +87,9 @@ media_source:
     id: bluetooth
   
 media_player:
-#  - platform: sendspin
-#    id: sendspin_group_media_player
+  - platform: sendspin
+    id: sendspin_group_media_player
+    
   - platform: speaker_source
     id: external_media_player
     name: Media Player
