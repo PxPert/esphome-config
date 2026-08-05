@@ -119,8 +119,8 @@ speaker:
     use_apll: true
     sample_rate: 48000
     channel: stereo
-    timeout: never
-    buffer_duration: 2s
+    timeout: 2s
+    buffer_duration: 1s
     
   
 sensor:
