@@ -161,9 +161,9 @@ text_sensor:
     type: "album"
     name: "Album"
   - platform: a2dp_sink
-    id: "bt_title"
-    type: "title"
-    name: "Title"
+    id: "bt_titlea"
+    type: "titlea"
+    name: "Titlea"
   - platform: a2dp_sink
     id: "bt_peername"
     type: "peername"
