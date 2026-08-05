@@ -67,10 +67,6 @@ namespace esphome::a2dp_sink {
             ESP_LOGW(TAG, "A2DPSink is initialized");
         }
 
-        void A2DPSinkMediaSource::loop()
-        {
-        }
-
 
         void A2DPSinkMediaSource::dump_config()
         {

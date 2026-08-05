@@ -76,6 +76,10 @@ namespace esphome
                 this->peer_name_callbacks_.add(std::forward<F>(callback));
             }
 
+            template<typename F> void add_rssi_callback(F &&callback) {
+                this->rssi_callbacks_.add(std::forward<F>(callback));
+            }
+
             BluetoothA2DPSink* a2dp_sink() const;
 
             void start();
@@ -100,6 +104,7 @@ namespace esphome
 
             void peer_name_callback(const char* name);
 
+            void rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi);
 
             // Callback fan-out to child components; they filter as needed
             CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
@@ -111,7 +116,7 @@ namespace esphome
 
             CallbackManager<void(const char*)> peer_name_callbacks_{};
 
-
+            CallbackManager<void(esp_bt_gap_cb_param_t::read_rssi_delta_param&)> rssi_callbacks_{};
 
 
         }; // class A2DPSinkHub

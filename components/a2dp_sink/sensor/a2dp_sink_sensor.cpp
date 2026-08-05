@@ -12,6 +12,7 @@ void A2DPSinkTextSensor::dump_config() { LOG_TEXT_SENSOR("", "A2DPSink", this); 
 // THREAD CONTEXT: Main loop. The registered metadata callback also fires on the main loop
 // (SendspinHub dispatches metadata from client_->loop()).
 void A2DPSinkTextSensor::setup() {
+  this->disable_loop();
   this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
     ESP_LOGW(TAG, "Callback Text sensor!!");
     if (metadata.type() == this->metadata_type_ ) {

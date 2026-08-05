@@ -29,6 +29,7 @@ void A2DPMetadataTextSensor::setup() {
 }
 
 void A2DPSinkPeerTextSensor::setup() {
+  this->disable_loop();
 
   this->parent_->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {
     if (state != ESP_A2D_CONNECTION_STATE_DISCONNECTED) {

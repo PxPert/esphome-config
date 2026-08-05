@@ -44,6 +44,11 @@ namespace esphome
             this->peer_name_callbacks_.call(name);
         }
 
+        void A2DPSinkHub::rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
+            ESP_LOGD(TAG, "RSSI delta: %d", rssi.rssi_delta);
+            this->rssi_callbacks_.call(rssi);
+        }
+
         void A2DPSinkHub::setup()
         {
             ESP_LOGW(TAG, "%s", "A2DPSink initializing");
@@ -101,6 +106,18 @@ namespace esphome
                 [](char* name) {
                     if (g_a2dp_hub_instance != nullptr) {
                         g_a2dp_hub_instance->peer_name_callback(name);
+                    }
+                }
+            );
+
+            /*
+             * RSSI callback
+             */
+            a2dp_sink_.set_rssi_active(true);
+            a2dp_sink_.set_rssi_callback(
+                [](esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->rssi_callback(rssi);
                     }
                 }
             );

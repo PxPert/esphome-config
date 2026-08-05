@@ -15,7 +15,6 @@ namespace esphome::a2dp_sink {
         {
         public:
             void setup() override;
-            void loop() override;
             void dump_config() override;
 
             // MediaSource interface implementation

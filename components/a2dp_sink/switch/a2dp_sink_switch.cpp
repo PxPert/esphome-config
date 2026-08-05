@@ -45,6 +45,7 @@ void A2DPSwitchBluetooth::dump_config() {
 }
 
 void A2DPSwitchBluetooth::setup() {
+  this->disable_loop();
   bool initial_state = this->get_initial_state_with_restore_mode().value_or(false);
 
   // write state before setup
