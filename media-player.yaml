@@ -76,8 +76,8 @@ a2dp_sink:
 media_source:
   - platform: audio_http
     id: http_source
-#    buffer_size: 100000
-#    task_stack_in_psram: true
+    buffer_size: 1000000
+    task_stack_in_psram: true
   - platform: sendspin
 #    fixed_delay: 1ms
     id: sendspin_media_source
