@@ -18,9 +18,10 @@ esphome:
 #      - -DEXIT_ON_STOP
 #  includes:
 #    - includes/advanced_bt_component.h
-psram:
-  mode: quad
-  speed: 80MHZ
+
+#psram:
+#  mode: quad
+#  speed: 80MHZ
   
 mdns:
   disabled: false
@@ -79,16 +80,16 @@ sendspin:
 #  name: test
   
 media_source:
-  - platform: audio_http
-    id: http_source
-    buffer_size: 1000000
-    task_stack_in_psram: true
+#  - platform: audio_http
+#    id: http_source
+#    buffer_size: 1000000
+#    task_stack_in_psram: true
   - platform: sendspin
     fixed_delay: 10ms
     id: sendspin_media_source
 #    task_stack_in_psram: true
-    decode_memory: internal
-    buffer_size: 1000000
+#    decode_memory: internal
+#    buffer_size: 1000000
     static_delay_adjustable: true
 #  - platform: a2dp_sink
 #    id: bluetooth
