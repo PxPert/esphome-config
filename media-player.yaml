@@ -43,10 +43,11 @@ esp32:
 #      CONFIG_BT_BLUEDROID_ENABLED: y
 #      CONFIG_BT_NIMBLE_ENABLED: n
 #      CONFIG_BTDM_CTRL_MODE_BTDM: y
-    version: 6.0.2
+#    version: 6.0.2
 #    version: 6.1-beta1
-    advanced:
-      sram1_as_iram: true
+#    advanced:
+#      sram1_as_iram: true
+
   cpu_frequency: 240MHZ
 wifi:
   power_save_mode: none
