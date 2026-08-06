@@ -190,11 +190,11 @@ text_sensor:
 #    id: text_sensor_sendspin_2
 
 switch:
-#  - platform: a2dp_sink
-#    type: connection
-#    name: "Bluetooth connection"
-#    id: "btConnection"
-#    restore_mode: ALWAYS_OFF
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    id: "btConnection"
+    restore_mode: ALWAYS_OFF
 #
 #  - platform: a2dp_sink
 #    type: bluetooth
