@@ -40,3 +40,8 @@ A2DP Pairing via Pin + callback
 - Move sensors to the correct sections (For example diagnostic sensors like RSSI or device name)
 
 - Add documentation to each component
+
+
+Fixes:
+- No autoplay when connected to a linux pc
+- Bad sample rate when connected to a linux pc, probably need to set dynamic sample rate & channels

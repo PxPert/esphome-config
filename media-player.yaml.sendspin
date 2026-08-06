@@ -1,0 +1,265 @@
+# Basic Config
+substitutions:
+  friendly_name: test-media-player
+  device_name: test-media-player
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  libraries:
+#    - SBCDecoder=https://github.com/pschatzmann/arduino-libsbc
+#    - AACDecoder=https://github.com/pschatzmann/arduino-libhelix
+#    - AudioTools=https://github.com/pschatzmann/arduino-audio-tools
+#    - BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
+#  platformio_options:
+#    build_flags: 
+#      - -DUSE_DEFAULT_STDLIB
+#      - -DUSE_IDF_LOGGER
+#      - -DEXIT_ON_STOP
+#  includes:
+#    - includes/advanced_bt_component.h
+
+psram:
+  mode: quad
+  speed: 80MHZ
+  
+mdns:
+  disabled: false
+
+  
+esp32:
+  board: esp-wrover-kit
+  
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_BT_ENABLED: n
+#      CONFIG_BT_ENABLED: y
+#      CONFIG_BT_BLE_ENABLED: n
+#      CONFIG_BT_GATTS_ENABLE: n
+#      CONFIG_BT_CLASSIC_ENABLED: y
+#      CONFIG_BT_A2DP_ENABLE: y
+#      CONFIG_BT_SPP_ENABLED: y
+#      CONFIG_BT_BLUEDROID_ENABLED: y
+#      CONFIG_BT_NIMBLE_ENABLED: n
+#      CONFIG_BTDM_CTRL_MODE_BTDM: y
+#    version: 6.0.2
+#    version: 6.1-beta1
+    advanced:
+      sram1_as_iram: true
+
+  cpu_frequency: 240MHZ
+wifi:
+  power_save_mode: none
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  enable_btm: true
+  enable_rrm: true
+  manual_ip:
+    static_ip: 192.168.1.102
+    subnet: 255.255.255.0
+    gateway: 192.168.1.1
+    
+logger:
+  hardware_uart: UART0
+  level: DEBUG
+  baud_rate: 115200
+  task_log_buffer_size: 0B
+  tx_buffer_size: 160B
+
+api:
+
+ota:
+  platform: esphome
+
+#external_components:
+#  - source: /config/components/
+#    components: [ a2dp_sink ]
+    
+sendspin:
+#  task_stack_in_psram: false
+
+#a2dp_sink:
+#  name: test
+  
+media_source:
+#  - platform: audio_http
+#    id: http_source
+#    buffer_size: 1000000
+#    task_stack_in_psram: true
+  - platform: sendspin
+#    fixed_delay: 10ms
+    id: sendspin_media_source
+#    task_stack_in_psram: true
+#    decode_memory: internal
+#    buffer_size: 2000000
+    static_delay_adjustable: true
+#  - platform: a2dp_sink
+#    id: bluetooth
+  
+media_player:
+  - platform: sendspin
+    id: sendspin_group_media_player
+    
+  - platform: speaker_source
+    id: external_media_player
+    name: Media Player
+    media_pipeline:
+      format: FLAC
+      num_channels: 2
+      sample_rate: 48000
+#      speaker: spdif_speaker
+      speaker: luxe_speaker
+      sources:
+        - sendspin_media_source
+#        - bluetooth
+#        - http_source
+  
+#optional
+#web_server:
+#  port: 80
+
+i2c:
+  - id: i2c_bus
+    sda: GPIO18
+    scl: GPIO23
+    
+#audio_dac:
+# - platform: es8388
+
+external_components:
+  - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
+    components: [es8388]
+    refresh: 0s
+
+es8388:
+  
+i2s_audio:
+#  - id: i2s_spdif
+    
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO5
+    
+speaker:
+#  - platform: i2s_audio
+#    id: spdif_speaker
+#    dac_type: external
+#    i2s_audio_id: i2s_spdif
+#    i2s_dout_pin: GPIO23
+#    spdif_mode: true
+#    use_apll: true
+#    sample_rate: 48000
+#    channel: stereo
+#    timeout: never
+#    buffer_duration: 2s
+  - platform: i2s_audio
+    id: luxe_speaker
+    i2s_audio_id: i2s_audio_bus
+    dac_type: external
+    i2s_dout_pin: GPIO26
+    channel: stereo
+    sample_rate: 48000
+  
+sensor:
+
+#  - platform: wifi_signal
+#    name: "WiFi Signal"
+#    update_interval: 600s
+#  - platform: sendspin
+#    type: track
+#    name: traccia
+#    id: sensor_sendspin_1
+#  - platform: a2dp_sink
+#    type: tracknum
+#    id: "btTrackNr"
+#    name: "Track Number"
+#  - platform: a2dp_sink
+#    type: playingtime
+#    id: "btPlayingTime"
+#    name: "Playing Time"
+#  - platform: a2dp_sink
+#    type: num_tracks
+#    id: "btNumTracks"
+#    name: "Total Tracks"
+#  - platform: a2dp_sink
+#    type: trackposition
+#    id: "btTrackPos"
+#    name: "Track Position"
+#  - platform: a2dp_sink
+#    type: rssi
+#    id: "btRSSI"
+#    name: "RSSI"
+    
+#text_sensor:
+#  - platform: a2dp_sink
+#    id: "bt_artist"
+#    type: "artist"
+#    name: "Artist"
+#  - platform: a2dp_sink
+#    id: "bt_album"
+#    type: "album"
+#    name: "Album"
+#  - platform: a2dp_sink
+#    id: "bt_titlea"
+#    type: "title"
+#    name: "Titlea"
+#  - platform: a2dp_sink
+#    id: "bt_peername"
+#    type: "peername"
+#    name: "Peer name"
+#  - platform: a2dp_sink
+#    id: "bt_peeraddr"
+#    type: "peeraddr"
+#    name: "Peer address"
+#  - platform: wifi_info
+#    ip_address:
+#      name: "IP Address"
+#  - platform: sendspin
+#    type: title
+#    name: titolo
+#    id: text_sensor_sendspin_1
+#  - platform: sendspin
+#    type: artist
+#    name: artista
+#    id: text_sensor_sendspin_2
+
+#switch:
+#  - platform: a2dp_sink
+#    type: connection
+#    name: "Bluetooth connection"
+#    id: "btConnection"
+#    restore_mode: ALWAYS_OFF
+    
+#  - platform: a2dp_sink
+#    type: bluetooth
+#    name: "Bluetooth state"
+#    id: "btState"
+#    restore_mode: RESTORE_DEFAULT_OFF
+switch:
+  - platform: gpio
+    name: amplifier
+    id: amplifier_enable
+    pin:
+      number: GPIO21
+      inverted: true
+    restore_mode: ALWAYS_OFF
+    
+button:
+#  - platform: template
+#    name: next
+#    on_press:
+#      - then:
+#          - logger.log:
+#              level: INFO
+#              format: Next
+#          - media_player.next: external_media_player
+#  - platform: template
+#    name: previous
+#    on_press:
+#      - then:
+#          - media_player.previous: external_media_player
+            
+  - platform: restart
+    name: "restart"
+    id: button_restart_1

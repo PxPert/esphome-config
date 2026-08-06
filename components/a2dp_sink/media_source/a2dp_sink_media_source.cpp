@@ -161,7 +161,7 @@ namespace esphome::a2dp_sink {
         }
 
         bool A2DPSinkMediaSource::can_handle(const std::string &uri) const {
-            ESP_LOGE(TAG, "Check URI: '%s'", uri.c_str());
+            // ESP_LOGE(TAG, "Check URI: '%s'", uri.c_str());
             return uri.starts_with(URI_PREFIX);
         }
 

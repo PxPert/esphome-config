@@ -1,0 +1,19 @@
+ 
+external_components:
+  - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
+    components: [es8388]
+    refresh: 0s
+
+i2c:
+  - id: i2c_bus
+    sda: GPIO18
+    scl: GPIO23
+
+es8388:
+
+i2s_audio:
+#  - id: i2s_spdif
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO5
+

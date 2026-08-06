@@ -35,6 +35,11 @@ namespace esphome
             this->playback_position_callbacks_.call(play_pos);
         }
 
+        void A2DPSinkHub::avrc_rn_volumechange_callback(int volume) {
+            ESP_LOGD(TAG, "AVRC volume change: %d", volume);
+            this->volume_change_callbacks_.call(volume);
+        }
+
         void A2DPSinkHub::on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data) {
             ESP_LOGD(TAG, "A2DP connection state changed: %d", (uint8_t)state);
             this->connection_state_callbacks_.call(state, user_data);
@@ -118,6 +123,17 @@ namespace esphome
                 [](esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
                     if (g_a2dp_hub_instance != nullptr) {
                         g_a2dp_hub_instance->rssi_callback(rssi);
+                    }
+                }
+            );
+
+            /*
+             * Volume change callback
+             */
+            a2dp_sink_.set_avrc_rn_volumechange(
+                [](int volume) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->avrc_rn_volumechange_callback(volume);
                     }
                 }
             );

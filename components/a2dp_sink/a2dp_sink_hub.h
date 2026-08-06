@@ -85,6 +85,10 @@ namespace esphome
                 this->rssi_callbacks_.add(std::forward<F>(callback));
             }
 
+            template<typename F> void add_volume_change_callback(F &&callback) {
+                this->volume_change_callbacks_.add(std::forward<F>(callback));
+            }
+
             BluetoothA2DPSink* a2dp_sink() const;
 
             void start();
@@ -111,6 +115,9 @@ namespace esphome
 
             void rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi);
 
+            // Volume change callback
+            void avrc_rn_volumechange_callback(int volume);
+
             // Callback fan-out to child components; they filter as needed
             CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
 
@@ -122,6 +129,8 @@ namespace esphome
             CallbackManager<void(const char*)> peer_name_callbacks_{};
 
             CallbackManager<void(esp_bt_gap_cb_param_t::read_rssi_delta_param&)> rssi_callbacks_{};
+
+            CallbackManager<void(int)> volume_change_callbacks_{};
 
 
         }; // class A2DPSinkHub
