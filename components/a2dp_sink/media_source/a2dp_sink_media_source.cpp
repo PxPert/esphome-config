@@ -24,16 +24,15 @@ namespace esphome::a2dp_sink {
             this->disable_loop();
 
             g_a2dp_sink_instance = this;
-
-            this->parent_->a2dp_sink()->set_stream_reader(
+/*
+            this->parent_->set_stream_reader(
                 [](const uint8_t *data, uint32_t length) {
                     if (g_a2dp_sink_instance != nullptr) {
                         g_a2dp_sink_instance->a2dp_data_stream(data, length);
                     }
-                },
-                false  // i2s_output: false = gestisci tu l'audio, la libreria non fa output I2S automatico
+                }
             );
-
+*/
 
             this->parent_->add_playback_status_callbacks([this](esp_avrc_playback_stat_t playback) {
                 ESP_LOGE(TAG, "Play status: %d", playback);
@@ -114,7 +113,7 @@ namespace esphome::a2dp_sink {
                         return;
                     }
                     ESP_LOGD(TAG, "Stop requested");
-                    this->parent_->a2dp_sink()->stop();
+                    this->parent_->stop_a2dp();
                     this->pause_.store(false, std::memory_order_relaxed);
                     this->set_state_(media_source::MediaSourceState::IDLE);
                 break;
@@ -124,35 +123,35 @@ namespace esphome::a2dp_sink {
                         return;
                     }
                     ESP_LOGD(TAG, "Pause requested");
-                    this->parent_->a2dp_sink()->pause();
+                    this->parent_->pause_a2dp();
                     this->pause_.store(true, std::memory_order_relaxed);
                     this->set_state_(media_source::MediaSourceState::PAUSED);
                 break;
                 case media_source::MediaSourceCommand::PLAY:
-                    if (this->parent_->a2dp_sink()->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                    if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
                         ESP_LOGW(TAG, "Cannot play: A2DP is not connected");
                         return;
                     }
                     ESP_LOGD(TAG, "Play requested");
-                    this->parent_->a2dp_sink()->play();
+                    this->parent_->play_a2dp();
                     this->set_state_(media_source::MediaSourceState::PLAYING);
                     this->pause_.store(false, std::memory_order_relaxed);
                 break;
                 case media_source::MediaSourceCommand::NEXT:
-                    if (this->parent_->a2dp_sink()->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                    if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
                         ESP_LOGW(TAG, "Cannot go to next: A2DP is not connected");
                         return;
                     }
                     ESP_LOGD(TAG, "Next requested");
-                    this->parent_->a2dp_sink()->next();
+                    this->parent_->next_track();
                 break;
                 case media_source::MediaSourceCommand::PREVIOUS:
-                    if (this->parent_->a2dp_sink()->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                    if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
                         ESP_LOGE(TAG, "Cannot go to previous: A2DP is not connected");
                         return;
                     }
                     ESP_LOGD(TAG, "Previous requested");
-                    this->parent_->a2dp_sink()->previous();
+                    this->parent_->prev_track();
                 break;
                 default:
                     ESP_LOGE(TAG, "Unhandled command requested: %d", command);

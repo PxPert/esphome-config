@@ -16,9 +16,8 @@ void A2DPSinkVolumeNumber::dump_config() {
 }
 
 void A2DPSinkVolumeNumber::control(float value) {
-  // Call set_volume on the A2DP sink through the parent hub
   // The value is already validated by ESPHome (0-127 range)
-  this->parent_->a2dp_sink()->set_volume(static_cast<uint8_t>(value));
+  this->parent_->set_volume(static_cast<uint8_t>(value));
 }
 
 

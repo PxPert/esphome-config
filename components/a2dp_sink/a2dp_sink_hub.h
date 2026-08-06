@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "BluetoothA2DPSink.h"
 #include <atomic>
+#include <functional>
 
 
 namespace esphome
@@ -97,6 +98,36 @@ namespace esphome
 
             /// Set the volume of the A2DP sink (0-100)
             void set_volume(uint8_t volume);
+
+            /// Set the stream reader callback for A2DP audio data
+            void set_stream_reader(void (*callBack)(const uint8_t*, uint32_t));
+
+            /// Stop the A2DP stream (does not disconnect)
+            void stop_a2dp();
+
+            /// Pause the A2DP stream
+            void pause_a2dp();
+
+            /// Resume playing the A2DP stream
+            void play_a2dp();
+
+            /// Skip to next track
+            void next_track();
+
+            /// Skip to previous track
+            void prev_track();
+
+            /// Get the current A2DP connection state
+            esp_a2d_connection_state_t get_connection_state();
+
+            /// Set the connection state (connect/disconnect)
+            void set_connected(bool connected);
+
+            /// Get the peer device name
+            const char* get_peer_name();
+
+            /// Get the current peer Bluetooth address
+            esp_bd_addr_t* get_current_peer_address();
 
             /// Converts an esp_bd_addr_t (6-byte Bluetooth address) to a human-readable
             /// string like "AA:BB:CC:DD:EE:FF".

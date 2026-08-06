@@ -38,12 +38,12 @@ void A2DPSinkPeerTextSensor::setup() {
   });
 
   this->parent_->add_peer_name_callback([this](const char *name) {
-    if (this->parent_->a2dp_sink()->get_connection_state() == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+    if (this->parent_->get_connection_state() == ESP_A2D_CONNECTION_STATE_CONNECTED) {
       if (this->metadata_type_ == A2DPSinkTextMetadataTypes::PEERNAME) {
-        ESP_LOGW(TAG, "Peer text sensor callback fired, publishing peer name: %s", this->parent_->a2dp_sink()->get_peer_name());
+        ESP_LOGW(TAG, "Peer text sensor callback fired, publishing peer name: %s", this->parent_->get_peer_name());
         this->publish_if_changed_(name);
       } else if (this->metadata_type_ == A2DPSinkTextMetadataTypes::PEERADDR) {
-        auto* peer_addr = this->parent_->a2dp_sink()->get_current_peer_address();
+        auto* peer_addr = this->parent_->get_current_peer_address();
         this->publish_if_changed_(A2DPSinkHub::bd_addr_to_string(*peer_addr).c_str());
       } else {
         ESP_LOGW(TAG, "Peer text sensor callback fired but type is not PEERNAME or PEERADDR, ignoring");

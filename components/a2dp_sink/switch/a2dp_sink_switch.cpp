@@ -22,12 +22,8 @@ void A2DPSwitchConnection::setup() {
 void A2DPSwitchConnection::write_state(bool state) {
   if (state != this->state) {
     ESP_LOGI(TAG, "A2DP connection switch state changed: %s", state ? "ON" : "OFF");
-    if (state) {
-      this->parent_->a2dp_sink()->set_connected(true);
-    } else {
-      this->parent_->a2dp_sink()->set_connected(false);
-    }    
-  }
+    this->parent_->set_connected(state);
+  }    
 }
 
 void A2DPSwitchConnection::publish_state_if_changed_(bool state) {

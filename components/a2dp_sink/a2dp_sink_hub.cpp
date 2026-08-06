@@ -172,6 +172,46 @@ namespace esphome
             a2dp_sink_.set_volume(volume);
         }
 
+        void A2DPSinkHub::set_stream_reader(void (*callBack)(const uint8_t*, uint32_t)) {
+            a2dp_sink_.set_stream_reader(callBack, false);
+        }
+
+        void A2DPSinkHub::stop_a2dp() {
+            a2dp_sink_.stop();
+        }
+
+        void A2DPSinkHub::pause_a2dp() {
+            a2dp_sink_.pause();
+        }
+
+        void A2DPSinkHub::play_a2dp() {
+            a2dp_sink_.play();
+        }
+
+        void A2DPSinkHub::next_track() {
+            a2dp_sink_.next();
+        }
+
+        void A2DPSinkHub::prev_track() {
+            a2dp_sink_.previous();
+        }
+
+        esp_a2d_connection_state_t A2DPSinkHub::get_connection_state() {
+            return a2dp_sink_.get_connection_state();
+        }
+
+        void A2DPSinkHub::set_connected(bool connected) {
+            a2dp_sink_.set_connected(connected);
+        }
+
+        const char* A2DPSinkHub::get_peer_name() {
+            return a2dp_sink_.get_peer_name();
+        }
+
+        esp_bd_addr_t* A2DPSinkHub::get_current_peer_address() {
+            return a2dp_sink_.get_current_peer_address();
+        }
+
         void A2DPSinkHub::dump_config()
         {
             ESP_LOGCONFIG(TAG, "A2DP Sink");
