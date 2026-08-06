@@ -142,10 +142,10 @@ sensor:
 #    type: playingtime
 #    id: "btPlayingTime"
 #    name: "Playing Time"
-#  - platform: a2dp_sink
-#    type: num_tracks
-#    id: "btNumTracks"
-#    name: "Total Tracks"
+  - platform: a2dp_sink
+    type: num_tracks
+    id: "btNumTracks"
+    name: "Total Tracks"
 #  - platform: a2dp_sink
 #    type: trackposition
 #    id: "btTrackPos"
