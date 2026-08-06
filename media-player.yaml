@@ -76,7 +76,7 @@ external_components:
 
 packages:
   device_base: !include includes/dev_museluxe_base.yaml
-  device_ext: !include includes/dev_museluxe_voice_extensions.yaml
+#  device_ext: !include includes/dev_museluxe_voice_extensions.yaml
   
 sendspin:
 #  task_stack_in_psram: false
