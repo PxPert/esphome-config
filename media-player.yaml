@@ -157,10 +157,10 @@ sensor:
 
         
 text_sensor:
-  - platform: a2dp_sink
-    id: "bt_artist"
-    type: "artist"
-    name: "Artist"
+#  - platform: a2dp_sink
+#    id: "bt_artist"
+#    type: "artist"
+#    name: "Artist"
 #  - platform: a2dp_sink
 #    id: "bt_album"
 #    type: "album"
@@ -169,10 +169,10 @@ text_sensor:
 #    id: "bt_titlea"
 #    type: "title"
 #    name: "Titlea"
-#  - platform: a2dp_sink
-#    id: "bt_peername"
-#    type: "peername"
-#    name: "Peer name"
+  - platform: a2dp_sink
+    id: "bt_peername"
+    type: "peername"
+    name: "Peer name"
 #  - platform: a2dp_sink
 #    id: "bt_peeraddr"
 #    type: "peeraddr"
