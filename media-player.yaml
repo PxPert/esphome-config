@@ -33,16 +33,15 @@ esp32:
   framework:
     type: esp-idf
     sdkconfig_options:
-      CONFIG_BT_ENABLED: n
-#      CONFIG_BT_ENABLED: y
-#      CONFIG_BT_BLE_ENABLED: n
-#      CONFIG_BT_GATTS_ENABLE: n
-#      CONFIG_BT_CLASSIC_ENABLED: y
-#      CONFIG_BT_A2DP_ENABLE: y
-#      CONFIG_BT_SPP_ENABLED: y
-#      CONFIG_BT_BLUEDROID_ENABLED: y
-#      CONFIG_BT_NIMBLE_ENABLED: n
-#      CONFIG_BTDM_CTRL_MODE_BTDM: y
+      CONFIG_BT_ENABLED: y
+      CONFIG_BT_BLE_ENABLED: n
+      CONFIG_BT_GATTS_ENABLE: n
+      CONFIG_BT_CLASSIC_ENABLED: y
+      CONFIG_BT_A2DP_ENABLE: y
+      CONFIG_BT_SPP_ENABLED: y
+      CONFIG_BT_BLUEDROID_ENABLED: y
+      CONFIG_BT_NIMBLE_ENABLED: n
+      CONFIG_BTDM_CTRL_MODE_BTDM: y
 #    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
@@ -64,23 +63,25 @@ logger:
   hardware_uart: UART0
   level: DEBUG
   baud_rate: 115200
-  task_log_buffer_size: 0B
-  tx_buffer_size: 160B
 
 api:
 
 ota:
   platform: esphome
 
-#external_components:
-#  - source: /config/components/
-#    components: [ a2dp_sink ]
+external_components:
+  - source: /config/components/
+    components: [ a2dp_sink ]
+  - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
+    components: [es8388]
+    refresh: 0s
+
     
 sendspin:
 #  task_stack_in_psram: false
 
-#a2dp_sink:
-#  name: test
+a2dp_sink:
+  name: test
   
 media_source:
 #  - platform: audio_http
@@ -94,8 +95,8 @@ media_source:
 #    decode_memory: internal
 #    buffer_size: 2000000
     static_delay_adjustable: true
-#  - platform: a2dp_sink
-#    id: bluetooth
+  - platform: a2dp_sink
+    id: bluetooth
   
 media_player:
   - platform: sendspin
@@ -108,11 +109,10 @@ media_player:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
-#      speaker: spdif_speaker
       speaker: luxe_speaker
       sources:
         - sendspin_media_source
-#        - bluetooth
+        - bluetooth
 #        - http_source
   
 #optional
@@ -127,10 +127,6 @@ i2c:
 #audio_dac:
 # - platform: es8388
 
-external_components:
-  - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
-    components: [es8388]
-    refresh: 0s
 
 es8388:
   
@@ -159,84 +155,84 @@ speaker:
     dac_type: external
     i2s_dout_pin: GPIO26
     channel: stereo
-    sample_rate: 48000
+#    sample_rate: 44100
   
 sensor:
 
 #  - platform: wifi_signal
 #    name: "WiFi Signal"
 #    update_interval: 600s
-#  - platform: sendspin
-#    type: track
-#    name: traccia
-#    id: sensor_sendspin_1
-#  - platform: a2dp_sink
-#    type: tracknum
-#    id: "btTrackNr"
-#    name: "Track Number"
-#  - platform: a2dp_sink
-#    type: playingtime
-#    id: "btPlayingTime"
-#    name: "Playing Time"
-#  - platform: a2dp_sink
-#    type: num_tracks
-#    id: "btNumTracks"
-#    name: "Total Tracks"
-#  - platform: a2dp_sink
-#    type: trackposition
-#    id: "btTrackPos"
-#    name: "Track Position"
-#  - platform: a2dp_sink
-#    type: rssi
-#    id: "btRSSI"
-#    name: "RSSI"
+  - platform: sendspin
+    type: track
+    name: traccia
+    id: sensor_sendspin_1
+  - platform: a2dp_sink
+    type: tracknum
+    id: "btTrackNr"
+    name: "Track Number"
+  - platform: a2dp_sink
+    type: playingtime
+    id: "btPlayingTime"
+    name: "Playing Time"
+  - platform: a2dp_sink
+    type: num_tracks
+    id: "btNumTracks"
+    name: "Total Tracks"
+  - platform: a2dp_sink
+    type: trackposition
+    id: "btTrackPos"
+    name: "Track Position"
+  - platform: a2dp_sink
+    type: rssi
+    id: "btRSSI"
+    name: "RSSI"
     
-#text_sensor:
-#  - platform: a2dp_sink
-#    id: "bt_artist"
-#    type: "artist"
-#    name: "Artist"
-#  - platform: a2dp_sink
-#    id: "bt_album"
-#    type: "album"
-#    name: "Album"
-#  - platform: a2dp_sink
-#    id: "bt_titlea"
-#    type: "title"
-#    name: "Titlea"
-#  - platform: a2dp_sink
-#    id: "bt_peername"
-#    type: "peername"
-#    name: "Peer name"
-#  - platform: a2dp_sink
-#    id: "bt_peeraddr"
-#    type: "peeraddr"
-#    name: "Peer address"
-#  - platform: wifi_info
-#    ip_address:
-#      name: "IP Address"
-#  - platform: sendspin
-#    type: title
-#    name: titolo
-#    id: text_sensor_sendspin_1
-#  - platform: sendspin
-#    type: artist
-#    name: artista
-#    id: text_sensor_sendspin_2
+text_sensor:
+  - platform: a2dp_sink
+    id: "bt_artist"
+    type: "artist"
+    name: "Artist"
+  - platform: a2dp_sink
+    id: "bt_album"
+    type: "album"
+    name: "Album"
+  - platform: a2dp_sink
+    id: "bt_titlea"
+    type: "title"
+    name: "Titlea"
+  - platform: a2dp_sink
+    id: "bt_peername"
+    type: "peername"
+    name: "Peer name"
+  - platform: a2dp_sink
+    id: "bt_peeraddr"
+    type: "peeraddr"
+    name: "Peer address"
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+  - platform: sendspin
+    type: title
+    name: titolo
+    id: text_sensor_sendspin_1
+  - platform: sendspin
+    type: artist
+    name: artista
+    id: text_sensor_sendspin_2
 
-#switch:
-#  - platform: a2dp_sink
-#    type: connection
-#    name: "Bluetooth connection"
-#    id: "btConnection"
-#    restore_mode: ALWAYS_OFF
-    
-#  - platform: a2dp_sink
-#    type: bluetooth
-#    name: "Bluetooth state"
-#    id: "btState"
-#    restore_mode: RESTORE_DEFAULT_OFF
 switch:
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    id: "btConnection"
+    restore_mode: ALWAYS_OFF
+    
+  - platform: a2dp_sink
+    type: bluetooth
+    name: "Bluetooth state"
+    id: "btState"
+    restore_mode: RESTORE_DEFAULT_OFF
+
   - platform: gpio
     name: amplifier
     id: amplifier_enable
@@ -246,19 +242,19 @@ switch:
     restore_mode: ALWAYS_OFF
     
 button:
-#  - platform: template
-#    name: next
-#    on_press:
-#      - then:
-#          - logger.log:
-#              level: INFO
-#              format: Next
-#          - media_player.next: external_media_player
-#  - platform: template
-#    name: previous
-#    on_press:
-#      - then:
-#          - media_player.previous: external_media_player
+  - platform: template
+    name: next
+    on_press:
+      - then:
+          - logger.log:
+              level: INFO
+              format: Next
+          - media_player.next: external_media_player
+  - platform: template
+    name: previous
+    on_press:
+      - then:
+          - media_player.previous: external_media_player
             
   - platform: restart
     name: "restart"
