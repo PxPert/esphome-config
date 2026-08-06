@@ -51,6 +51,14 @@ A2DPSINK_NUMERIC_TYPES = {
     "rssi": A2DPSinkRssiSensor,
 }
 
+A2DPSINK_REQUEST_MAP = {
+    "tracknum":      request_metadata_support,
+    "playingtime":   request_metadata_support,
+    "num_tracks":    request_metadata_support,
+    "trackposition": request_position_support,
+    "rssi":          request_rssi_support,
+}
+
 def _validate_type(config):
     """Select the sensor class based on CONF_TYPE and bake it into CONF_ID."""
     sensor_class = A2DPSINK_NUMERIC_TYPES[config[CONF_TYPE]]
@@ -59,10 +67,8 @@ def _validate_type(config):
 
 
 def _request_roles(config: ConfigType) -> ConfigType:
-    """Request the sensor role for the A2DP Sink."""
-    request_position_support()
-    request_rssi_support()
-    request_metadata_support()
+    """Request only the sensor role needed for this A2DP Sink type."""
+    A2DPSINK_REQUEST_MAP[config[CONF_TYPE]]()
     return config
 
 

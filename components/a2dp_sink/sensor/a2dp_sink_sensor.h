@@ -20,11 +20,16 @@ class A2DPSinkNumericSensor : public A2DPSinkChild, public sensor::Sensor {
   A2DPSinkTextMetadataTypes metadata_type_;
 };
 
+#ifdef USE_A2DP_METADATA
 
 class A2DPMetadataNumericSensor : public A2DPSinkNumericSensor {
  public:
   void setup() override;
 };
+
+#endif
+
+#ifdef USE_A2DP_POS
 
 class A2DPSinkTrackPositionSensor : public A2DPSinkNumericSensor
 {
@@ -32,11 +37,16 @@ class A2DPSinkTrackPositionSensor : public A2DPSinkNumericSensor
   void setup() override;
 };
 
+#endif
+
+#ifdef USE_A2DP_RSSI
+
 class A2DPSinkRssiSensor : public A2DPSinkNumericSensor
 {
  public:
   void setup() override;
 };
 
+#endif
 
 }  // namespace esphome::a2dp_sink

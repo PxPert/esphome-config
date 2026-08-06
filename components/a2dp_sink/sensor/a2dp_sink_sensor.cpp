@@ -16,9 +16,8 @@ void A2DPSinkNumericSensor::publish_if_changed_(float value) {
   }
 }
 
+#ifdef USE_A2DP_METADATA
 
-// THREAD CONTEXT: Main loop. The registered metadata callback also fires on the main loop
-// (A2DPSinkHub dispatches metadata from the A2DP sink callbacks).
 void A2DPMetadataNumericSensor::setup() {
   this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
     if (metadata.type() == (uint8_t)this->metadata_type_) {
@@ -30,6 +29,9 @@ void A2DPMetadataNumericSensor::setup() {
     }
   });
 }
+#endif
+
+#ifdef USE_A2DP_POS
 
 void A2DPSinkTrackPositionSensor::setup() {
   this->parent_->add_playback_position_callbacks([this](uint32_t pos) {
@@ -37,9 +39,16 @@ void A2DPSinkTrackPositionSensor::setup() {
   });
 }
 
+#endif
+
+#ifdef USE_A2DP_RSSI
+
 void A2DPSinkRssiSensor::setup() {
   this->parent_->add_rssi_callback([this](esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
     this->publish_if_changed_((float)rssi.rssi_delta);
   });
 }
+
+#endif
+
 }  // namespace esphome::a2dp_sink

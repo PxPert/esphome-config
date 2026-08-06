@@ -78,7 +78,9 @@ namespace esphome
             template<typename F> void add_playback_position_callbacks(F &&callback) {
                 this->playback_position_callbacks_.add(std::forward<F>(callback));
             }
+#endif
 
+#ifdef USE_A2DP_RSSI
             template<typename F> void add_rssi_callback(F &&callback) {
                 this->rssi_callbacks_.add(std::forward<F>(callback));
             }
