@@ -124,7 +124,12 @@ speaker:
     sample_rate: 44100
     timeout: 500ms
 #    sample_rate: 44100
-  
+
+number:
+  - platform: a2dp_sink
+    name: "Volume"
+    a2dp_sink_id: id_a2dp_sink
+    
 sensor:
   - platform: sendspin
     type: track
