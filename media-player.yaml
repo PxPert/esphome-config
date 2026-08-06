@@ -78,7 +78,8 @@ external_components:
     refresh: 0s
 
 packages:
-  # Configurazione di base
+  device_base: !include includes/dev_museluxe_base.yaml
+
   device_ext: !include includes/dev_museluxe_voice_extensions.yaml
   
 sendspin:
