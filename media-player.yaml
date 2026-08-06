@@ -84,9 +84,9 @@ a2dp_sink:
   name: test
   
 media_source:
-#  - platform: audio_http
-#    id: http_source
-#    buffer_size: 1000000
+  - platform: audio_http
+    id: http_source
+    buffer_size: 1000000
 #    task_stack_in_psram: true
   - platform: sendspin
 #    fixed_delay: 10ms
@@ -97,7 +97,53 @@ media_source:
     static_delay_adjustable: true
   - platform: a2dp_sink
     id: bluetooth
-  
+
+voice_assistant:
+  microphone: luxe_microphone
+  media_player: external_media_player
+  on_start:
+    - light.turn_on:
+        id: top_led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: none
+  on_tts_start:
+    - light.turn_on:
+        id: top_led
+        blue: 60%
+        red: 20%
+        green: 20%
+        effect: none
+  on_tts_end:
+    then:
+      - media_player.play_media:
+          media_url: !lambda return x;
+          id: external_media_player
+      - light.turn_on:
+          id: top_led
+          blue: 60%
+          red: 20%
+          green: 20%
+          effect: pulse
+  on_end:
+    then:
+      - delay: 1s
+      - wait_until:
+          condition:
+            not:
+              media_player.is_playing: external_media_player
+      - light.turn_off: top_led
+  on_error:
+    - light.turn_on:
+        id: top_led
+        blue: 0%
+        red: 100%
+        green: 0%
+        effect: none
+    - delay: 1s
+    - light.turn_off: top_led
+      
 media_player:
   - platform: sendspin
     id: sendspin_group_media_player
@@ -113,7 +159,7 @@ media_player:
       sources:
         - sendspin_media_source
         - bluetooth
-#        - http_source
+        - http_source
   
 #optional
 #web_server:
@@ -136,6 +182,13 @@ i2s_audio:
   - id: i2s_audio_bus
     i2s_lrclk_pin: GPIO25
     i2s_bclk_pin: GPIO5
+
+microphone:
+  - platform: i2s_audio
+    id: luxe_microphone
+    i2s_din_pin: GPIO35
+    adc_type: external
+    pdm: false
     
 speaker:
 #  - platform: i2s_audio
@@ -186,7 +239,26 @@ sensor:
     type: rssi
     id: "btRSSI"
     name: "RSSI"
-    
+  - platform: adc
+    id: battery_sensor
+    pin: GPIO33
+    name: Battery
+    icon: "mdi:battery-outline"
+    device_class: voltage
+    state_class: measurement
+    entity_category: diagnostic
+    unit_of_measurement: V
+    update_interval: 15s
+    accuracy_decimals: 3
+    attenuation: 11db
+    raw: true
+    filters:
+      - multiply: 0.00173913  # 2300 -> 4, for attenuation 11db, based on Olivier's code
+      - exponential_moving_average:
+          alpha: 0.2
+          send_every: 2
+      - delta: 0.002
+        
 text_sensor:
   - platform: a2dp_sink
     id: "bt_artist"
@@ -219,6 +291,56 @@ text_sensor:
     type: artist
     name: artista
     id: text_sensor_sendspin_2
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO19
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Volume Up
+    id: volume_up
+    on_click:
+      then:
+        - media_player.volume_up: external_media_player
+  - platform: gpio
+    pin:
+      number: GPIO32
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Volume Down
+    id: volume_down
+    on_click:
+      then:
+        - media_player.volume_down: external_media_player
+  - platform: gpio
+    pin:
+      number: GPIO12
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Action
+    id: action_button
+    on_multi_click:
+      - timing:
+          - ON FOR AT MOST 350ms
+          - OFF FOR AT LEAST 10ms
+        then:
+          - media_player.toggle: external_media_player
+      - timing:
+          - ON FOR AT LEAST 350ms
+        then:
+          - voice_assistant.start:
+      - timing:
+          - ON FOR AT LEAST 350ms
+          - OFF FOR AT LEAST 10ms
+        then:
+          - voice_assistant.stop:
 
 switch:
   - platform: a2dp_sink
@@ -259,3 +381,18 @@ button:
   - platform: restart
     name: "restart"
     id: button_restart_1
+
+
+light:
+  - platform: esp32_rmt_led_strip
+    name: None
+    id: top_led
+    pin: GPIO22
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    gamma_correct: 2.8
+    effects:
+      - pulse:
+          transition_length: 250ms
+          update_interval: 250ms
