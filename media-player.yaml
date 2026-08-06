@@ -126,81 +126,81 @@ speaker:
 #    sample_rate: 44100
 
 number:
-  - platform: a2dp_sink
-    name: "Volume"
+#  - platform: a2dp_sink
+#    name: "Volume"
     
 sensor:
   - platform: sendspin
     type: track
     name: traccia
     id: sensor_sendspin_1
-  - platform: a2dp_sink
-    type: tracknum
-    id: "btTrackNr"
-    name: "Track Number"
-  - platform: a2dp_sink
-    type: playingtime
-    id: "btPlayingTime"
-    name: "Playing Time"
-  - platform: a2dp_sink
-    type: num_tracks
-    id: "btNumTracks"
-    name: "Total Tracks"
-  - platform: a2dp_sink
-    type: trackposition
-    id: "btTrackPos"
-    name: "Track Position"
-  - platform: a2dp_sink
-    type: rssi
-    id: "btRSSI"
-    name: "RSSI"
+#  - platform: a2dp_sink
+#    type: tracknum
+#    id: "btTrackNr"
+#    name: "Track Number"
+#  - platform: a2dp_sink
+#    type: playingtime
+#    id: "btPlayingTime"
+#    name: "Playing Time"
+#  - platform: a2dp_sink
+#    type: num_tracks
+#    id: "btNumTracks"
+#    name: "Total Tracks"
+#  - platform: a2dp_sink
+#    type: trackposition
+#    id: "btTrackPos"
+#    name: "Track Position"
+#  - platform: a2dp_sink
+#    type: rssi
+#    id: "btRSSI"
+#    name: "RSSI"
 
         
 text_sensor:
-  - platform: a2dp_sink
-    id: "bt_artist"
-    type: "artist"
-    name: "Artist"
-  - platform: a2dp_sink
-    id: "bt_album"
-    type: "album"
-    name: "Album"
-  - platform: a2dp_sink
-    id: "bt_titlea"
-    type: "title"
-    name: "Titlea"
-  - platform: a2dp_sink
-    id: "bt_peername"
-    type: "peername"
-    name: "Peer name"
-  - platform: a2dp_sink
-    id: "bt_peeraddr"
-    type: "peeraddr"
-    name: "Peer address"
-  - platform: wifi_info
-    ip_address:
-      name: "IP Address"
-  - platform: sendspin
-    type: title
-    name: titolo
-    id: text_sensor_sendspin_1
-  - platform: sendspin
-    type: artist
-    name: artista
-    id: text_sensor_sendspin_2
+#  - platform: a2dp_sink
+#    id: "bt_artist"
+#    type: "artist"
+#    name: "Artist"
+#  - platform: a2dp_sink
+#    id: "bt_album"
+#    type: "album"
+#    name: "Album"
+#  - platform: a2dp_sink
+#    id: "bt_titlea"
+#    type: "title"
+#    name: "Titlea"
+#  - platform: a2dp_sink
+#    id: "bt_peername"
+#    type: "peername"
+#    name: "Peer name"
+#  - platform: a2dp_sink
+#    id: "bt_peeraddr"
+#    type: "peeraddr"
+#    name: "Peer address"
+#  - platform: wifi_info
+#    ip_address:
+#      name: "IP Address"
+#  - platform: sendspin
+#    type: title
+#    name: titolo
+#    id: text_sensor_sendspin_1
+#  - platform: sendspin
+#    type: artist
+#    name: artista
+#    id: text_sensor_sendspin_2
 
 switch:
-  - platform: a2dp_sink
-    type: connection
-    name: "Bluetooth connection"
-    id: "btConnection"
-    restore_mode: ALWAYS_OFF
-    
-  - platform: a2dp_sink
-    type: bluetooth
-    name: "Bluetooth state"
-    id: "btState"
-    restore_mode: RESTORE_DEFAULT_OFF
+#  - platform: a2dp_sink
+#    type: connection
+#    name: "Bluetooth connection"
+#    id: "btConnection"
+#    restore_mode: ALWAYS_OFF
+#
+#  - platform: a2dp_sink
+#    type: bluetooth
+#    name: "Bluetooth state"
+#    id: "btState"
+#    restore_mode: RESTORE_DEFAULT_OFF
 
   - platform: gpio
     name: amplifier
