@@ -101,6 +101,10 @@ media_source:
 voice_assistant:
   microphone: luxe_microphone
   media_player: external_media_player
+  use_wake_word: false
+  noise_suppression_level: 0
+  auto_gain: 0 dbfs
+  volume_multiplier: 1
   on_start:
     - light.turn_on:
         id: top_led
