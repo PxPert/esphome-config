@@ -43,7 +43,7 @@ esp32:
       CONFIG_BT_NIMBLE_ENABLED: n
       CONFIG_BTDM_CTRL_MODE_BTDM: y
 #    version: 6.0.2
-#    version: 6.1-beta1
+    version: 6.1-beta1
     advanced:
       sram1_as_iram: true
 
@@ -76,7 +76,6 @@ external_components:
     components: [es8388]
     refresh: 0s
 
-    
 sendspin:
 #  task_stack_in_psram: false
 
