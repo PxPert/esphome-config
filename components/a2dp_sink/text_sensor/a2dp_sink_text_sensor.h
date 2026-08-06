@@ -13,13 +13,13 @@ class A2DPSinkTextSensor : public A2DPSinkChild, public text_sensor::TextSensor 
   void dump_config() override;
   void setup() override {};
 
-  void set_metadata_type(A2DPSinkTextMetadataTypes metadata_type) { this->metadata_type_ = metadata_type; }
+  void set_metadata_type(A2DPSinkMetadataTypes metadata_type) { this->metadata_type_ = metadata_type; }
 
  protected:
 //  const char *extract_value_(const sendspin::ServerMetadataStateObject &metadata) const;
   void publish_if_changed_(const char *value);
 
-  A2DPSinkTextMetadataTypes metadata_type_;
+  A2DPSinkMetadataTypes metadata_type_;
 };
 
 

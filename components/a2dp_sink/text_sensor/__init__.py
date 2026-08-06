@@ -29,14 +29,14 @@ A2DPSinkPeerTextSensor = a2dp_sink_ns.class_(
     cg.Component,
 )
 
-A2DPSinkTextMetadataTypes = a2dp_sink_ns.enum("A2DPSinkTextMetadataTypes", is_class=True)
+A2DPSinkMetadataTypes = a2dp_sink_ns.enum("A2DPSinkMetadataTypes", is_class=True)
 A2DPSINK_TEXT_METADATA_TYPES = {
-    "title": A2DPSinkTextMetadataTypes.TITLE,
-    "artist": A2DPSinkTextMetadataTypes.ARTIST,
-    "album": A2DPSinkTextMetadataTypes.ALBUM,
-    "genre": A2DPSinkTextMetadataTypes.GENRE,
-    "peername": A2DPSinkTextMetadataTypes.PEERNAME,
-    "peeraddr": A2DPSinkTextMetadataTypes.PEERADDR,
+    "title": A2DPSinkMetadataTypes.TITLE,
+    "artist": A2DPSinkMetadataTypes.ARTIST,
+    "album": A2DPSinkMetadataTypes.ALBUM,
+    "genre": A2DPSinkMetadataTypes.GENRE,
+    "peername": A2DPSinkMetadataTypes.PEERNAME,
+    "peeraddr": A2DPSinkMetadataTypes.PEERADDR,
 }
 
 A2DPSINK_TEXT_TYPES = {

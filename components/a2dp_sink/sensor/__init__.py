@@ -34,13 +34,13 @@ A2DPSinkRssiSensor = a2dp_sink_ns.class_(
     cg.Component,
 )
 
-A2DPSinkNumericMetadataTypes = a2dp_sink_ns.enum("A2DPSinkTextMetadataTypes", is_class=True)
+A2DPSinkNumericMetadataTypes = a2dp_sink_ns.enum("A2DPSinkMetadataTypes", is_class=True)
 A2DPSINK_NUMERIC_METADATA_TYPES = {
     "tracknum": A2DPSinkNumericMetadataTypes.TRACKNUM,
     "playingtime": A2DPSinkNumericMetadataTypes.PLAYINGTIME,
     "num_tracks": A2DPSinkNumericMetadataTypes.NUM_TRACKS,
-    "trackposition": A2DPSinkNumericMetadataTypes.TRACKPOSITION,
-    "rssi": A2DPSinkNumericMetadataTypes.RSSI,
+    "trackposition": "",
+    "rssi": "",
 }
 
 A2DPSINK_NUMERIC_TYPES = {
@@ -91,4 +91,7 @@ async def to_code(config: ConfigType) -> None:
     await cg.register_parented(var, config[CONF_A2DP_SINK_ID])
     await sensor.register_sensor(var, config)
 
-    cg.add(var.set_metadata_type(config[CONF_TYPE]))
+    # Only set metadata_type for A2DPMetadataNumericSensor types (tracknum, playingtime, num_tracks)
+    # Trackposition and RSSI sensors don't need this as they use their own callback mechanisms
+    if config[CONF_TYPE] in ("tracknum", "playingtime", "num_tracks"):
+        cg.add(var.set_metadata_type(config[CONF_TYPE]))

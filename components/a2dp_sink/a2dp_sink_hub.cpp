@@ -74,7 +74,9 @@ namespace esphome
             /*
              * Metadata subscription and callbacks
              */
-            a2dp_sink_.set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM | ESP_AVRC_MD_ATTR_PLAYING_TIME );
+            if (this->metadata_mask_ > 0) {
+                a2dp_sink_.set_avrc_metadata_attribute_mask(this->metadata_mask_);
+            }
             a2dp_sink_.set_avrc_metadata_callback(
                 [](uint8_t id, const uint8_t *text) {
                     if (g_a2dp_hub_instance != nullptr) {

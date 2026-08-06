@@ -19,6 +19,9 @@ void A2DPSinkNumericSensor::publish_if_changed_(float value) {
 #ifdef USE_A2DP_METADATA
 
 void A2DPMetadataNumericSensor::setup() {
+  // Request this specific metadata attribute from the parent hub
+  this->parent_->add_metadata_attribute((uint8_t)this->metadata_type_);
+  
   this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
     if (metadata.type() == (uint8_t)this->metadata_type_) {
       // Metadata values come as strings, parse them to float

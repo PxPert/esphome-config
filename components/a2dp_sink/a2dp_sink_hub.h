@@ -18,7 +18,7 @@ namespace esphome
         inline constexpr float CHILD = HUB - 1.0f;
         }  // namespace sendspin_priority
 
-        enum class A2DPSinkTextMetadataTypes {
+        enum class A2DPSinkMetadataTypes {
             TITLE = ESP_AVRC_MD_ATTR_TITLE,
             ARTIST = ESP_AVRC_MD_ATTR_ARTIST,
             ALBUM = ESP_AVRC_MD_ATTR_ALBUM,
@@ -90,6 +90,8 @@ namespace esphome
             template<typename F> void add_metadata_update_callback(F &&callback) {
                 this->metadata_update_callbacks_.add(std::forward<F>(callback));
             }
+            void add_metadata_attribute(uint8_t attr) { this->metadata_mask_ |= attr; }
+
 #endif
 
 #ifdef USE_A2DP_PEER_NAME
@@ -180,6 +182,7 @@ namespace esphome
             void avrc_metadata_callback(uint8_t id, const uint8_t *text);
 
             CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
+            uint8_t metadata_mask_ = 0;
 
 #endif
 

@@ -39,10 +39,10 @@ void A2DPSinkPeerTextSensor::setup() {
 
   this->parent_->add_peer_name_callback([this](const char *name) {
     if (this->parent_->get_connection_state() == ESP_A2D_CONNECTION_STATE_CONNECTED) {
-      if (this->metadata_type_ == A2DPSinkTextMetadataTypes::PEERNAME) {
+      if (this->metadata_type_ == A2DPSinkMetadataTypes::PEERNAME) {
         ESP_LOGW(TAG, "Peer text sensor callback fired, publishing peer name: %s", this->parent_->get_peer_name());
         this->publish_if_changed_(name);
-      } else if (this->metadata_type_ == A2DPSinkTextMetadataTypes::PEERADDR) {
+      } else if (this->metadata_type_ == A2DPSinkMetadataTypes::PEERADDR) {
         auto* peer_addr = this->parent_->get_current_peer_address();
         this->publish_if_changed_(A2DPSinkHub::bd_addr_to_string(*peer_addr).c_str());
       } else {
