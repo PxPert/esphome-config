@@ -30,13 +30,14 @@ A2DPSinkPeerTextSensor = a2dp_sink_ns.class_(
 )
 
 A2DPSinkMetadataTypes = a2dp_sink_ns.enum("A2DPSinkMetadataTypes", is_class=True)
+A2DPSinkPeerRequestTypes = a2dp_sink_ns.enum("A2DPSinkPeerRequestTypes", is_class=True)
 A2DPSINK_TEXT_METADATA_TYPES = {
     "title": A2DPSinkMetadataTypes.TITLE,
     "artist": A2DPSinkMetadataTypes.ARTIST,
     "album": A2DPSinkMetadataTypes.ALBUM,
     "genre": A2DPSinkMetadataTypes.GENRE,
-    "peername": A2DPSinkMetadataTypes.PEERNAME,
-    "peeraddr": A2DPSinkMetadataTypes.PEERADDR,
+    "peername": A2DPSinkPeerRequestTypes.PEERNAME,
+    "peeraddr": A2DPSinkPeerRequestTypes.PEERADDR,
 }
 
 A2DPSINK_TEXT_TYPES = {
@@ -48,6 +49,15 @@ A2DPSINK_TEXT_TYPES = {
     "peeraddr": A2DPSinkPeerTextSensor,
 }
 
+A2DPSINK_TEXT_REQUEST_MAP = {
+    "title": request_metadata_support,
+    "artist": request_metadata_support,
+    "album": request_metadata_support,
+    "genre": request_metadata_support,
+    "peername": request_peer_name_support,
+    "peeraddr": request_peer_name_support,
+}
+
 def _validate_type(config):
     """Select the text sensor class based on CONF_TYPE and bake it into CONF_ID."""
     sensor_class = A2DPSINK_TEXT_TYPES[config[CONF_TYPE]]
@@ -57,8 +67,7 @@ def _validate_type(config):
 
 def _request_roles(config: ConfigType) -> ConfigType:
     """Request the text_sensor role for the A2DP Sink."""
-    request_metadata_support()
-    request_peer_name_support()
+    A2DPSINK_TEXT_REQUEST_MAP[config[CONF_TYPE]]()
     return config
 
 
@@ -81,4 +90,8 @@ async def to_code(config: ConfigType) -> None:
     await cg.register_parented(var, config[CONF_A2DP_SINK_ID])
     await text_sensor.register_text_sensor(var, config)
 
-    cg.add(var.set_metadata_type(config[CONF_TYPE]))
+    # Only set metadata_type for A2DPMetadataTextSensor types
+    if config[CONF_TYPE] in ("title", "artist", "album","genre"):
+        cg.add(var.set_metadata_type(config[CONF_TYPE]))
+    else:
+        cg.add(var.set_peer_type(config[CONF_TYPE]))

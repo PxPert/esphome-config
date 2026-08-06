@@ -51,7 +51,7 @@ A2DPSINK_NUMERIC_TYPES = {
     "rssi": A2DPSinkRssiSensor,
 }
 
-A2DPSINK_REQUEST_MAP = {
+A2DPSINK_NUMERIC_REQUEST_MAP = {
     "tracknum":      request_metadata_support,
     "playingtime":   request_metadata_support,
     "num_tracks":    request_metadata_support,
@@ -68,7 +68,7 @@ def _validate_type(config):
 
 def _request_roles(config: ConfigType) -> ConfigType:
     """Request only the sensor role needed for this A2DP Sink type."""
-    A2DPSINK_REQUEST_MAP[config[CONF_TYPE]]()
+    A2DPSINK_NUMERIC_REQUEST_MAP[config[CONF_TYPE]]()
     return config
 
 
@@ -91,7 +91,6 @@ async def to_code(config: ConfigType) -> None:
     await cg.register_parented(var, config[CONF_A2DP_SINK_ID])
     await sensor.register_sensor(var, config)
 
-    # Only set metadata_type for A2DPMetadataNumericSensor types (tracknum, playingtime, num_tracks)
-    # Trackposition and RSSI sensors don't need this as they use their own callback mechanisms
+    # Only set metadata_type for A2DPMetadataNumericSensor types
     if config[CONF_TYPE] in ("tracknum", "playingtime", "num_tracks"):
         cg.add(var.set_metadata_type(config[CONF_TYPE]))

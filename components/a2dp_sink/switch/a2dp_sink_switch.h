@@ -5,6 +5,7 @@
 
 namespace esphome::a2dp_sink {
 
+#ifdef USE_A2DP_CONNECTION_STATE
 /**
  * @brief Switch che riflette lo stato di connessione A2DP dei client.
  *
@@ -20,6 +21,7 @@ class A2DPSwitchConnection : public A2DPSinkChild, public switch_::Switch {
  protected:
   void publish_state_if_changed_(bool state);
 };
+#endif
 
 /**
  * @brief Switch che accende/spegne l'interfaccia Bluetooth.

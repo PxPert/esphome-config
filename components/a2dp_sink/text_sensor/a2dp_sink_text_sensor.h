@@ -13,26 +13,33 @@ class A2DPSinkTextSensor : public A2DPSinkChild, public text_sensor::TextSensor 
   void dump_config() override;
   void setup() override {};
 
-  void set_metadata_type(A2DPSinkMetadataTypes metadata_type) { this->metadata_type_ = metadata_type; }
-
  protected:
-//  const char *extract_value_(const sendspin::ServerMetadataStateObject &metadata) const;
   void publish_if_changed_(const char *value);
 
-  A2DPSinkMetadataTypes metadata_type_;
 };
 
+#ifdef USE_A2DP_METADATA
 
 class A2DPMetadataTextSensor : public A2DPSinkTextSensor {
  public:
   void setup() override;
-};
+  void set_metadata_type(A2DPSinkMetadataTypes metadata_type) { this->metadata_type_ = metadata_type; }
+ protected:
+   A2DPSinkMetadataTypes metadata_type_;
 
+};
+#endif
+
+#ifdef USE_A2DP_PEER_NAME
 class A2DPSinkPeerTextSensor : public A2DPSinkTextSensor
 {
  public:
   void setup() override;
+  void set_peer_type(A2DPSinkPeerRequestTypes peer_type) { this->peer_type_ = peer_type; }
+ protected:
+  A2DPSinkPeerRequestTypes peer_type_;
 };
+#endif
 
 
 }  // namespace esphome::a2dp_sink

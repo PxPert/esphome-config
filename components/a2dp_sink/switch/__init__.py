@@ -8,7 +8,7 @@ from .. import (
     CONF_A2DP_SINK_ID,
     A2DPSinkHub,
     a2dp_sink_ns,
-    request_switch_support,
+    request_connection_state_support,
 )
 
 CODEOWNERS = ["@PxPert"]
@@ -40,7 +40,9 @@ def _validate_type(config):
 
 def _request_roles(config: ConfigType) -> ConfigType:
     """Request the switch role for the A2DP Sink."""
-    request_switch_support()
+    if config[CONF_TYPE] in ("connection"):
+        request_connection_state_support()
+        
     return config
 
 

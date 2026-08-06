@@ -6,6 +6,8 @@ static const char *const TAG = "a2dp_sink.number";
 
 void A2DPSinkVolumeNumber::setup() {
   // Subscribe to volume change callbacks from the hub
+  this->disable_loop();
+
   this->parent_->add_volume_change_callback([this](int volume) {
     this->publish_state(static_cast<float>(volume));
   });

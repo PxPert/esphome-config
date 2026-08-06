@@ -33,9 +33,9 @@ A2DP Pairing via Pin + callback
 Add Automations callbacks
 
 - General code cleanup
-  - Selective compilation of handlers/masks based on selected sensors or switches
-  - Optimize text_sensors and sensors to not use set_metadata for non-native metadata components
-  - Refactor the metadata enum
+  - Selective compilation of handlers/masks based on selected sensors or switches - Done
+  - Optimize text_sensors and sensors to not use set_metadata for non-native metadata components - Done
+  - Refactor the metadata enum - Done
   - Add ESP_LOGD all around and overall ESP_LOG* Cleanup
 
 - Move sensors to the correct sections (For example diagnostic sensors like RSSI or device name)

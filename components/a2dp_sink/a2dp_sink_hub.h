@@ -18,6 +18,7 @@ namespace esphome
         inline constexpr float CHILD = HUB - 1.0f;
         }  // namespace sendspin_priority
 
+#ifdef USE_A2DP_METADATA
         enum class A2DPSinkMetadataTypes {
             TITLE = ESP_AVRC_MD_ATTR_TITLE,
             ARTIST = ESP_AVRC_MD_ATTR_ARTIST,
@@ -26,12 +27,15 @@ namespace esphome
             TRACKNUM = ESP_AVRC_MD_ATTR_TRACK_NUM,
             PLAYINGTIME = ESP_AVRC_MD_ATTR_PLAYING_TIME,
             NUM_TRACKS = ESP_AVRC_MD_ATTR_NUM_TRACKS,
+        };
+#endif
+
+#ifdef USE_A2DP_PEER_NAME
+        enum class A2DPSinkPeerRequestTypes {
             PEERNAME,
             PEERADDR,
-            TRACKPOSITION,
-            RSSI,
         };
-
+#endif 
         class A2DPSinkMetadata
         {
         public:

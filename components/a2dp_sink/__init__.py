@@ -40,7 +40,6 @@ A2DPSinkHub = a2dp_sink_ns.class_(
 
 @dataclass
 class A2dpSinkConfiguration:
-    switch_support: bool = False
     position_support: bool = False
     rssi_support: bool = False
     metadata_support: bool = False
@@ -54,12 +53,6 @@ def _get_data() -> A2dpSinkConfiguration:
     if DOMAIN not in CORE.data:
         CORE.data[DOMAIN] = A2dpSinkConfiguration()
     return CORE.data[DOMAIN]
-
-
-def request_switch_support() -> None:
-    """Request switch subcomponent support for A2DP Sink."""
-    _get_data().switch_support = True
-
 
 def request_position_support() -> None:
     """Request track position support for A2DP Sink."""
@@ -84,7 +77,6 @@ def request_volume_support() -> None:
 def request_playback_status_support() -> None:
     """Request playback status support for A2DP Sink."""
     _get_data().playback_status_support = True
-
 
 def request_connection_state_support() -> None:
     """Request connection state notifications support for A2DP Sink."""
@@ -122,8 +114,6 @@ async def to_code(config):
     # Emit USE_A2DP_* defines so the hub C++ can conditionally compile
     # callback infrastructure only for features the user actually needs.
     data = _get_data()
-    if data.switch_support:
-        cg.add_define("USE_A2DP_SWITCH", True)
     if data.position_support:
         cg.add_define("USE_A2DP_POS", True)
     if data.rssi_support:

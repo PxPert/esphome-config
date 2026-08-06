@@ -4,6 +4,7 @@ namespace esphome::a2dp_sink {
 
 static const char *const TAG = "a2dp_sink.switch";
 
+#ifdef USE_A2DP_CONNECTION_STATE
 // ---------------------------------------------------------------------------
 // A2DPSwitchConnection
 // ---------------------------------------------------------------------------
@@ -13,6 +14,7 @@ void A2DPSwitchConnection::dump_config() {
 }
 
 void A2DPSwitchConnection::setup() {
+  this->disable_loop();
   this->parent_->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {
     bool is_connected = (state == ESP_A2D_CONNECTION_STATE_CONNECTED);
     this->publish_state_if_changed_(is_connected);
@@ -31,7 +33,7 @@ void A2DPSwitchConnection::publish_state_if_changed_(bool state) {
     this->publish_state(state);
   }
 }
-
+#endif
 // ---------------------------------------------------------------------------
 // A2DPSwitchBluetooth
 // ---------------------------------------------------------------------------

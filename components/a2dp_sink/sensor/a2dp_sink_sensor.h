@@ -15,7 +15,6 @@ class A2DPSinkNumericSensor : public A2DPSinkChild, public sensor::Sensor {
  protected:
   void publish_if_changed_(float value);
 
-  A2DPSinkMetadataTypes metadata_type_;
 };
 
 #ifdef USE_A2DP_METADATA
@@ -24,6 +23,8 @@ class A2DPMetadataNumericSensor : public A2DPSinkNumericSensor {
  public:
   void setup() override;
   void set_metadata_type(A2DPSinkMetadataTypes metadata_type) { this->metadata_type_ = metadata_type; }
+ protected:
+   A2DPSinkMetadataTypes metadata_type_;
 
 };
 

@@ -16,10 +16,16 @@ void A2DPSinkTextSensor::publish_if_changed_(const char *value) {
   }
 }
 
+#ifdef USE_A2DP_METADATA
 
 // THREAD CONTEXT: Main loop. The registered metadata callback also fires on the main loop
 // (SendspinHub dispatches metadata from client_->loop()).
 void A2DPMetadataTextSensor::setup() {
+  this->disable_loop();
+
+  // Request this specific metadata attribute from the parent hub
+  this->parent_->add_metadata_attribute((uint8_t)this->metadata_type_);
+
   this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
     ESP_LOGW(TAG, "Callback Text sensor!!");
     if (metadata.type() == (uint8_t)this->metadata_type_ ) {
@@ -27,22 +33,19 @@ void A2DPMetadataTextSensor::setup() {
     }
   });
 }
+#endif
+
+#ifdef USE_A2DP_PEER_NAME
 
 void A2DPSinkPeerTextSensor::setup() {
   this->disable_loop();
 
-  this->parent_->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {
-    if (state != ESP_A2D_CONNECTION_STATE_DISCONNECTED) {
-      this->publish_if_changed_("disconnected");
-    }
-  });
-
   this->parent_->add_peer_name_callback([this](const char *name) {
     if (this->parent_->get_connection_state() == ESP_A2D_CONNECTION_STATE_CONNECTED) {
-      if (this->metadata_type_ == A2DPSinkMetadataTypes::PEERNAME) {
+      if (this->peer_type_ == A2DPSinkPeerRequestTypes::PEERNAME) {
         ESP_LOGW(TAG, "Peer text sensor callback fired, publishing peer name: %s", this->parent_->get_peer_name());
         this->publish_if_changed_(name);
-      } else if (this->metadata_type_ == A2DPSinkMetadataTypes::PEERADDR) {
+      } else if (this->peer_type_ == A2DPSinkPeerRequestTypes::PEERADDR) {
         auto* peer_addr = this->parent_->get_current_peer_address();
         this->publish_if_changed_(A2DPSinkHub::bd_addr_to_string(*peer_addr).c_str());
       } else {
@@ -55,5 +58,6 @@ void A2DPSinkPeerTextSensor::setup() {
 
   });
 }
+#endif
 }  // namespace esphome::a2dp_sink
 
