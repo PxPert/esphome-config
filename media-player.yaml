@@ -146,14 +146,14 @@ sensor:
 #    type: num_tracks
 #    id: "btNumTracks"
 #    name: "Total Tracks"
-  - platform: a2dp_sink
-    type: trackposition
-    id: "btTrackPos"
-    name: "Track Position"
 #  - platform: a2dp_sink
-#    type: rssi
-#    id: "btRSSI"
-#    name: "RSSI"
+#    type: trackposition
+#    id: "btTrackPos"
+#    name: "Track Position"
+  - platform: a2dp_sink
+    type: rssi
+    id: "btRSSI"
+    name: "RSSI"
 
         
 text_sensor:
