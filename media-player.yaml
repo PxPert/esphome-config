@@ -29,6 +29,7 @@ mdns:
   
 esp32:
   board: esp-wrover-kit
+  partitions: huge_app.csv
   
   framework:
     type: esp-idf
