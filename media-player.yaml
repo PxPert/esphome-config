@@ -150,10 +150,10 @@ sensor:
 #    type: trackposition
 #    id: "btTrackPos"
 #    name: "Track Position"
-  - platform: a2dp_sink
-    type: rssi
-    id: "btRSSI"
-    name: "RSSI"
+#  - platform: a2dp_sink
+#    type: rssi
+#    id: "btRSSI"
+#    name: "RSSI"
 
         
 text_sensor:
