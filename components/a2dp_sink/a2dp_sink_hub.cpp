@@ -11,12 +11,7 @@ namespace esphome
         static A2DPSinkHub *g_a2dp_hub_instance = nullptr;
         static BluetoothA2DPSink a2dp_sink_;
 
-//        static SBCDecoder sbc_decoder;
-//        static A2DPDecoderSBC a2dp_sbc(sbc_decoder);
-
-//        static AACDecoderHelix aac_decoder;
-//        static A2DPDecoderAAC a2dp_aac(aac_decoder);
-
+  #ifdef USE_A2DP_METADATA
         void A2DPSinkHub::avrc_metadata_callback(uint8_t id, const uint8_t *text) {
             ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", id, text);
 
@@ -24,35 +19,48 @@ namespace esphome
             this->metadata_update_callbacks_.call(m);
 
         }
+#endif
 
+#ifdef USE_A2DP_PLAYBACK_STATUS
         void A2DPSinkHub::avrc_rn_playstatus_callback(esp_avrc_playback_stat_t playback) {
             ESP_LOGD(TAG, "AVRC playstatus rsp: %d", (uint8_t)playback);
             this->playback_status_callbacks_.call(playback);
         }
+#endif
 
+#ifdef USE_A2DP_POS
         void A2DPSinkHub::avrc_rn_play_pos_callback(uint32_t play_pos) {
             ESP_LOGD(TAG, "AVRC playposition: %d", play_pos);
             this->playback_position_callbacks_.call(play_pos);
         }
+#endif
 
+#ifdef USE_A2DP_VOLUME
         void A2DPSinkHub::avrc_rn_volumechange_callback(int volume) {
             ESP_LOGD(TAG, "AVRC volume change: %d", volume);
             this->volume_change_callbacks_.call(volume);
         }
+#endif
 
+#ifdef USE_A2DP_CONNECTION_STATE
         void A2DPSinkHub::on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data) {
             ESP_LOGD(TAG, "A2DP connection state changed: %d", (uint8_t)state);
             this->connection_state_callbacks_.call(state, user_data);
         }
+#endif
 
+#ifdef USE_A2DP_PEER_NAME
         void A2DPSinkHub::peer_name_callback(const char* name) {
             this->peer_name_callbacks_.call(name);
         }
+#endif
 
+#ifdef USE_A2DP_RSSI
         void A2DPSinkHub::rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
             ESP_LOGD(TAG, "RSSI delta: %d", rssi.rssi_delta);
             this->rssi_callbacks_.call(rssi);
         }
+#endif
 
         void A2DPSinkHub::setup()
         {
@@ -62,6 +70,7 @@ namespace esphome
 
             this->disable_loop();
 
+#ifdef USE_A2DP_METADATA
             /*
              * Metadata subscription and callbacks
              */
@@ -73,7 +82,9 @@ namespace esphome
                     }
                 }
             );
+#endif
 
+#ifdef USE_A2DP_PLAYBACK_STATUS
             /*
              * Playback status callback
              */
@@ -84,7 +95,9 @@ namespace esphome
                     }
                 }
             );
+#endif
 
+#ifdef USE_A2DP_POS
             /*
              * Playback position callback
              */
@@ -95,7 +108,9 @@ namespace esphome
                     }
                 }
             );
+#endif
 
+#ifdef USE_A2DP_CONNECTION_STATE
             /* 
              * Connection state callback
              */
@@ -106,7 +121,9 @@ namespace esphome
                     }
                 }
             );
+#endif
 
+#ifdef USE_A2DP_PEER_NAME
             a2dp_sink_.set_peer_name_callback(
                 [](char* name) {
                     if (g_a2dp_hub_instance != nullptr) {
@@ -114,7 +131,9 @@ namespace esphome
                     }
                 }
             );
+#endif
 
+#ifdef USE_A2DP_RSSI
             /*
              * RSSI callback
              */
@@ -126,7 +145,9 @@ namespace esphome
                     }
                 }
             );
+#endif
 
+#ifdef USE_A2DP_VOLUME
             /*
              * Volume change callback
              */
@@ -146,7 +167,7 @@ namespace esphome
                     }
                 }
             );
-
+#endif
 
             ESP_LOGW(TAG, "%s", "A2DPSink is initialized");
         }

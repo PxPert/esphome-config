@@ -8,9 +8,11 @@ from .. import (
     CONF_A2DP_SINK_ID,
     A2DPSinkHub,
     a2dp_sink_ns,
+    request_switch_support,
 )
 
 CODEOWNERS = ["@PxPert"]
+DEPENDENCIES = ["a2dp_sink"]
 
 A2DPSwitchConnection = a2dp_sink_ns.class_(
     "A2DPSwitchConnection",
@@ -36,6 +38,12 @@ def _validate_type(config):
     return config
 
 
+def _request_roles(config: ConfigType) -> ConfigType:
+    """Request the switch role for the A2DP Sink."""
+    request_switch_support()
+    return config
+
+
 CONFIG_SCHEMA = cv.All(
     switch.switch_schema(switch.Switch).extend(
         {
@@ -44,6 +52,7 @@ CONFIG_SCHEMA = cv.All(
         }
     ),
     _validate_type,
+    _request_roles,
     cv.only_on_esp32,
 )
 

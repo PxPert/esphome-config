@@ -24,7 +24,7 @@ namespace esphome::a2dp_sink {
             this->disable_loop();
 
             g_a2dp_sink_instance = this;
-/*
+
             this->parent_->set_stream_reader(
                 [](const uint8_t *data, uint32_t length) {
                     if (g_a2dp_sink_instance != nullptr) {
@@ -32,7 +32,7 @@ namespace esphome::a2dp_sink {
                     }
                 }
             );
-*/
+
 
             this->parent_->add_playback_status_callbacks([this](esp_avrc_playback_stat_t playback) {
                 ESP_LOGE(TAG, "Play status: %d", playback);
@@ -50,10 +50,6 @@ namespace esphome::a2dp_sink {
                         this->pause_.store(true, std::memory_order_relaxed);
                         break;
                 }
-            });
-
-            this->parent_->add_playback_position_callbacks([this](uint32_t pos) {
-                ESP_LOGE(TAG, "Play position: %d", pos);
             });
 
             this->parent_->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {

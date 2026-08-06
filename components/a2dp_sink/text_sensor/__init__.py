@@ -9,10 +9,13 @@ from .. import (
     CONF_A2DP_SINK_ID,
     A2DPSinkHub,
     a2dp_sink_ns,
+    request_metadata_support,
+    request_peer_name_support
 )
 
 
 CODEOWNERS = ["@PxPert"]
+DEPENDENCIES = ["a2dp_sink"]
 
 A2DPMetadataTextSensor = a2dp_sink_ns.class_(
     "A2DPMetadataTextSensor",
@@ -52,6 +55,13 @@ def _validate_type(config):
     return config
 
 
+def _request_roles(config: ConfigType) -> ConfigType:
+    """Request the text_sensor role for the A2DP Sink."""
+    request_metadata_support()
+    request_peer_name_support()
+    return config
+
+
 CONFIG_SCHEMA = cv.All(
     text_sensor.text_sensor_schema().extend(
         {
@@ -60,6 +70,7 @@ CONFIG_SCHEMA = cv.All(
         }
     ),
     _validate_type,
+    _request_roles,
     cv.only_on_esp32,
 )
 

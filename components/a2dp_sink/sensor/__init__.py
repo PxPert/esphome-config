@@ -8,9 +8,13 @@ from .. import (
     CONF_A2DP_SINK_ID,
     A2DPSinkHub,
     a2dp_sink_ns,
+    request_position_support,
+    request_rssi_support,
+    request_metadata_support
 )
 
 CODEOWNERS = ["@PxPert"]
+DEPENDENCIES = ["a2dp_sink"]
 
 A2DPMetadataNumericSensor = a2dp_sink_ns.class_(
     "A2DPMetadataNumericSensor",
@@ -54,6 +58,14 @@ def _validate_type(config):
     return config
 
 
+def _request_roles(config: ConfigType) -> ConfigType:
+    """Request the sensor role for the A2DP Sink."""
+    request_position_support()
+    request_rssi_support()
+    request_metadata_support()
+    return config
+
+
 CONFIG_SCHEMA = cv.All(
     sensor.sensor_schema().extend(
         {
@@ -62,6 +74,7 @@ CONFIG_SCHEMA = cv.All(
         }
     ),
     _validate_type,
+    _request_roles,
     cv.only_on_esp32,
 )
 

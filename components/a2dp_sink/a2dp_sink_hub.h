@@ -62,33 +62,45 @@ namespace esphome
             void set_auto_reconnect(bool v) { this->auto_reconnect_ = v; }
             bool auto_reconnect() { return this->auto_reconnect_; };
 
-            template<typename F> void add_metadata_update_callback(F &&callback) {
-                this->metadata_update_callbacks_.add(std::forward<F>(callback));
-            }
-
-            template<typename F> void add_playback_status_callbacks(F &&callback) {
-                this->playback_status_callbacks_.add(std::forward<F>(callback));
-            }
-
-            template<typename F> void add_playback_position_callbacks(F &&callback) {
-                this->playback_position_callbacks_.add(std::forward<F>(callback));
-            }
-
+#ifdef USE_A2DP_CONNECTION_STATE
             template<typename F> void add_connection_state_callbacks(F &&callback) {
                 this->connection_state_callbacks_.add(std::forward<F>(callback));
             }
+#endif
 
-            template<typename F> void add_peer_name_callback(F &&callback) {
-                this->peer_name_callbacks_.add(std::forward<F>(callback));
+#ifdef USE_A2DP_PLAYBACK_STATUS
+            template<typename F> void add_playback_status_callbacks(F &&callback) {
+                this->playback_status_callbacks_.add(std::forward<F>(callback));
+            }
+#endif
+
+#ifdef USE_A2DP_POS
+            template<typename F> void add_playback_position_callbacks(F &&callback) {
+                this->playback_position_callbacks_.add(std::forward<F>(callback));
             }
 
             template<typename F> void add_rssi_callback(F &&callback) {
                 this->rssi_callbacks_.add(std::forward<F>(callback));
             }
+#endif
 
+#ifdef USE_A2DP_METADATA
+            template<typename F> void add_metadata_update_callback(F &&callback) {
+                this->metadata_update_callbacks_.add(std::forward<F>(callback));
+            }
+#endif
+
+#ifdef USE_A2DP_PEER_NAME
+            template<typename F> void add_peer_name_callback(F &&callback) {
+                this->peer_name_callbacks_.add(std::forward<F>(callback));
+            }
+#endif
+
+#ifdef USE_A2DP_VOLUME
             template<typename F> void add_volume_change_callback(F &&callback) {
                 this->volume_change_callbacks_.add(std::forward<F>(callback));
             }
+#endif
 
             BluetoothA2DPSink* a2dp_sink() const;
 
@@ -137,34 +149,49 @@ namespace esphome
             std::string name_;
             bool auto_reconnect_;
 
-            // Metadata Callback
-            void avrc_metadata_callback(uint8_t id, const uint8_t *text);
-
-            // Playback status callbacks
-            void avrc_rn_playstatus_callback(esp_avrc_playback_stat_t playback);
-            void avrc_rn_play_pos_callback(uint32_t play_pos);
+#ifdef USE_A2DP_CONNECTION_STATE
             void on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data);
 
-            void peer_name_callback(const char* name);
+            CallbackManager<void(esp_a2d_connection_state_t, void*)> connection_state_callbacks_{};
+#endif
 
-            void rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi);
-
-            // Volume change callback
-            void avrc_rn_volumechange_callback(int volume);
-
-            // Callback fan-out to child components; they filter as needed
-            CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
+#ifdef USE_A2DP_PLAYBACK_STATUS
+            void avrc_rn_playstatus_callback(esp_avrc_playback_stat_t playback);
 
             CallbackManager<void(esp_avrc_playback_stat_t playback)> playback_status_callbacks_{};
+#endif
+
+#ifdef USE_A2DP_POS
+            void avrc_rn_play_pos_callback(uint32_t play_pos);
+
             CallbackManager<void(uint32_t pos)> playback_position_callbacks_{};
 
-            CallbackManager<void(esp_a2d_connection_state_t, void*)> connection_state_callbacks_{};
+#endif
 
-            CallbackManager<void(const char*)> peer_name_callbacks_{};
+#ifdef USE_A2DP_RSSI
+            void rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi);
 
             CallbackManager<void(esp_bt_gap_cb_param_t::read_rssi_delta_param&)> rssi_callbacks_{};
+#endif
+
+#ifdef USE_A2DP_METADATA
+            void avrc_metadata_callback(uint8_t id, const uint8_t *text);
+
+            CallbackManager<void(const A2DPSinkMetadata &)> metadata_update_callbacks_{};
+
+#endif
+
+#ifdef USE_A2DP_PEER_NAME
+            void peer_name_callback(const char* name);
+
+            CallbackManager<void(const char*)> peer_name_callbacks_{};
+#endif
+
+#ifdef USE_A2DP_VOLUME
+            void avrc_rn_volumechange_callback(int volume);
 
             CallbackManager<void(int)> volume_change_callbacks_{};
+#endif
 
 
         }; // class A2DPSinkHub

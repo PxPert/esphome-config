@@ -4,14 +4,17 @@ import esphome.config_validation as cv
 from esphome.const import (
     CONF_ID
 )
+from esphome.types import ConfigType
 
 from .. import (
     CONF_A2DP_SINK_ID,
     A2DPSinkHub,
     a2dp_sink_ns,
+    request_volume_support,
 )
 
 CODEOWNERS = ["@PxPert"]
+DEPENDENCIES = ["a2dp_sink"]
 
 A2DPSinkVolumeNumber = a2dp_sink_ns.class_(
     "A2DPSinkVolumeNumber",
@@ -19,14 +22,22 @@ A2DPSinkVolumeNumber = a2dp_sink_ns.class_(
     cg.Component,
 )
 
-CONFIG_SCHEMA = (
+
+def _request_roles(config: ConfigType) -> ConfigType:
+    """Request the number role for the A2DP Sink."""
+    request_volume_support()
+    return config
+
+
+CONFIG_SCHEMA = cv.All(
     number.number_schema(A2DPSinkVolumeNumber)
     .extend(
         {
             cv.GenerateID(CONF_A2DP_SINK_ID): cv.use_id(A2DPSinkHub),
         }
-    )
-    .add_extra(cv.only_on_esp32)
+    ),
+    _request_roles,
+    cv.only_on_esp32,
 )
 
 

@@ -4,6 +4,7 @@ from esphome.components import audio, media_source
 from esphome.const import (
     CONF_ID,
 )
+from esphome.types import ConfigType
 
 from esphome import automation
 
@@ -11,12 +12,15 @@ from .. import (
     CONF_A2DP_SINK_ID,
     A2DPSinkHub,
     a2dp_sink_ns,
+    request_playback_status_support,
+    request_connection_state_support
 )
 
 AUTO_LOAD = ["audio"]
 CODEOWNERS = ["@PxPert"]
 # DEPENDENCIES = ['uart']
 DOMAIN = "a2dpsink"
+DEPENDENCIES = ["a2dp_sink"]
 
 # CONFIG-IDs
 CONF_A2DPSINK_ID = "a2dp_sink_id"
@@ -33,6 +37,13 @@ A2DPSinkMediaSource = a2dp_sink_ns.class_(
 )
 
 
+def _request_roles(config: ConfigType) -> ConfigType:
+    """Request the media_source role for the A2DP Sink."""
+    request_playback_status_support()
+    request_connection_state_support()
+    return config
+
+
 # ------------------------------
 #  Parameter Config
 # ------------------------------
@@ -45,6 +56,7 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(CONF_A2DP_SINK_ID): cv.use_id(A2DPSinkHub),
         }
     ),
+    _request_roles,
     cv.only_on_esp32,
 )
 
