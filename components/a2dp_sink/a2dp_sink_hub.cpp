@@ -138,6 +138,16 @@ namespace esphome
                 }
             );
 
+            // Same callback to nofity when the local volume change has been completed (after the remote device has acknowledged it)
+            a2dp_sink_.set_avrc_rn_volumechange_completed(
+                [](int volume) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->avrc_rn_volumechange_callback(volume);
+                    }
+                }
+            );
+
+
             ESP_LOGW(TAG, "%s", "A2DPSink is initialized");
         }
 
@@ -155,6 +165,11 @@ namespace esphome
 
         BluetoothA2DPSink* A2DPSinkHub::a2dp_sink() const {
             return &a2dp_sink_;
+        }
+
+        void A2DPSinkHub::set_volume(uint8_t volume) {
+            ESP_LOGD(TAG, "Setting volume to: %d", volume);
+            a2dp_sink_.set_volume(volume);
         }
 
         void A2DPSinkHub::dump_config()

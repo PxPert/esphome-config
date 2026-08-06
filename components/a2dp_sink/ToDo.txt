@@ -14,7 +14,7 @@ Sensor:
 - RSSI - Done
 
 Slider:
-- Volume
+- Volume - Done
 
 Buttons:
 - Next
@@ -30,6 +30,7 @@ MediaPayer Override:
 
 A2DP Pairing via Pin + callback
 
+Add Automations callbacks
 
 - General code cleanup
   - Selective compilation of handlers/masks based on selected sensors or switches

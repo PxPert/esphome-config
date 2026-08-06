@@ -95,6 +95,9 @@ namespace esphome
 
             void stop();
 
+            /// Set the volume of the A2DP sink (0-100)
+            void set_volume(uint8_t volume);
+
             /// Converts an esp_bd_addr_t (6-byte Bluetooth address) to a human-readable
             /// string like "AA:BB:CC:DD:EE:FF".
             static std::string bd_addr_to_string(const esp_bd_addr_t& addr);
