@@ -102,7 +102,8 @@ a2dp_sink:
   on_metadata:
     then:
       - lambda: |-
-          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type, text.c_str());
+          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type);
+#          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type, text.c_str());
   on_peer_name:
     then:
       - lambda: |-
