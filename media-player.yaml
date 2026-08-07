@@ -91,14 +91,14 @@ a2dp_sink:
 #    then:
 #      - lambda: |-
 #          ESP_LOGD("a2dp", "Playback status: %u", (uint8_t)playback);
-  on_playback_position:
-    then:
-      - lambda: |-
-          ESP_LOGD("a2dp", "Playback position: %lu", (unsigned long)pos);
-#  on_rssi:
+#  on_playback_position:
 #    then:
 #      - lambda: |-
-#          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
+#          ESP_LOGD("a2dp", "Playback position: %lu", (unsigned long)pos);
+  on_rssi:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
 #  on_metadata:
 #    then:
 #      - lambda: |-
