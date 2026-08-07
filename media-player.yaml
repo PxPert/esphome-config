@@ -99,15 +99,14 @@ a2dp_sink:
 #    then:
 #      - lambda: |-
 #          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
-  on_metadata:
-    then:
-      - lambda: |-
-          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type, text.c_str());
-#  on_peer_name:
+#  on_metadata:
 #    then:
 #      - lambda: |-
-#          ESP_LOGD("a2dp", "Peer name: stub");
-#          ESP_LOGD("a2dp", "Peer name: %s", name.c_str());
+#          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type, text.c_str());
+  on_peer_name:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Peer name: %s", name.c_str());
 #  on_volume_change:
 #    then:
 #      - lambda: |-
