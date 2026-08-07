@@ -103,14 +103,14 @@ a2dp_sink:
 #    then:
 #      - lambda: |-
 #          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type, text.c_str());
-  on_peer_name:
-    then:
-      - lambda: |-
-          ESP_LOGD("a2dp", "Peer name: %s", name.c_str());
-#  on_volume_change:
+#  on_peer_name:
 #    then:
 #      - lambda: |-
-#          ESP_LOGD("a2dp", "Volume: %d", volume);
+#          ESP_LOGD("a2dp", "Peer name: %s", name.c_str());
+  on_volume_change:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Volume: %d", volume);
           
 media_source:
   - platform: sendspin
