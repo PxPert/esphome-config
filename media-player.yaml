@@ -83,7 +83,35 @@ sendspin:
 
 a2dp_sink:
   name: test
-  
+  on_connection_state:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Connection state: %u", (uint8_t)state);
+  on_playback_status:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Playback status: %u", (uint8_t)playback);
+  on_playback_position:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Playback position: %lu", (unsigned long)pos);
+  on_rssi:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
+  on_metadata:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Metadata type: %u, text: %s", (uint8_t)type, (const char*)text);
+  on_peer_name:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Peer name: %s", name);
+  on_volume_change:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Volume: %d", volume);
+          
 media_source:
   - platform: sendspin
 #    fixed_delay: 10ms
