@@ -5,6 +5,7 @@ import esphome.config_validation as cv
 from esphome.const import (
     CONF_ID,
     CONF_NAME,
+    CONF_TRIGGER_ID,
 )
 from esphome.core import CORE
 
@@ -20,6 +21,15 @@ CONF_A2DP_SINK_ID = "a2dp_sink_id"  # Used by child components
 
 CONF_A2DP_AUTO_RECONNECT = "auto_reconnect"
 
+# Automation trigger IDs
+CONF_ON_CONNECTION_STATE = "on_connection_state"
+CONF_ON_PLAYBACK_STATUS = "on_playback_status"
+CONF_ON_PLAYBACK_POSITION = "on_playback_position"
+CONF_ON_RSSI = "on_rssi"
+CONF_ON_METADATA = "on_metadata"
+CONF_ON_PEER_NAME = "on_peer_name"
+CONF_ON_VOLUME_CHANGE = "on_volume_change"
+
 
 # ------------------------------
 #  Namespace & Hub class
@@ -31,6 +41,45 @@ a2dp_sink_ns = cg.esphome_ns.namespace('a2dp_sink')
 A2DPSinkHub = a2dp_sink_ns.class_(
     'A2DPSinkHub',
     cg.Component,
+)
+
+# ------------------------------
+#  Automation Triggers
+# ------------------------------
+
+ConnectionStateTrigger = a2dp_sink_ns.class_(
+    "ConnectionStateTrigger",
+    automation.Trigger.template(),
+)
+
+PlaybackStatusTrigger = a2dp_sink_ns.class_(
+    "PlaybackStatusTrigger",
+    automation.Trigger.template(),
+)
+
+PlaybackPositionTrigger = a2dp_sink_ns.class_(
+    "PlaybackPositionTrigger",
+    automation.Trigger.template(),
+)
+
+RssiTrigger = a2dp_sink_ns.class_(
+    "RssiTrigger",
+    automation.Trigger.template(),
+)
+
+MetadataUpdateTrigger = a2dp_sink_ns.class_(
+    "MetadataUpdateTrigger",
+    automation.Trigger.template(),
+)
+
+PeerNameTrigger = a2dp_sink_ns.class_(
+    "PeerNameTrigger",
+    automation.Trigger.template(),
+)
+
+VolumeChangeTrigger = a2dp_sink_ns.class_(
+    "VolumeChangeTrigger",
+    automation.Trigger.template(),
 )
 
 
@@ -85,6 +134,53 @@ def request_connection_state_support() -> None:
 
 
 # ------------------------------
+#  Automation trigger schemas
+# ------------------------------
+
+ON_CONNECTION_STATE_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(ConnectionStateTrigger),
+    }
+)
+
+ON_PLAYBACK_STATUS_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PlaybackStatusTrigger),
+    }
+)
+
+ON_PLAYBACK_POSITION_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PlaybackPositionTrigger),
+    }
+)
+
+ON_RSSI_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(RssiTrigger),
+    }
+)
+
+ON_METADATA_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(MetadataUpdateTrigger),
+    }
+)
+
+ON_PEER_NAME_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PeerNameTrigger),
+    }
+)
+
+ON_VOLUME_CHANGE_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(VolumeChangeTrigger),
+    }
+)
+
+
+# ------------------------------
 #  Parameter Config
 # ------------------------------
 CONFIG_SCHEMA = cv.All(
@@ -93,7 +189,13 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(): cv.declare_id(A2DPSinkHub),
             cv.Required(CONF_NAME): cv.string,
             cv.Optional(CONF_A2DP_AUTO_RECONNECT, default=True): cv.boolean,
-
+            cv.Optional(CONF_ON_CONNECTION_STATE): ON_CONNECTION_STATE_SCHEMA,
+            cv.Optional(CONF_ON_PLAYBACK_STATUS): ON_PLAYBACK_STATUS_SCHEMA,
+            cv.Optional(CONF_ON_PLAYBACK_POSITION): ON_PLAYBACK_POSITION_SCHEMA,
+            cv.Optional(CONF_ON_RSSI): ON_RSSI_SCHEMA,
+            cv.Optional(CONF_ON_METADATA): ON_METADATA_SCHEMA,
+            cv.Optional(CONF_ON_PEER_NAME): ON_PEER_NAME_SCHEMA,
+            cv.Optional(CONF_ON_VOLUME_CHANGE): ON_VOLUME_CHANGE_SCHEMA,
         }
     ),
     cv.only_on_esp32,
@@ -110,6 +212,82 @@ async def to_code(config):
 
     cg.add(var.set_name(config[CONF_NAME]))
     cg.add(var.set_auto_reconnect(config[CONF_A2DP_AUTO_RECONNECT]))
+
+    # Build automation triggers
+    # Using a trigger automatically requests the corresponding feature support,
+    # so the USE_A2DP_* define is emitted and the C++ callback infrastructure
+    # is compiled in.
+
+    if CONF_ON_CONNECTION_STATE in config:
+        request_connection_state_support()
+    if CONF_ON_PLAYBACK_STATUS in config:
+        request_playback_status_support()
+    if CONF_ON_PLAYBACK_POSITION in config:
+        request_position_support()
+    if CONF_ON_RSSI in config:
+        request_rssi_support()
+    if CONF_ON_METADATA in config:
+        request_metadata_support()
+    if CONF_ON_PEER_NAME in config:
+        request_peer_name_support()
+    if CONF_ON_VOLUME_CHANGE in config:
+        request_volume_support()
+
+    for conf in config.get(CONF_ON_CONNECTION_STATE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint8, "state")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_PLAYBACK_STATUS, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint8, "playback")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_PLAYBACK_POSITION, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint32, "pos")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_RSSI, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint8, "rssi_delta")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_METADATA, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.int8, "type"), (cg.uint8, "text")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_PEER_NAME, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.std_string, "name")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_VOLUME_CHANGE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint8, "volume")],
+            conf
+        )
 
     # Emit USE_A2DP_* defines so the hub C++ can conditionally compile
     # callback infrastructure only for features the user actually needs.
@@ -128,5 +306,3 @@ async def to_code(config):
         cg.add_define("USE_A2DP_PLAYBACK_STATUS", True)
     if data.connection_state_support:
         cg.add_define("USE_A2DP_CONNECTION_STATE", True)
-
-
