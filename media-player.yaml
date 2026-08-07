@@ -95,10 +95,10 @@ a2dp_sink:
     then:
       - lambda: |-
           ESP_LOGD("a2dp", "Playback position: %lu", (unsigned long)pos);
-  on_rssi:
-    then:
-      - lambda: |-
-          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
+#  on_rssi:
+#    then:
+#      - lambda: |-
+#          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
 #  on_metadata:
 #    then:
 #      - lambda: |-
