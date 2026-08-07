@@ -261,7 +261,7 @@ async def to_code(config):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(
             trigger,
-            [(cg.uint8, "rssi_delta")],
+            [(cg.int8, "rssi_delta")],
             conf
         )
 
@@ -269,7 +269,7 @@ async def to_code(config):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(
             trigger,
-            [(cg.int8, "type"), (cg.uint8, "text")],
+            [(cg.uint8, "type"), (cg.std_string, "text")],
             conf
         )
 

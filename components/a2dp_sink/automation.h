@@ -12,22 +12,22 @@ namespace esphome {
 namespace a2dp_sink {
 
 #ifdef USE_A2DP_CONNECTION_STATE
-class ConnectionStateTrigger : public Trigger<esp_a2d_connection_state_t> {
+class ConnectionStateTrigger : public Trigger<uint8_t> {
  public:
   explicit ConnectionStateTrigger(A2DPSinkHub *parent) {
     parent->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {
-      this->trigger(state);
+      this->trigger((uint8_t)state);
     });
   }
 };
 #endif
 
 #ifdef USE_A2DP_PLAYBACK_STATUS
-class PlaybackStatusTrigger : public Trigger<esp_avrc_playback_stat_t> {
+class PlaybackStatusTrigger : public Trigger<uint8_t> {
  public:
   explicit PlaybackStatusTrigger(A2DPSinkHub *parent) {
     parent->add_playback_status_callbacks([this](esp_avrc_playback_stat_t playback) {
-      this->trigger(playback);
+      this->trigger((uint8_t)playback);
     });
   }
 };
@@ -45,7 +45,7 @@ class PlaybackPositionTrigger : public Trigger<uint32_t> {
 #endif
 
 #ifdef USE_A2DP_RSSI
-class RssiTrigger : public Trigger<int> {
+class RssiTrigger : public Trigger<int8_t> {
  public:
   explicit RssiTrigger(A2DPSinkHub *parent) {
     parent->add_rssi_callback([this](esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
@@ -60,7 +60,7 @@ class MetadataUpdateTrigger : public Trigger<uint8_t, std::string> {
  public:
   explicit MetadataUpdateTrigger(A2DPSinkHub *parent) {
     parent->add_metadata_update_callback([this](const A2DPSinkMetadata &meta) {
-      this->trigger(meta.type(), std::string(meta.text()));
+      this->trigger(meta.type(), std::string((const char*)meta.text()));
     });
   }
 };
