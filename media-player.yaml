@@ -107,7 +107,7 @@ a2dp_sink:
   on_peer_name:
     then:
       - lambda: |-
-          ESP_LOGD("a2dp", "Peer name: %s");
+          ESP_LOGD("a2dp", "Peer name: stub");
 #          ESP_LOGD("a2dp", "Peer name: %s", name.c_str());
   on_volume_change:
     then:
