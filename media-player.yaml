@@ -162,49 +162,49 @@ sensor:
     type: track
     name: traccia
     id: sensor_sendspin_1
-#  - platform: a2dp_sink
-#    type: tracknum
-#    id: "btTrackNr"
-#    name: "Track Number"
-#  - platform: a2dp_sink
-#    type: playingtime
-#    id: "btPlayingTime"
-#    name: "Playing Time"
-#  - platform: a2dp_sink
-#    type: num_tracks
-#    id: "btNumTracks"
-#    name: "Total Tracks"
-#  - platform: a2dp_sink
-#    type: trackposition
-#    id: "btTrackPos"
-#    name: "Track Position"
-#  - platform: a2dp_sink
-#    type: rssi
-#    id: "btRSSI"
-#    name: "RSSI"
+  - platform: a2dp_sink
+    type: tracknum
+    id: "btTrackNr"
+    name: "Track Number"
+  - platform: a2dp_sink
+    type: playingtime
+    id: "btPlayingTime"
+    name: "Playing Time"
+  - platform: a2dp_sink
+    type: num_tracks
+    id: "btNumTracks"
+    name: "Total Tracks"
+  - platform: a2dp_sink
+    type: trackposition
+    id: "btTrackPos"
+    name: "Track Position"
+  - platform: a2dp_sink
+    type: rssi
+    id: "btRSSI"
+    name: "RSSI"
 
         
 text_sensor:
-#  - platform: a2dp_sink
-#    id: "bt_artist"
-#    type: "artist"
-#    name: "Artist"
-#  - platform: a2dp_sink
-#    id: "bt_album"
-#    type: "album"
-#    name: "Album"
-#  - platform: a2dp_sink
-#    id: "bt_titlea"
-#    type: "title"
-#    name: "Titlea"
-#  - platform: a2dp_sink
-#    id: "bt_peername"
-#    type: "peername"
-#    name: "Peer name"
-#  - platform: a2dp_sink
-#    id: "bt_peeraddr"
-#    type: "peeraddr"
-#    name: "Peer address"
+  - platform: a2dp_sink
+    id: "bt_artist"
+    type: "artist"
+    name: "Artist"
+  - platform: a2dp_sink
+    id: "bt_album"
+    type: "album"
+    name: "Album"
+  - platform: a2dp_sink
+    id: "bt_titlea"
+    type: "title"
+    name: "Title"
+  - platform: a2dp_sink
+    id: "bt_peername"
+    type: "peername"
+    name: "Peer name"
+  - platform: a2dp_sink
+    id: "bt_peeraddr"
+    type: "peeraddr"
+    name: "Peer address"
 #  - platform: wifi_info
 #    ip_address:
 #      name: "IP Address"
