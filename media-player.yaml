@@ -154,8 +154,8 @@ speaker:
 #    sample_rate: 44100
 
 number:
-#  - platform: a2dp_sink
-#    name: "Volume"
+  - platform: a2dp_sink
+    name: "Volume"
     
 sensor:
   - platform: sendspin
