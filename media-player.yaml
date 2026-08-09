@@ -189,9 +189,11 @@ sensor:
     name: "RSSI"
   - platform: a2dp_sink
     type: samplereate
+    id: "btSampleRate"
     name: "A2DP Sample Rate"
   - platform: a2dp_sink
     type: channels
+    id: "btChannels"
     name: "A2DP Channels"
         
 text_sensor:
