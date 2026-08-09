@@ -10,7 +10,8 @@ from .. import (
     a2dp_sink_ns,
     request_position_support,
     request_rssi_support,
-    request_metadata_support
+    request_metadata_support,
+    request_sample_rate_support,
 )
 
 CODEOWNERS = ["@PxPert"]
@@ -34,6 +35,18 @@ A2DPSinkRssiSensor = a2dp_sink_ns.class_(
     cg.Component,
 )
 
+A2DPSinkSampleRateSensor = a2dp_sink_ns.class_(
+    "A2DPSinkSampleRateSensor",
+    sensor.Sensor,
+    cg.Component,
+)
+
+A2DPSinkChannelsSensor = a2dp_sink_ns.class_(
+    "A2DPSinkChannelsSensor",
+    sensor.Sensor,
+    cg.Component,
+)
+
 A2DPSinkNumericMetadataTypes = a2dp_sink_ns.enum("A2DPSinkMetadataTypes", is_class=True)
 A2DPSINK_NUMERIC_METADATA_TYPES = {
     "tracknum": A2DPSinkNumericMetadataTypes.TRACKNUM,
@@ -41,6 +54,8 @@ A2DPSINK_NUMERIC_METADATA_TYPES = {
     "num_tracks": A2DPSinkNumericMetadataTypes.NUM_TRACKS,
     "trackposition": "",
     "rssi": "",
+    "samplereate": "",
+    "channels": "",
 }
 
 A2DPSINK_NUMERIC_TYPES = {
@@ -49,6 +64,8 @@ A2DPSINK_NUMERIC_TYPES = {
     "num_tracks": A2DPMetadataNumericSensor,
     "trackposition": A2DPSinkTrackPositionSensor,
     "rssi": A2DPSinkRssiSensor,
+    "samplereate": A2DPSinkSampleRateSensor,
+    "channels": A2DPSinkChannelsSensor,
 }
 
 A2DPSINK_NUMERIC_REQUEST_MAP = {
@@ -57,6 +74,8 @@ A2DPSINK_NUMERIC_REQUEST_MAP = {
     "num_tracks":    request_metadata_support,
     "trackposition": request_position_support,
     "rssi":          request_rssi_support,
+    "samplereate":   request_sample_rate_support,
+    "channels":      request_sample_rate_support,
 }
 
 def _validate_type(config):

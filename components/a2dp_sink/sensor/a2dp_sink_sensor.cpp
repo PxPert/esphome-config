@@ -60,4 +60,24 @@ void A2DPSinkRssiSensor::setup() {
 
 #endif
 
+#ifdef USE_A2DP_SAMPLE_RATE
+
+void A2DPSinkSampleRateSensor::setup() {
+  this->disable_loop();
+
+  this->parent_->add_sample_rate_callback([this](uint16_t sample_rate) {
+    this->publish_if_changed_((float)sample_rate);
+  });
+}
+
+void A2DPSinkChannelsSensor::setup() {
+  this->disable_loop();
+
+  this->parent_->add_sample_rate_callback([this](uint16_t /*sample_rate*/) {
+    this->publish_if_changed_((float)this->parent_->a2dp_sink()->channels());
+  });
+}
+
+#endif
+
 }  // namespace esphome::a2dp_sink

@@ -50,4 +50,20 @@ class A2DPSinkRssiSensor : public A2DPSinkNumericSensor
 
 #endif
 
+#ifdef USE_A2DP_SAMPLE_RATE
+
+class A2DPSinkSampleRateSensor : public A2DPSinkNumericSensor
+{
+ public:
+  void setup() override;
+};
+
+class A2DPSinkChannelsSensor : public A2DPSinkNumericSensor
+{
+ public:
+  void setup() override;
+};
+
+#endif
+
 }  // namespace esphome::a2dp_sink

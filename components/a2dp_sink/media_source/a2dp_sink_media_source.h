@@ -18,11 +18,10 @@ namespace esphome::a2dp_sink {
             void dump_config() override;
 
             // MediaSource interface implementation
-            bool play_uri(const std::string &uri) override;
-            void handle_command(media_source::MediaSourceCommand command) override;
-            bool can_handle(const std::string &uri) const override;
-
-
+            virtual bool play_uri(const std::string &uri) override;
+            virtual void handle_command(media_source::MediaSourceCommand command) override;
+            virtual bool can_handle(const std::string &uri) const override;
+            virtual bool has_internal_playlist() const { return true; }
 
 
         protected:
