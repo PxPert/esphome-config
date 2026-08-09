@@ -10,7 +10,8 @@ esphome:
 #    - SBCDecoder=https://github.com/pschatzmann/arduino-libsbc
 #    - AACDecoder=https://github.com/pschatzmann/arduino-libhelix
 #    - AudioTools=https://github.com/pschatzmann/arduino-audio-tools
-    - BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
+#    - BluetoothA2DPSink=https://github.com/pschatzmann/ESP32-A2DP
+    - BluetoothA2DPSink=lib/ESP32-A2DP
   platformio_options:
     build_flags: 
       - -DUSE_DEFAULT_STDLIB
