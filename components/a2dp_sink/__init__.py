@@ -29,6 +29,7 @@ CONF_ON_RSSI = "on_rssi"
 CONF_ON_METADATA = "on_metadata"
 CONF_ON_PEER_NAME = "on_peer_name"
 CONF_ON_VOLUME_CHANGE = "on_volume_change"
+CONF_ON_SAMPLE_RATE = "on_sample_rate"
 
 
 # ------------------------------
@@ -82,6 +83,11 @@ VolumeChangeTrigger = a2dp_sink_ns.class_(
     automation.Trigger.template(),
 )
 
+SampleRateTrigger = a2dp_sink_ns.class_(
+    "SampleRateTrigger",
+    automation.Trigger.template(),
+)
+
 
 # ------------------------------
 #  Feature flags — subcomponents call request_*_support() to opt in
@@ -96,6 +102,7 @@ class A2dpSinkConfiguration:
     volume_support: bool = False
     playback_status_support: bool = False
     connection_state_support: bool = False
+    sample_rate_support: bool = False
 
 
 def _get_data() -> A2dpSinkConfiguration:
@@ -130,6 +137,10 @@ def request_playback_status_support() -> None:
 def request_connection_state_support() -> None:
     """Request connection state notifications support for A2DP Sink."""
     _get_data().connection_state_support = True
+
+def request_sample_rate_support() -> None:
+    """Request sample rate change notifications support for A2DP Sink."""
+    _get_data().sample_rate_support = True
 
 
 
@@ -179,6 +190,12 @@ ON_VOLUME_CHANGE_SCHEMA = automation.validate_automation(
     }
 )
 
+ON_SAMPLE_RATE_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SampleRateTrigger),
+    }
+)
+
 
 # ------------------------------
 #  Parameter Config
@@ -196,6 +213,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ON_METADATA): ON_METADATA_SCHEMA,
             cv.Optional(CONF_ON_PEER_NAME): ON_PEER_NAME_SCHEMA,
             cv.Optional(CONF_ON_VOLUME_CHANGE): ON_VOLUME_CHANGE_SCHEMA,
+            cv.Optional(CONF_ON_SAMPLE_RATE): ON_SAMPLE_RATE_SCHEMA,
         }
     ),
     cv.only_on_esp32,
@@ -232,6 +250,8 @@ async def to_code(config):
         request_peer_name_support()
     if CONF_ON_VOLUME_CHANGE in config:
         request_volume_support()
+    if CONF_ON_SAMPLE_RATE in config:
+        request_sample_rate_support()
 
     for conf in config.get(CONF_ON_CONNECTION_STATE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
@@ -289,6 +309,14 @@ async def to_code(config):
             conf
         )
 
+    for conf in config.get(CONF_ON_SAMPLE_RATE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint16, "sample_rate")],
+            conf
+        )
+
     # Emit USE_A2DP_* defines so the hub C++ can conditionally compile
     # callback infrastructure only for features the user actually needs.
     data = _get_data()
@@ -306,3 +334,5 @@ async def to_code(config):
         cg.add_define("USE_A2DP_PLAYBACK_STATUS", True)
     if data.connection_state_support:
         cg.add_define("USE_A2DP_CONNECTION_STATE", True)
+    if data.sample_rate_support:
+        cg.add_define("USE_A2DP_SAMPLE_RATE", True)

@@ -110,6 +110,12 @@ namespace esphome
             }
 #endif
 
+#ifdef USE_A2DP_SAMPLE_RATE
+            template<typename F> void add_sample_rate_callback(F &&callback) {
+                this->sample_rate_callbacks_.add(std::forward<F>(callback));
+            }
+#endif
+
             BluetoothA2DPSink* a2dp_sink() const;
 
             void start();
@@ -200,6 +206,12 @@ namespace esphome
             void avrc_rn_volumechange_callback(int volume);
 
             CallbackManager<void(int)> volume_change_callbacks_{};
+#endif
+
+#ifdef USE_A2DP_SAMPLE_RATE
+            void sample_rate_callback(uint16_t sample_rate);
+
+            CallbackManager<void(uint16_t)> sample_rate_callbacks_{};
 #endif
 
 

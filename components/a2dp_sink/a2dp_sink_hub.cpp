@@ -42,6 +42,13 @@ namespace esphome
         }
 #endif
 
+#ifdef USE_A2DP_SAMPLE_RATE
+        void A2DPSinkHub::sample_rate_callback(uint16_t sample_rate) {
+            ESP_LOGD(TAG, "AVRC sample rate change: %d", sample_rate);
+            this->sample_rate_callbacks_.call(sample_rate);
+        }
+#endif
+
 #ifdef USE_A2DP_CONNECTION_STATE
         void A2DPSinkHub::on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data) {
             ESP_LOGD(TAG, "A2DP connection state changed: %d", (uint8_t)state);
@@ -166,6 +173,19 @@ namespace esphome
                 [](int volume) {
                     if (g_a2dp_hub_instance != nullptr) {
                         g_a2dp_hub_instance->avrc_rn_volumechange_callback(volume);
+                    }
+                }
+            );
+#endif
+
+#ifdef USE_A2DP_SAMPLE_RATE
+            /*
+             * Sample rate change callback
+             */
+            a2dp_sink_.set_sample_rate_callback(
+                [](uint16_t sample_rate) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->sample_rate_callback(sample_rate);
                     }
                 }
             );

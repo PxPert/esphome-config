@@ -13,7 +13,8 @@ from .. import (
     A2DPSinkHub,
     a2dp_sink_ns,
     request_playback_status_support,
-    request_connection_state_support
+    request_connection_state_support,
+    request_sample_rate_support
 )
 
 AUTO_LOAD = ["audio"]
@@ -41,6 +42,7 @@ def _request_roles(config: ConfigType) -> ConfigType:
     """Request the media_source role for the A2DP Sink."""
     request_playback_status_support()
     request_connection_state_support()
+    request_sample_rate_support()
     return config
 
 

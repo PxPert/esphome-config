@@ -22,13 +22,14 @@ namespace esphome::a2dp_sink {
             void handle_command(media_source::MediaSourceCommand command) override;
             bool can_handle(const std::string &uri) const override;
 
-            void a2dp_data_stream(const uint8_t *data, uint32_t length);
 
 
 
         protected:
-            std::atomic<bool> pause_{false};
+            void a2dp_data_stream(const uint8_t *data, uint32_t length);
 
+            std::atomic<bool> pause_{false};
+            audio::AudioStreamInfo stream_info_;
 
         }; // class A2DPSink
 

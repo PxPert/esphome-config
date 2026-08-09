@@ -41,8 +41,8 @@ Add Automations callbacks
 - Move sensors to the correct sections (For example diagnostic sensors like RSSI or device name)
 
 - Add documentation to each component
-
+- Change duration sensors from ms to s
 
 Fixes:
 - No autoplay when connected to a linux pc
-- Bad sample rate when connected to a linux pc, probably need to set dynamic sample rate & channels
+- Bad sample rate when connected to a linux pc, probably need to set dynamic sample rate & channels - Done (Dynamic sample rate & channels implemented)

@@ -88,5 +88,16 @@ class VolumeChangeTrigger : public Trigger<uint8_t> {
 };
 #endif
 
+#ifdef USE_A2DP_SAMPLE_RATE
+class SampleRateTrigger : public Trigger<uint16_t> {
+ public:
+  explicit SampleRateTrigger(A2DPSinkHub *parent) {
+    parent->add_sample_rate_callback([this](uint16_t sample_rate) {
+      this->trigger(sample_rate);
+    });
+  }
+};
+#endif
+
 }  // namespace a2dp_sink
 }  // namespace esphome

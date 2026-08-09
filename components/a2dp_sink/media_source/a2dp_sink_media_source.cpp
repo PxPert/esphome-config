@@ -57,6 +57,14 @@ namespace esphome::a2dp_sink {
                 this->pause_.store(false, std::memory_order_relaxed);
             });
 
+            this->parent_->add_sample_rate_callback([this](uint16_t sample_rate) {
+                this->stream_info_ = audio::AudioStreamInfo(
+                    16, 
+                    this->parent_->a2dp_sink()->channels(), 
+                    sample_rate
+                );                
+            });
+
             this->pause_.store(false, std::memory_order_relaxed);
 
             ESP_LOGW(TAG, "A2DPSink is initialized");
@@ -167,8 +175,7 @@ namespace esphome::a2dp_sink {
                 return;
             }
 
-            static audio::AudioStreamInfo i(16, 2, 44100);
-            this->write_output(data, length, AUDIO_WRITE_TIMEOUT_MS, i);
+            this->write_output(data, length, AUDIO_WRITE_TIMEOUT_MS, this->stream_info_);
 
         }
 
