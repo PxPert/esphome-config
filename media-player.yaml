@@ -111,6 +111,11 @@ a2dp_sink:
     then:
       - lambda: |-
           ESP_LOGD("a2dp", "Volume: %d", volume);
+  on_sample_rate:
+    then:
+      - logger.log:
+          format: "Sample rate changed to: %d"
+          args: ["sample_rate"]
           
 media_source:
   - platform: sendspin
