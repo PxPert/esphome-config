@@ -98,6 +98,7 @@ media_player:
 #        - source_sendspin
     media_pipeline: 
       format: FLAC
+      num_channels: 1
       sample_rate: 44100
       speaker: echo_speaker
       sources:
