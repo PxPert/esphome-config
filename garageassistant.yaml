@@ -19,6 +19,9 @@ esp32:
       minimum_chip_revision: "1.1"
 logger:
   level: DEBUG
+  task_log_buffer_size: 0B
+  tx_buffer_size: 160B
+  
 
   
 api:
@@ -61,7 +64,7 @@ speaker:
     dac_type: external
     num_channels: 1
     bits_per_sample: 16bit
-    buffer_duration: 60ms
+    buffer_duration: 100ms
   - platform: mixer
     num_channels: 1
     bits_per_sample: 16
@@ -98,10 +101,13 @@ media_player:
   - platform: speaker
     name: VoiceAssistant
     id: va_media_player
+    
     announcement_pipeline:
       speaker: src_va
+      num_channels: 1
       format: WAV
-    buffer_size: 6000
+      sample_rate: 44100
+    buffer_size: 4000
     volume_min: 0.4
     files:
       - id: timer_finished_wave_file
