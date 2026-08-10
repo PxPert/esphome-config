@@ -63,7 +63,7 @@ speaker:
     i2s_dout_pin: GPIO22
     dac_type: external
     bits_per_sample: 16bit
-    sample_rate: 16000
+    sample_rate: 48000
     channel: stereo  # The Echo has poor playback audio quality when using mon audio
     buffer_duration: 10ms
 #    buffer_duration: 60ms
@@ -87,7 +87,7 @@ media_player:
     announcement_pipeline:
       speaker: echo_speaker
       format: FLAC
-      sample_rate: 16000
+      sample_rate: 48000
       sources:
         - source_http
         - source_file
