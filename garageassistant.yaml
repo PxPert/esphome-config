@@ -65,7 +65,8 @@ speaker:
     bits_per_sample: 16bit
     sample_rate: 16000
     channel: stereo  # The Echo has poor playback audio quality when using mon audio
-    buffer_duration: 60ms
+    buffer_duration: 10ms
+#    buffer_duration: 60ms
 
 audio_file:
   file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
@@ -86,6 +87,7 @@ media_player:
     announcement_pipeline:
       speaker: echo_speaker
       format: FLAC
+      sample_rate: 16000
       sources:
         - source_http
         - source_file
