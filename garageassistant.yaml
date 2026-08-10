@@ -84,7 +84,7 @@ media_source:
     id: source_file
   - platform: sendspin
     id: source_sendspin
-    buffer_size: 30000
+    buffer_size: 50000
 
 media_player:
   - platform: sendspin
