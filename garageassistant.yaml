@@ -90,7 +90,7 @@ media_player:
     id: echo_media_player
     announcement_pipeline:
       speaker: echo_speaker
-      format: MP3
+      format: FLAC
       sample_rate: 44100
       sources:
         - source_http
