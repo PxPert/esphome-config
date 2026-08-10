@@ -92,7 +92,7 @@ http_request:
 media_source:
   - platform: audio_http
     id: source_http
-#    buffer_size: 100000
+    buffer_size: 5000
 #  - platform: audio_file
 #    id: source_file
   - platform: sendspin
