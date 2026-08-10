@@ -13,9 +13,12 @@ esp32:
   cpu_frequency: 240MHz
   framework:
     type: esp-idf
+    version: 6.0.2
     advanced:
       sram1_as_iram: true
+      
 logger:
+  
 api:
 
 ota:
