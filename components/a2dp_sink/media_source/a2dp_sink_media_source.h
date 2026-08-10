@@ -5,8 +5,6 @@
 #include "esphome/core/component.h"
 #include "../a2dp_sink_hub.h"
 
-#include <atomic>
-
 
 namespace esphome::a2dp_sink {
 
@@ -15,6 +13,7 @@ namespace esphome::a2dp_sink {
         {
         public:
             void setup() override;
+            void loop() override;
             void dump_config() override;
 
             // MediaSource interface implementation
@@ -27,7 +26,6 @@ namespace esphome::a2dp_sink {
         protected:
             void a2dp_data_stream(const uint8_t *data, uint32_t length);
 
-            std::atomic<bool> pause_{false};
             audio::AudioStreamInfo stream_info_;
 
         }; // class A2DPSink

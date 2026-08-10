@@ -42,10 +42,24 @@ namespace esphome
         }
 #endif
 
+#ifdef USE_A2DP_AUDIO_STATE
+        void A2DPSinkHub::audio_state_callback(esp_a2d_audio_state_t state) {
+            ESP_LOGD(TAG, "A2DP audio state changed: %d", (uint8_t)state);
+            this->audio_state_callbacks_.call(state);
+        }
+#endif
+
 #ifdef USE_A2DP_SAMPLE_RATE
         void A2DPSinkHub::sample_rate_callback(uint16_t sample_rate) {
             ESP_LOGD(TAG, "AVRC sample rate change: %d", sample_rate);
             this->sample_rate_callbacks_.call(sample_rate);
+        }
+#endif
+
+#ifdef USE_A2DP_AVRCP_CONNECTION_STATE
+        void A2DPSinkHub::avrc_connection_state_callback(bool connected) {
+            ESP_LOGD(TAG, "AVRCP connection state changed: %s", connected ? "connected" : "disconnected");
+            this->avrc_connection_state_callbacks_.call(connected);
         }
 #endif
 
@@ -173,6 +187,32 @@ namespace esphome
                 [](int volume) {
                     if (g_a2dp_hub_instance != nullptr) {
                         g_a2dp_hub_instance->avrc_rn_volumechange_callback(volume);
+                    }
+                }
+            );
+#endif
+
+#ifdef USE_A2DP_AUDIO_STATE
+            /*
+             * Audio state callback
+             */
+            a2dp_sink_.set_on_audio_state_changed(
+                [](esp_a2d_audio_state_t state, void *) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->audio_state_callback(state);
+                    }
+                }
+            );
+#endif
+
+#ifdef USE_A2DP_AVRCP_CONNECTION_STATE
+            /*
+             * AVRCP connection state callback
+             */
+            a2dp_sink_.set_avrc_connection_state_callback(
+                [](bool connected) {
+                    if (g_a2dp_hub_instance != nullptr) {
+                        g_a2dp_hub_instance->avrc_connection_state_callback(connected);
                     }
                 }
             );

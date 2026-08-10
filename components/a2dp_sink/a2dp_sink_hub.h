@@ -110,6 +110,18 @@ namespace esphome
             }
 #endif
 
+#ifdef USE_A2DP_AUDIO_STATE
+            template<typename F> void add_audio_state_callback(F &&callback) {
+                this->audio_state_callbacks_.add(std::forward<F>(callback));
+            }
+#endif
+
+#ifdef USE_A2DP_AVRCP_CONNECTION_STATE
+            template<typename F> void add_avrc_connection_state_callback(F &&callback) {
+                this->avrc_connection_state_callbacks_.add(std::forward<F>(callback));
+            }
+#endif
+
 #ifdef USE_A2DP_SAMPLE_RATE
             template<typename F> void add_sample_rate_callback(F &&callback) {
                 this->sample_rate_callbacks_.add(std::forward<F>(callback));
@@ -206,6 +218,18 @@ namespace esphome
             void avrc_rn_volumechange_callback(int volume);
 
             CallbackManager<void(int)> volume_change_callbacks_{};
+#endif
+
+#ifdef USE_A2DP_AUDIO_STATE
+            void audio_state_callback(esp_a2d_audio_state_t state);
+
+            CallbackManager<void(esp_a2d_audio_state_t)> audio_state_callbacks_{};
+#endif
+
+#ifdef USE_A2DP_AVRCP_CONNECTION_STATE
+            void avrc_connection_state_callback(bool connected);
+
+            CallbackManager<void(bool)> avrc_connection_state_callbacks_{};
 #endif
 
 #ifdef USE_A2DP_SAMPLE_RATE

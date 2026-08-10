@@ -14,7 +14,9 @@ from .. import (
     a2dp_sink_ns,
     request_playback_status_support,
     request_connection_state_support,
-    request_sample_rate_support
+    request_sample_rate_support,
+    request_avrcp_connection_state_support,
+    request_audio_state_support
 )
 
 AUTO_LOAD = ["audio"]
@@ -43,6 +45,8 @@ def _request_roles(config: ConfigType) -> ConfigType:
     request_playback_status_support()
     request_connection_state_support()
     request_sample_rate_support()
+    request_avrcp_connection_state_support()
+    request_audio_state_support()
     return config
 
 

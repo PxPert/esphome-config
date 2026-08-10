@@ -30,6 +30,8 @@ CONF_ON_METADATA = "on_metadata"
 CONF_ON_PEER_NAME = "on_peer_name"
 CONF_ON_VOLUME_CHANGE = "on_volume_change"
 CONF_ON_SAMPLE_RATE = "on_sample_rate"
+CONF_ON_AVRCP_CONNECTION_STATE = "on_avrcp_connection_state"
+CONF_ON_AUDIO_STATE = "on_audio_state"
 
 
 # ------------------------------
@@ -88,6 +90,16 @@ SampleRateTrigger = a2dp_sink_ns.class_(
     automation.Trigger.template(),
 )
 
+AVRCPConnectionStateTrigger = a2dp_sink_ns.class_(
+    "AVRCPConnectionStateTrigger",
+    automation.Trigger.template(),
+)
+
+AudioStateTrigger = a2dp_sink_ns.class_(
+    "AudioStateTrigger",
+    automation.Trigger.template(),
+)
+
 
 # ------------------------------
 #  Feature flags — subcomponents call request_*_support() to opt in
@@ -103,6 +115,8 @@ class A2dpSinkConfiguration:
     playback_status_support: bool = False
     connection_state_support: bool = False
     sample_rate_support: bool = False
+    avrcp_connection_state_support: bool = False
+    audio_state_support: bool = False
 
 
 def _get_data() -> A2dpSinkConfiguration:
@@ -141,6 +155,14 @@ def request_connection_state_support() -> None:
 def request_sample_rate_support() -> None:
     """Request sample rate change notifications support for A2DP Sink."""
     _get_data().sample_rate_support = True
+
+def request_avrcp_connection_state_support() -> None:
+    """Request AVRCP connection state notifications support for A2DP Sink."""
+    _get_data().avrcp_connection_state_support = True
+
+def request_audio_state_support() -> None:
+    """Request audio state notifications support for A2DP Sink."""
+    _get_data().audio_state_support = True
 
 
 
@@ -196,6 +218,18 @@ ON_SAMPLE_RATE_SCHEMA = automation.validate_automation(
     }
 )
 
+ON_AVRCP_CONNECTION_STATE_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(AVRCPConnectionStateTrigger),
+    }
+)
+
+ON_AUDIO_STATE_SCHEMA = automation.validate_automation(
+    {
+        cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(AudioStateTrigger),
+    }
+)
+
 
 # ------------------------------
 #  Parameter Config
@@ -214,6 +248,8 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ON_PEER_NAME): ON_PEER_NAME_SCHEMA,
             cv.Optional(CONF_ON_VOLUME_CHANGE): ON_VOLUME_CHANGE_SCHEMA,
             cv.Optional(CONF_ON_SAMPLE_RATE): ON_SAMPLE_RATE_SCHEMA,
+            cv.Optional(CONF_ON_AVRCP_CONNECTION_STATE): ON_AVRCP_CONNECTION_STATE_SCHEMA,
+            cv.Optional(CONF_ON_AUDIO_STATE): ON_AUDIO_STATE_SCHEMA,
         }
     ),
     cv.only_on_esp32,
@@ -252,6 +288,10 @@ async def to_code(config):
         request_volume_support()
     if CONF_ON_SAMPLE_RATE in config:
         request_sample_rate_support()
+    if CONF_ON_AVRCP_CONNECTION_STATE in config:
+        request_avrcp_connection_state_support()
+    if CONF_ON_AUDIO_STATE in config:
+        request_audio_state_support()
 
     for conf in config.get(CONF_ON_CONNECTION_STATE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
@@ -317,6 +357,22 @@ async def to_code(config):
             conf
         )
 
+    for conf in config.get(CONF_ON_AVRCP_CONNECTION_STATE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.bool_, "connected")],
+            conf
+        )
+
+    for conf in config.get(CONF_ON_AUDIO_STATE, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(
+            trigger,
+            [(cg.uint8, "state")],
+            conf
+        )
+
     # Emit USE_A2DP_* defines so the hub C++ can conditionally compile
     # callback infrastructure only for features the user actually needs.
     data = _get_data()
@@ -336,3 +392,7 @@ async def to_code(config):
         cg.add_define("USE_A2DP_CONNECTION_STATE", True)
     if data.sample_rate_support:
         cg.add_define("USE_A2DP_SAMPLE_RATE", True)
+    if data.avrcp_connection_state_support:
+        cg.add_define("USE_A2DP_AVRCP_CONNECTION_STATE", True)
+    if data.audio_state_support:
+        cg.add_define("USE_A2DP_AUDIO_STATE", True)

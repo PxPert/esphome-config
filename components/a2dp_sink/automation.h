@@ -88,12 +88,34 @@ class VolumeChangeTrigger : public Trigger<uint8_t> {
 };
 #endif
 
+#ifdef USE_A2DP_AUDIO_STATE
+class AudioStateTrigger : public Trigger<uint8_t> {
+ public:
+  explicit AudioStateTrigger(A2DPSinkHub *parent) {
+    parent->add_audio_state_callback([this](esp_a2d_audio_state_t state) {
+      this->trigger((uint8_t)state);
+    });
+  }
+};
+#endif
+
 #ifdef USE_A2DP_SAMPLE_RATE
 class SampleRateTrigger : public Trigger<uint16_t> {
  public:
   explicit SampleRateTrigger(A2DPSinkHub *parent) {
     parent->add_sample_rate_callback([this](uint16_t sample_rate) {
       this->trigger(sample_rate);
+    });
+  }
+};
+#endif
+
+#ifdef USE_A2DP_AVRCP_CONNECTION_STATE
+class AVRCPConnectionStateTrigger : public Trigger<bool> {
+ public:
+  explicit AVRCPConnectionStateTrigger(A2DPSinkHub *parent) {
+    parent->add_avrc_connection_state_callback([this](bool connected) {
+      this->trigger(connected);
     });
   }
 };

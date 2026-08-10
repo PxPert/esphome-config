@@ -17,6 +17,19 @@ namespace esphome::a2dp_sink {
 
         static A2DPSinkMediaSource *g_a2dp_sink_instance = nullptr;
 
+        void A2DPSinkMediaSource::loop() {
+            /*
+            static unsigned long int last_stub_time_ = 0;
+
+            if (millis() - last_stub_time_ >= 5000) {
+                // --- comando stub qui ---
+                ESP_LOGI(TAG, "Stub executed %d - audio state: %d", (int)this->get_state(),this->parent_->a2dp_sink()->get_audio_state());
+                // -------------------------
+                last_stub_time_ = millis();
+            }
+            */
+
+        }
         void A2DPSinkMediaSource::setup()
         {
             ESP_LOGW(TAG, "A2DPSink initializing");
@@ -33,28 +46,44 @@ namespace esphome::a2dp_sink {
                 }
             );
 
+            this->parent_->add_avrc_connection_state_callback([this](bool connected) {
+                if (connected) {
+                    this->parent_->play_a2dp();
+                }
+            });
+
+            this->parent_->add_audio_state_callback([this](esp_a2d_audio_state_t state) {
+                ESP_LOGI(TAG, "audio_state_callback: %d", state);
+                if (state == ESP_A2D_AUDIO_STATE_STARTED) {
+                    this->set_state_(media_source::MediaSourceState::PLAYING);
+                } else {
+                    if (this->get_state() == media_source::MediaSourceState::PLAYING) {
+                    this->set_state_(media_source::MediaSourceState::IDLE);
+                    }
+                }
+            });
 
             this->parent_->add_playback_status_callbacks([this](esp_avrc_playback_stat_t playback) {
                 ESP_LOGE(TAG, "Play status: %d", playback);
                 switch (playback) {
                     case ESP_AVRC_PLAYBACK_PLAYING:
+                        //this->request_play_uri_(URI_PREFIX);
                         this->set_state_(media_source::MediaSourceState::PLAYING);
-                        this->pause_.store(false, std::memory_order_relaxed);
                         break;
                     case ESP_AVRC_PLAYBACK_STOPPED:
                         this->set_state_(media_source::MediaSourceState::IDLE);
-                        this->pause_.store(false, std::memory_order_relaxed);
                         break;
                     case ESP_AVRC_PLAYBACK_PAUSED:
                         this->set_state_(media_source::MediaSourceState::PAUSED);
-                        this->pause_.store(true, std::memory_order_relaxed);
                         break;
                 }
             });
 
             this->parent_->add_connection_state_callbacks([this](esp_a2d_connection_state_t state, void *user_data) {
                 this->set_state_(media_source::MediaSourceState::IDLE);
-                this->pause_.store(false, std::memory_order_relaxed);
+                if (state == ESP_A2D_CONNECTION_STATE_CONNECTED) {
+                    this->request_play_uri_(URI_PREFIX);
+                }
             });
 
             this->parent_->add_sample_rate_callback([this](uint16_t sample_rate) {
@@ -65,22 +94,17 @@ namespace esphome::a2dp_sink {
                 );                
             });
 
-            this->pause_.store(false, std::memory_order_relaxed);
-
             ESP_LOGW(TAG, "A2DPSink is initialized");
         }
-
 
         void A2DPSinkMediaSource::dump_config()
         {
             ESP_LOGCONFIG(TAG, "A2DP Sink Media Source");
         }
 
-
-
-
         bool A2DPSinkMediaSource::play_uri(const std::string &uri) {
             ESP_LOGE(TAG, "Play URI: '%s'", uri.c_str());
+            
             if (!this->is_ready() || this->is_failed() || this->status_has_error()) {
                 return false;
             }
@@ -96,10 +120,8 @@ namespace esphome::a2dp_sink {
                 ESP_LOGE(TAG, "Invalid URI: '%s'", uri.c_str());
                 return false;
             }
-            ESP_LOGE(TAG, "Play URI: '%s' OK!", uri.c_str());
-                        // a2dp_sink_.start("MyMusic");
-            this->set_state_(media_source::MediaSourceState::PLAYING);
 
+            ESP_LOGE(TAG, "Play URI: '%s' OK!", uri.c_str());
             return true;
         }
 
@@ -107,54 +129,51 @@ namespace esphome::a2dp_sink {
             ESP_LOGE(TAG, "handle_command requested: %d", command);
             switch (command) {
                 case media_source::MediaSourceCommand::STOP:
+                    ESP_LOGD(TAG, "Stop requested");
                     if (
-                        (this->get_state() == media_source::MediaSourceState::PLAYING) 
-                        ||
-                        (this->get_state() == media_source::MediaSourceState::PAUSED)
+                        (this->get_state() != media_source::MediaSourceState::PLAYING) 
+                        &&
+                        (this->get_state() != media_source::MediaSourceState::PAUSED)
                     )
                     {
                         ESP_LOGW(TAG, "Cannot stop: source is not playing playing or paused");
                         return;
                     }
-                    ESP_LOGD(TAG, "Stop requested");
-                    this->parent_->stop_a2dp();
-                    this->pause_.store(false, std::memory_order_relaxed);
+                    this->parent_->set_connected(false);
                     this->set_state_(media_source::MediaSourceState::IDLE);
                 break;
                 case media_source::MediaSourceCommand::PAUSE:
+                    ESP_LOGD(TAG, "Pause requested");
                     if (this->get_state() != media_source::MediaSourceState::PLAYING) {
                         ESP_LOGW(TAG, "Cannot pause: source is not playing");
                         return;
                     }
-                    ESP_LOGD(TAG, "Pause requested");
                     this->parent_->pause_a2dp();
-                    this->pause_.store(true, std::memory_order_relaxed);
-                    this->set_state_(media_source::MediaSourceState::PAUSED);
+                    // this->set_state_(media_source::MediaSourceState::PAUSED);
                 break;
                 case media_source::MediaSourceCommand::PLAY:
+                    ESP_LOGD(TAG, "Play requested");
                     if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
                         ESP_LOGW(TAG, "Cannot play: A2DP is not connected");
-                        return;
+                    } else {
+                        this->parent_->play_a2dp();
                     }
-                    ESP_LOGD(TAG, "Play requested");
-                    this->parent_->play_a2dp();
-                    this->set_state_(media_source::MediaSourceState::PLAYING);
-                    this->pause_.store(false, std::memory_order_relaxed);
+                    // this->set_state_(media_source::MediaSourceState::PLAYING);
                 break;
                 case media_source::MediaSourceCommand::NEXT:
+                    ESP_LOGD(TAG, "Next requested");
                     if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
                         ESP_LOGW(TAG, "Cannot go to next: A2DP is not connected");
                         return;
                     }
-                    ESP_LOGD(TAG, "Next requested");
                     this->parent_->next_track();
                 break;
                 case media_source::MediaSourceCommand::PREVIOUS:
+                    ESP_LOGD(TAG, "Previous requested");
                     if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
                         ESP_LOGE(TAG, "Cannot go to previous: A2DP is not connected");
                         return;
                     }
-                    ESP_LOGD(TAG, "Previous requested");
                     this->parent_->prev_track();
                 break;
                 default:
@@ -170,12 +189,9 @@ namespace esphome::a2dp_sink {
 
         void A2DPSinkMediaSource::a2dp_data_stream(const uint8_t *data, uint32_t length) {
 
-            if (this->pause_.load(std::memory_order_relaxed)) {
-                // vTaskDelay(pdMS_TO_TICKS(PAUSE_POLL_DELAY_MS));
-                return;
+            if (this->get_state() == media_source::MediaSourceState::PLAYING) {
+                this->write_output(data, length, AUDIO_WRITE_TIMEOUT_MS, this->stream_info_);
             }
-
-            this->write_output(data, length, AUDIO_WRITE_TIMEOUT_MS, this->stream_info_);
 
         }
 
