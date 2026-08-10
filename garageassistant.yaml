@@ -4,7 +4,6 @@ substitutions:
 
 esphome:
   name: ${name}
-  name_add_mac_suffix: true
   friendly_name: ${friendly_name}
   min_version: 2025.5.0
 
