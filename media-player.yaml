@@ -129,7 +129,10 @@ media_source:
   - platform: a2dp_sink
     id: bluetooth
 
-      
+audio:
+  codecs: 
+    mp3:
+  
 media_player:
   - platform: sendspin
     id: sendspin_group_media_player
