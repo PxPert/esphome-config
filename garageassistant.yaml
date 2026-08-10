@@ -253,16 +253,16 @@ switch:
       - media_player.stop:
           announcement: true
     on_turn_on:
-      # Turn on the repeat mode and pause for 1000 ms between playlist items/repeats
-      - lambda: |-
+      then:
+        - lambda: |
             id(echo_media_player)
               ->make_call()
               .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
               .set_announcement(true)
               .perform();
             id(echo_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 1000);
-      - media_player.speaker.play_on_device_media_file:
-          media_file: timer_finished_wave_file
-          announcement: true
-      - delay: 15min
-      - switch.turn_off: timer_ringing
+        - media_player.play_media:
+            media_url: audio-file://timer_finished_wave_file
+            announcement: true
+        - delay: 15min
+        - switch.turn_off: timer_ringing
