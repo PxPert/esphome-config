@@ -71,7 +71,7 @@ audio_file:
 media_source:
   - platform: audio_http
     id: source_http
-    buffer_size: 10000
+    buffer_size: 5000
   - platform: audio_file
     id: source_file
     
@@ -240,6 +240,7 @@ switch:
       - script.execute: reset_led
   - platform: template
     id: timer_ringing
+    name: switch_timer
     optimistic: true
     restore_mode: ALWAYS_OFF
     on_turn_off:
