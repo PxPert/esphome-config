@@ -260,7 +260,6 @@ switch:
               .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_REPEAT_ONE)
               .set_announcement(true)
               .perform();
-            id(echo_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 1000);
         - media_player.play_media:
             media_url: audio-file://timer_finished_wave_file
             announcement: true
