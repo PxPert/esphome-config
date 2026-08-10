@@ -85,10 +85,13 @@ speaker:
 
 sendspin:
   
-  
+http_request:
+  buffer_size_rx: 1024
+  buffer_size_tx: 128
+    
 media_source:
-#  - platform: audio_http
-#    id: source_http
+  - platform: audio_http
+    id: source_http
 #    buffer_size: 100000
 #  - platform: audio_file
 #    id: source_file
@@ -134,13 +137,6 @@ media_player:
       sources:
         - source_http
 #        - source_file
-#        - source_sendspin
-    media_pipeline:
-      format: FLAC
-      num_channels: 1
-      sample_rate: 44100
-      speaker: src_music
-      sources:
         - source_sendspin
 #    volume_min: 0.8
 
