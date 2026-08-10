@@ -56,8 +56,10 @@ void A2DPSwitchBluetooth::setup() {
 
 void A2DPSwitchBluetooth::write_state(bool state) {
   if (state) {
+    ESP_LOGI(TAG, "Bluetooth ON: starting A2DP Sink");
     this->parent_->start();
   } else {
+    ESP_LOGI(TAG, "Bluetooth OFF: stopping A2DP Sink");
     this->parent_->stop();
   }
   this->publish_state_if_changed_(state);

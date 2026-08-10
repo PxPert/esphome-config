@@ -32,7 +32,7 @@ namespace esphome::a2dp_sink {
         }
         void A2DPSinkMediaSource::setup()
         {
-            ESP_LOGW(TAG, "A2DPSink initializing");
+            ESP_LOGI(TAG, "A2DP Sink Media Source initializing");
 
             this->disable_loop();
 
@@ -53,7 +53,7 @@ namespace esphome::a2dp_sink {
             });
 
             this->parent_->add_audio_state_callback([this](esp_a2d_audio_state_t state) {
-                ESP_LOGI(TAG, "audio_state_callback: %d", state);
+                ESP_LOGD(TAG, "Audio state: %d", state);
                 if (state == ESP_A2D_AUDIO_STATE_STARTED) {
                     this->set_state_(media_source::MediaSourceState::PLAYING);
                 } else {
@@ -64,7 +64,7 @@ namespace esphome::a2dp_sink {
             });
 
             this->parent_->add_playback_status_callbacks([this](esp_avrc_playback_stat_t playback) {
-                ESP_LOGE(TAG, "Play status: %d", playback);
+                ESP_LOGD(TAG, "Playback status: %d", playback);
                 switch (playback) {
                     case ESP_AVRC_PLAYBACK_PLAYING:
                         //this->request_play_uri_(URI_PREFIX);
@@ -94,7 +94,7 @@ namespace esphome::a2dp_sink {
                 );                
             });
 
-            ESP_LOGW(TAG, "A2DPSink is initialized");
+            ESP_LOGI(TAG, "A2DP Sink Media Source initialized");
         }
 
         void A2DPSinkMediaSource::dump_config()
@@ -103,7 +103,7 @@ namespace esphome::a2dp_sink {
         }
 
         bool A2DPSinkMediaSource::play_uri(const std::string &uri) {
-            ESP_LOGE(TAG, "Play URI: '%s'", uri.c_str());
+            ESP_LOGD(TAG, "Play URI: '%s'", uri.c_str());
             
             if (!this->is_ready() || this->is_failed() || this->status_has_error()) {
                 return false;
@@ -111,73 +111,73 @@ namespace esphome::a2dp_sink {
 
             // Check if source is already playing
             if (this->get_state() != media_source::MediaSourceState::IDLE) {
-                ESP_LOGE(TAG, "Cannot play '%s': source is busy", uri.c_str());
+                ESP_LOGW(TAG, "Cannot play URI '%s': source not idle (state=%d)", uri.c_str(), (int)this->get_state());
                 return false;
             }
 
-            // Validate URI starts with "http://" or "https://"
+            // Validate URI starts with "a2dp://"
             if (!this->can_handle(uri)) {
-                ESP_LOGE(TAG, "Invalid URI: '%s'", uri.c_str());
+                ESP_LOGW(TAG, "URI '%s' not handled: does not start with '%s'", uri.c_str(), URI_PREFIX);
                 return false;
             }
 
-            ESP_LOGE(TAG, "Play URI: '%s' OK!", uri.c_str());
+            ESP_LOGI(TAG, "URI '%s' accepted for playback", uri.c_str());
             return true;
         }
 
         void A2DPSinkMediaSource::handle_command(media_source::MediaSourceCommand command) {
-            ESP_LOGE(TAG, "handle_command requested: %d", command);
+            ESP_LOGD(TAG, "Handling media command: %d", command);
             switch (command) {
                 case media_source::MediaSourceCommand::STOP:
-                    ESP_LOGD(TAG, "Stop requested");
+                    ESP_LOGD(TAG, "Executing STOP command");
                     if (
                         (this->get_state() != media_source::MediaSourceState::PLAYING) 
                         &&
                         (this->get_state() != media_source::MediaSourceState::PAUSED)
                     )
                     {
-                        ESP_LOGW(TAG, "Cannot stop: source is not playing playing or paused");
+                        ESP_LOGW(TAG, "Cannot stop: source not in PLAYING or PAUSED state");
                         return;
                     }
                     this->parent_->set_connected(false);
                     this->set_state_(media_source::MediaSourceState::IDLE);
                 break;
                 case media_source::MediaSourceCommand::PAUSE:
-                    ESP_LOGD(TAG, "Pause requested");
+                    ESP_LOGD(TAG, "Executing PAUSE command");
                     if (this->get_state() != media_source::MediaSourceState::PLAYING) {
-                        ESP_LOGW(TAG, "Cannot pause: source is not playing");
+                        ESP_LOGW(TAG, "Cannot pause: source not in PLAYING state");
                         return;
                     }
                     this->parent_->pause_a2dp();
                     // this->set_state_(media_source::MediaSourceState::PAUSED);
                 break;
                 case media_source::MediaSourceCommand::PLAY:
-                    ESP_LOGD(TAG, "Play requested");
+                    ESP_LOGD(TAG, "Executing PLAY command");
                     if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
-                        ESP_LOGW(TAG, "Cannot play: A2DP is not connected");
+                        ESP_LOGW(TAG, "Cannot play: A2DP not connected (state=%d)", this->parent_->get_connection_state());
                     } else {
                         this->parent_->play_a2dp();
                     }
                     // this->set_state_(media_source::MediaSourceState::PLAYING);
                 break;
                 case media_source::MediaSourceCommand::NEXT:
-                    ESP_LOGD(TAG, "Next requested");
+                    ESP_LOGD(TAG, "Executing NEXT command");
                     if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
-                        ESP_LOGW(TAG, "Cannot go to next: A2DP is not connected");
+                        ESP_LOGW(TAG, "Cannot skip next: A2DP not connected");
                         return;
                     }
                     this->parent_->next_track();
                 break;
                 case media_source::MediaSourceCommand::PREVIOUS:
-                    ESP_LOGD(TAG, "Previous requested");
+                    ESP_LOGD(TAG, "Executing PREVIOUS command");
                     if (this->parent_->get_connection_state() != ESP_A2D_CONNECTION_STATE_CONNECTED) {
-                        ESP_LOGE(TAG, "Cannot go to previous: A2DP is not connected");
+                        ESP_LOGW(TAG, "Cannot skip previous: A2DP not connected");
                         return;
                     }
                     this->parent_->prev_track();
                 break;
                 default:
-                    ESP_LOGE(TAG, "Unhandled command requested: %d", command);
+                    ESP_LOGW(TAG, "Unhandled media command: %d", command);
                 break;
             }
         }

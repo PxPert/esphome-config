@@ -4,7 +4,7 @@
 
 namespace esphome::a2dp_sink {
 
-static const char *const TAG = "sendspin.text_sensor";
+static const char *const TAG = "a2dp_sink.text_sensor";
 
 void A2DPSinkTextSensor::dump_config() { LOG_TEXT_SENSOR("", "A2DPSink", this); }
 
@@ -27,7 +27,7 @@ void A2DPMetadataTextSensor::setup() {
   this->parent_->add_metadata_attribute((uint8_t)this->metadata_type_);
 
   this->parent_->add_metadata_update_callback([this](const A2DPSinkMetadata &metadata) {
-    ESP_LOGW(TAG, "Callback Text sensor!!");
+    ESP_LOGD(TAG, "Metadata callback: type=%u", metadata.type());
     if (metadata.type() == (uint8_t)this->metadata_type_ ) {
       this->publish_if_changed_((const char*)metadata.text());
     }
@@ -43,13 +43,13 @@ void A2DPSinkPeerTextSensor::setup() {
   this->parent_->add_peer_name_callback([this](const char *name) {
     if (this->parent_->get_connection_state() == ESP_A2D_CONNECTION_STATE_CONNECTED) {
       if (this->peer_type_ == A2DPSinkPeerRequestTypes::PEERNAME) {
-        ESP_LOGW(TAG, "Peer text sensor callback fired, publishing peer name: %s", this->parent_->get_peer_name());
+        ESP_LOGD(TAG, "Peer name resolved: %s", name);
         this->publish_if_changed_(name);
       } else if (this->peer_type_ == A2DPSinkPeerRequestTypes::PEERADDR) {
         auto* peer_addr = this->parent_->get_current_peer_address();
         this->publish_if_changed_(A2DPSinkHub::bd_addr_to_string(*peer_addr).c_str());
       } else {
-        ESP_LOGW(TAG, "Peer text sensor callback fired but type is not PEERNAME or PEERADDR, ignoring");
+        ESP_LOGW(TAG, "Unknown peer request type, ignoring");
         return;
       }
     } else {

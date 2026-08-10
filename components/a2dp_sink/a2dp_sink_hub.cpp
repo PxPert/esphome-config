@@ -13,7 +13,7 @@ namespace esphome
 
   #ifdef USE_A2DP_METADATA
         void A2DPSinkHub::avrc_metadata_callback(uint8_t id, const uint8_t *text) {
-            ESP_LOGD(TAG, "AVRC metadata rsp: attribute id 0x%x, %s", id, text);
+            ESP_LOGD(TAG, "AVRC metadata: attribute 0x%02x = %s", id, text);
 
             A2DPSinkMetadata m(id, text );
             this->metadata_update_callbacks_.call(m);
@@ -23,49 +23,49 @@ namespace esphome
 
 #ifdef USE_A2DP_PLAYBACK_STATUS
         void A2DPSinkHub::avrc_rn_playstatus_callback(esp_avrc_playback_stat_t playback) {
-            ESP_LOGD(TAG, "AVRC playstatus rsp: %d", (uint8_t)playback);
+            ESP_LOGD(TAG, "AVRC playback status: %d", (uint8_t)playback);
             this->playback_status_callbacks_.call(playback);
         }
 #endif
 
 #ifdef USE_A2DP_POS
         void A2DPSinkHub::avrc_rn_play_pos_callback(uint32_t play_pos) {
-            ESP_LOGD(TAG, "AVRC playposition: %d", play_pos);
+            ESP_LOGD(TAG, "AVRC playback position: %u ms", play_pos);
             this->playback_position_callbacks_.call(play_pos);
         }
 #endif
 
 #ifdef USE_A2DP_VOLUME
         void A2DPSinkHub::avrc_rn_volumechange_callback(int volume) {
-            ESP_LOGD(TAG, "AVRC volume change: %d", volume);
+            ESP_LOGD(TAG, "AVRC volume changed: %d", volume);
             this->volume_change_callbacks_.call(volume);
         }
 #endif
 
 #ifdef USE_A2DP_AUDIO_STATE
         void A2DPSinkHub::audio_state_callback(esp_a2d_audio_state_t state) {
-            ESP_LOGD(TAG, "A2DP audio state changed: %d", (uint8_t)state);
+            ESP_LOGD(TAG, "A2DP audio state: %d", (uint8_t)state);
             this->audio_state_callbacks_.call(state);
         }
 #endif
 
 #ifdef USE_A2DP_SAMPLE_RATE
         void A2DPSinkHub::sample_rate_callback(uint16_t sample_rate) {
-            ESP_LOGD(TAG, "AVRC sample rate change: %d", sample_rate);
+            ESP_LOGD(TAG, "A2DP sample rate: %u Hz", sample_rate);
             this->sample_rate_callbacks_.call(sample_rate);
         }
 #endif
 
 #ifdef USE_A2DP_AVRCP_CONNECTION_STATE
         void A2DPSinkHub::avrc_connection_state_callback(bool connected) {
-            ESP_LOGD(TAG, "AVRCP connection state changed: %s", connected ? "connected" : "disconnected");
+            ESP_LOGD(TAG, "AVRCP connection: %s", connected ? "connected" : "disconnected");
             this->avrc_connection_state_callbacks_.call(connected);
         }
 #endif
 
 #ifdef USE_A2DP_CONNECTION_STATE
         void A2DPSinkHub::on_connection_state_changed(esp_a2d_connection_state_t state, void *user_data) {
-            ESP_LOGD(TAG, "A2DP connection state changed: %d", (uint8_t)state);
+            ESP_LOGI(TAG, "A2DP connection state: %d", (uint8_t)state);
             this->connection_state_callbacks_.call(state, user_data);
         }
 #endif
@@ -78,14 +78,14 @@ namespace esphome
 
 #ifdef USE_A2DP_RSSI
         void A2DPSinkHub::rssi_callback(esp_bt_gap_cb_param_t::read_rssi_delta_param& rssi) {
-            ESP_LOGD(TAG, "RSSI delta: %d", rssi.rssi_delta);
+            ESP_LOGD(TAG, "RSSI delta: %d dBm", rssi.rssi_delta);
             this->rssi_callbacks_.call(rssi);
         }
 #endif
 
         void A2DPSinkHub::setup()
         {
-            ESP_LOGW(TAG, "%s", "A2DPSink initializing");
+            ESP_LOGI(TAG, "A2DP Sink initializing");
 
             g_a2dp_hub_instance = this;
 
@@ -231,14 +231,16 @@ namespace esphome
             );
 #endif
 
-            ESP_LOGW(TAG, "%s", "A2DPSink is initialized");
+            ESP_LOGI(TAG, "A2DP Sink initialized");
         }
 
         void A2DPSinkHub::start() {
+            ESP_LOGI(TAG, "A2DP Sink starting (name=%s, auto_reconnect=%d)", this->name().c_str(), this->auto_reconnect());
             a2dp_sink_.start(this->name().c_str(), this->auto_reconnect());
         }
 
         void A2DPSinkHub::stop() {
+            ESP_LOGI(TAG, "A2DP Sink stopping");
             a2dp_sink_.end();
         }
 
@@ -251,7 +253,7 @@ namespace esphome
         }
 
         void A2DPSinkHub::set_volume(uint8_t volume) {
-            ESP_LOGD(TAG, "Setting volume to: %d", volume);
+            ESP_LOGD(TAG, "Setting A2DP volume to %u", volume);
             a2dp_sink_.set_volume(volume);
         }
 
