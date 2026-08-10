@@ -64,11 +64,11 @@ speaker:
     buffer_duration: 60ms
 #    buffer_duration: 60ms
 
-audio_file:
-  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
-  id: timer_finished_wave_file
+#audio_file:
+#  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
+#  id: timer_finished_wave_file
 
-sendspin:
+# sendspin:
   
   
 media_source:
