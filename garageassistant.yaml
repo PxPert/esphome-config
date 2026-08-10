@@ -74,6 +74,9 @@ speaker:
 audio_file:
   file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
   id: timer_finished_wave_file
+
+sendspin:
+  
   
 media_source:
   - platform: audio_http
@@ -81,7 +84,8 @@ media_source:
     buffer_size: 5000
   - platform: audio_file
     id: source_file
-    
+  - platform: sendspin
+    id: source_sendspin
 
 media_player:
   - platform: speaker_source
@@ -94,6 +98,7 @@ media_player:
       sources:
         - source_http
         - source_file
+        - source_sendspin
 #    media_pipeline: 
 #      speaker: echo_speaker
 #      sources:
