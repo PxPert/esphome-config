@@ -75,11 +75,11 @@ media_source:
   - platform: audio_http
     id: source_http
     buffer_size: 100000
-  - platform: audio_file
-    id: source_file
-  - platform: sendspin
-    id: source_sendspin
-    buffer_size: 50000
+#  - platform: audio_file
+#    id: source_file
+#  - platform: sendspin
+#    id: source_sendspin
+#    buffer_size: 50000
 
 media_player:
 #  - platform: sendspin
@@ -88,18 +88,20 @@ media_player:
   - platform: speaker_source
     name: None
     id: echo_media_player
-    announcement_pipeline:
-      speaker: echo_speaker
-      format: FLAC
-      sample_rate: 44100
-      sources:
-        - source_http
-        - source_file
-        - source_sendspin
-#    media_pipeline: 
+#    announcement_pipeline:
 #      speaker: echo_speaker
+#      format: FLAC
+#      sample_rate: 44100
 #      sources:
 #        - source_http
+#        - source_file
+#        - source_sendspin
+    media_pipeline: 
+      format: FLAC
+      sample_rate: 44100
+      speaker: echo_speaker
+      sources:
+        - source_http
 #        - source_file
     volume_min: 0.8
 
@@ -128,29 +130,29 @@ light:
           min_brightness: 50%
           max_brightness: 100%
 
-voice_assistant:
-  id: va
-  microphone:
-    microphone: echo_microphone
-    channels: 0
-    gain_factor: 4
-  media_player: echo_media_player
-  noise_suppression_level: 2
-  auto_gain: 31dBFS
+#voice_assistant:
+#  id: va
+#  microphone:
+#    microphone: echo_microphone
+#    channels: 0
+#    gain_factor: 4
+#  media_player: echo_media_player
+#  noise_suppression_level: 2
+#  auto_gain: 31dBFS
 
 button:
-  - platform: template
-    name: Start/Stop assistant
-    id: start_assistant
-    entity_category: config
-    on_press:
-      - if:
-          condition:
-            voice_assistant.is_running
-          then:
-            - voice_assistant.stop
-          else:
-            - voice_assistant.start
+#  - platform: template
+#    name: Start/Stop assistant
+#    id: start_assistant
+#    entity_category: config
+#    on_press:
+#      - if:
+#          condition:
+#            voice_assistant.is_running
+#          then:
+#            - voice_assistant.stop
+#          else:
+#            - voice_assistant.start
   - platform: factory_reset
     id: factory_reset_btn
     name: Factory reset
