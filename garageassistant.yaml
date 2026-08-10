@@ -59,22 +59,21 @@ microphone:
 
 speaker:
   - platform: i2s_audio
-    id: echo_speaker
+    id: src_music
     i2s_dout_pin: GPIO22
     dac_type: external
     num_channels: 1
     bits_per_sample: 16bit
     buffer_duration: 100ms
-  - platform: mixer
-    num_channels: 1
-    bits_per_sample: 16
-    source_speakers:
-      - id: src_va
-        buffer_duration: 60ms
-      - id: src_music
-        buffer_duration: 60ms
-        
-    output_speaker: echo_speaker
+#  - platform: mixer
+#    num_channels: 1
+#    bits_per_sample: 16
+#    source_speakers:
+#      - id: src_va
+#        buffer_duration: 60ms
+#      - id: src_music
+#        buffer_duration: 60ms        
+#    output_speaker: echo_speaker
 #    sample_rate: 44100
 #    channel: mono  # The Echo has poor playback audio quality when using mon audio
 #    buffer_duration: 60ms
@@ -98,28 +97,28 @@ media_source:
     buffer_size: 50000
 
 media_player:
-  - platform: speaker
-    name: VoiceAssistant
-    id: va_media_player
-    
-    announcement_pipeline:
-      speaker: src_va
-      num_channels: 1
-      format: WAV
-      sample_rate: 16000
-    buffer_size: 6000
-    volume_min: 0.4
-    files:
-      - id: timer_finished_wave_file
-        file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
-    on_announcement:
-      - light.turn_on:
-          id: led
-          blue: 100%
-          red: 0%
-          green: 0%
-          brightness: 100%
-          effect: none
+#  - platform: speaker
+#    name: VoiceAssistant
+#    id: va_media_player
+#    
+#    announcement_pipeline:
+#      speaker: src_va
+#      num_channels: 1
+#      format: WAV
+#      sample_rate: 16000
+#    buffer_size: 6000
+#    volume_min: 0.4
+#    files:
+#      - id: timer_finished_wave_file
+#        file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
+#    on_announcement:
+#      - light.turn_on:
+#          id: led
+#          blue: 100%
+#          red: 0%
+#          green: 0%
+#          brightness: 100%
+#          effect: none
         
 #  - platform: sendspin
 #    name: "Sendspin Group"
@@ -127,12 +126,13 @@ media_player:
   - platform: speaker_source
     name: None
     id: echo_media_player
-#    announcement_pipeline:
-#      speaker: echo_speaker
-#      format: FLAC
-#      sample_rate: 44100
-#      sources:
-#        - source_http
+    announcement_pipeline:
+      speaker: echo_speaker
+      format: WAV
+      sample_rate: 44100
+      num_channels: 1
+      sources:
+        - source_http
 #        - source_file
 #        - source_sendspin
     media_pipeline:
