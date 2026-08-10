@@ -71,6 +71,7 @@ audio_file:
 media_source:
   - platform: audio_http
     id: source_http
+    buffer_size: 10000
   - platform: audio_file
     id: source_file
     
