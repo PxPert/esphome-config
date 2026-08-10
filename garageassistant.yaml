@@ -18,6 +18,9 @@ esp32:
       sram1_as_iram: true
       
 logger:
+  level: NONE
+  baud_rate: 0
+
   
 api:
 
