@@ -87,8 +87,8 @@ media_source:
     buffer_size: 50000
 
 media_player:
-  - platform: sendspin
-    name: "Sendspin Group"
+#  - platform: sendspin
+#    name: "Sendspin Group"
     
   - platform: speaker_source
     name: None
