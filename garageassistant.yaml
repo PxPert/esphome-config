@@ -105,8 +105,8 @@ media_player:
     announcement_pipeline:
       speaker: src_va
       num_channels: 1
-      format: WAV
-      sample_rate: 44100
+      format: FLAC
+      sample_rate: 16000
     buffer_size: 4000
     volume_min: 0.4
     files:
