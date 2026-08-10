@@ -85,7 +85,7 @@ media_player:
     id: echo_media_player
     announcement_pipeline:
       speaker: echo_speaker
-      format: WAV
+      format: FLAC
       sources:
         - source_http
         - source_file
@@ -94,7 +94,7 @@ media_player:
 #      sources:
 #        - source_http
 #        - source_file
-    volume_min: 0.4
+    volume_min: 0.8
     on_announcement:
       - light.turn_on:
           id: led
