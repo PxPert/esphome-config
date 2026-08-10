@@ -1,0 +1,25 @@
+esphome:
+  name: garageassistant
+  friendly_name: GarageAssistant
+
+# Replace this with your actual platform if you aren't using ESP32.
+esp32:
+  board: esp32dev
+
+logger:
+
+api:
+  encryption:
+    key: "6RJK3SEMfAZ+3M5nFGTPY0FJ5/2JskDAqIagWO43RfI="
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: GarageAssistant Fallback Hotspot
+    password: "lgftGRTWby0s"
+
+captive_portal:
