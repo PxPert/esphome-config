@@ -83,7 +83,7 @@ speaker:
     num_channels: 1
 #    channel: 
     bits_per_sample: 16bit
-    buffer_duration: 100ms        
+    buffer_duration: 30ms        
     timeout: 1s
 #    buffer_duration: 100ms
 #  - platform: mixer
