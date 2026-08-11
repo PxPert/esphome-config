@@ -60,8 +60,9 @@ speaker:
     i2s_dout_pin: GPIO22
     dac_type: external
     num_channels: 1
-    channel: stereo
+    channel: mono
     bits_per_sample: 16bit
+    buffer_duration: 60ms        
 #    buffer_duration: 100ms
 #  - platform: mixer
 #    num_channels: 1
@@ -90,7 +91,7 @@ sendspin:
 media_source:
   - platform: audio_http
     id: source_http
-#    buffer_size: 6000
+    buffer_size: 6000
 #  - platform: audio_file
 #    id: source_file
   - platform: sendspin
