@@ -12,7 +12,13 @@ esphome:
       - -DUSE_DEFAULT_STDLIB
       - -DUSE_IDF_LOGGER
       - -DEXIT_ON_STOP
-        
+
+mdns:
+  disabled: true
+  
+debug:
+  update_interval: 60s
+  
 esp32:
   board: m5stack-atom
   
@@ -34,6 +40,8 @@ esp32:
       CONFIG_BT_AVRCP_CT_COVER_ART_ENABLED: n
       CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY: y
       CONFIG_BTDM_CTRL_BR_EDR_MAX_ACL_CONN: "1"
+#      CONFIG_BT_BTU_TASK_STACK_SIZE: "3072"   # default 4096
+      
 #    version: 6.0.2
     advanced:
       enable_ota_rollback: false
@@ -173,6 +181,12 @@ media_player:
         - bluetooth
 
 #    volume_min: 0.8
+sensor:
+  - platform: debug
+    free:
+      name: Free
+    fragmentation:
+      name: Fragmentation
 switch:
   - platform: a2dp_sink
     type: bluetooth
