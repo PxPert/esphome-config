@@ -40,7 +40,16 @@ esp32:
       CONFIG_BT_AVRCP_CT_COVER_ART_ENABLED: n
       CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY: y
       CONFIG_BTDM_CTRL_BR_EDR_MAX_ACL_CONN: "1"
-#      CONFIG_BT_BTU_TASK_STACK_SIZE: "3072"   # default 4096
+      
+      CONFIG_BT_BTU_TASK_STACK_SIZE: "3072"   # default 4096
+      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "6"      # default 10
+      CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM: "16"    # default 32
+      CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM: "16"    # default 32
+      CONFIG_ESP32_WIFI_TX_BUFFER_TYPE: "1"            # dynamic
+      CONFIG_LWIP_MAX_SOCKETS: "6"          # default 10
+      CONFIG_LWIP_TCP_MSS: "1440"
+      CONFIG_TCP_SND_BUF_DEFAULT: "5744"    # default ~5760, marginale
+      CONFIG_TCP_WND_DEFAULT: "5744"
       
 #    version: 6.0.2
     advanced:
