@@ -47,12 +47,12 @@ logger:
   task_log_buffer_size: 0B
   tx_buffer_size: 160B
   
-# api:
+api:
 
-#ota:
-#  - platform: esphome
-#    id: ota_esphome
-#    password: !secret ota_pwd_sec
+ota:
+  - platform: esphome
+    id: ota_esphome
+    password: !secret ota_pwd_sec
 
 external_components:
   - source: /config/components/
