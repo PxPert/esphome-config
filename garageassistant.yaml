@@ -96,7 +96,7 @@ media_source:
 #    id: source_file
   - platform: sendspin
     id: source_sendspin
-    buffer_size: 25000
+    buffer_size: 35000
 
 media_player:
 #  - platform: speaker
