@@ -43,18 +43,18 @@ esp32:
       CONFIG_BT_ALARM_MAX_NUM: "20"   # default 50
       
 #      CONFIG_BT_BTU_TASK_STACK_SIZE: "3072"   # default 4096
-      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "6"      # default 10 / Tweaked to 6
+      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "6"      # default 10
       CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM: "16"    # default 32
       CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM: "16"    # default 32
       CONFIG_ESP32_WIFI_TX_BUFFER_TYPE: "1"            # dynamic
-#      CONFIG_LWIP_MAX_SOCKETS: "6"          # default 10
+      CONFIG_LWIP_MAX_SOCKETS: "6"          # default 10
       CONFIG_LWIP_TCP_MSS: "1440"
-#      CONFIG_LWIP_MAX_ACTIVE_TCP: "10"      # default 16 / Tweaked to 8
-#      CONFIG_LWIP_MAX_LISTENING_TCP: "6"   # default 16 / Tweaked to 4
+      CONFIG_LWIP_MAX_ACTIVE_TCP: "8"      # default 16
+      CONFIG_LWIP_MAX_LISTENING_TCP: "4"   # default 16
       CONFIG_LWIP_MAX_UDP_PCBS: "6"        # default 16 (mDNS/DHCP/SNTP)
       CONFIG_LWIP_MAX_RAW_PCBS: "2"        # default 16, quasi mai usati
-#      CONFIG_TCP_SND_BUF_DEFAULT: "5744"    # default ~5760, marginale
-#      CONFIG_TCP_WND_DEFAULT: "5744"
+      CONFIG_TCP_SND_BUF_DEFAULT: "5744"    # default ~5760, marginale
+      CONFIG_TCP_WND_DEFAULT: "5744"
       CONFIG_ESP32_WIFI_MGMT_SBUF_NUM: "16"
       # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
 #      CONFIG_MBEDTLS_TLS_DISABLED: y
@@ -129,8 +129,8 @@ speaker:
     id: src_music
     i2s_dout_pin: GPIO22
     dac_type: external
-    num_channels: 1
-    channel: mono
+#    num_channels: 1
+    channel: stereo
     bits_per_sample: 16bit
     buffer_duration: 30ms        
 #    buffer_duration: 100ms
@@ -152,7 +152,7 @@ speaker:
 #  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
 #  id: timer_finished_wave_file
 
-sendspin:
+#sendspin:
   
 #http_request:
 #  buffer_size_rx: 1024
@@ -162,14 +162,14 @@ a2dp_sink:
   name: Garage
   
 media_source:
-#  - platform: audio_http
-#    id: source_http
-#    buffer_size: 8000
+  - platform: audio_http
+    id: source_http
+    buffer_size: 8000
 #  - platform: audio_file
 #    id: source_file
-  - platform: sendspin
-    id: source_sendspin
-    buffer_size: 25000
+#  - platform: sendspin
+#    id: source_sendspin
+#    buffer_size: 35000
   - platform: a2dp_sink
     id: bluetooth
     
@@ -206,12 +206,12 @@ media_player:
     announcement_pipeline:
       speaker: src_music
       format: WAV
-      sample_rate: 44100
-      num_channels: 1
+      sample_rate: 48000
+#      num_channels: 1
       sources:
-#        - source_http
+        - source_http
 #        - source_file
-        - source_sendspin
+#        - source_sendspin
         - bluetooth
 
 #    volume_min: 0.8
