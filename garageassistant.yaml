@@ -91,12 +91,12 @@ sendspin:
 media_source:
   - platform: audio_http
     id: source_http
-    buffer_size: 6000
+    buffer_size: 5000
 #  - platform: audio_file
 #    id: source_file
   - platform: sendspin
     id: source_sendspin
-    buffer_size: 50000
+    buffer_size: 25000
 
 media_player:
 #  - platform: speaker
