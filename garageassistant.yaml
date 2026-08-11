@@ -5,24 +5,20 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2025.5.0
 
 esp32:
   board: m5stack-atom
-  cpu_frequency: 240MHz
   
   framework:
     type: esp-idf
-    version: 6.0.2
+#    version: 6.0.2
     advanced:
-      sram1_as_iram: true
+ #     sram1_as_iram: true
       minimum_chip_revision: "1.1"
 logger:
   level: DEBUG
 #  task_log_buffer_size: 0B
 #  tx_buffer_size: 160B
-  
-
   
 api:
 
@@ -48,23 +44,24 @@ i2s_audio:
     i2s_lrclk_pin: GPIO33
     i2s_bclk_pin: GPIO19
 
-microphone:
-  - platform: i2s_audio
-    id: echo_microphone
-    i2s_din_pin: GPIO23
-    adc_type: external
-    pdm: true
-    sample_rate: 16000
-    correct_dc_offset: true
+#microphone:
+#  - platform: i2s_audio
+#    id: echo_microphone
+#    i2s_din_pin: GPIO23
+#    adc_type: external
+#    pdm: true
+#    sample_rate: 16000
+#    correct_dc_offset: true
 
 speaker:
   - platform: i2s_audio
     id: src_music
     i2s_dout_pin: GPIO22
     dac_type: external
-    num_channels: 1
+#    num_channels: 1
+    channel: stereo
     bits_per_sample: 16bit
-    buffer_duration: 100ms
+#    buffer_duration: 100ms
 #  - platform: mixer
 #    num_channels: 1
 #    bits_per_sample: 16
@@ -83,7 +80,7 @@ speaker:
 #  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
 #  id: timer_finished_wave_file
 
-sendspin:
+#sendspin:
   
 #http_request:
 #  buffer_size_rx: 1024
@@ -92,12 +89,12 @@ sendspin:
 media_source:
   - platform: audio_http
     id: source_http
-    buffer_size: 6000
+#    buffer_size: 6000
 #  - platform: audio_file
 #    id: source_file
-  - platform: sendspin
-    id: source_sendspin
-    buffer_size: 50000
+#  - platform: sendspin
+#    id: source_sendspin
+#    buffer_size: 50000
 
 media_player:
 #  - platform: speaker
@@ -132,38 +129,38 @@ media_player:
     announcement_pipeline:
       speaker: src_music
       format: WAV
-      sample_rate: 44100
+      sample_rate: 16000
       num_channels: 1
       sources:
         - source_http
 #        - source_file
-        - source_sendspin
+#        - source_sendspin
 #    volume_min: 0.8
 
-light:
-  - platform: esp32_rmt_led_strip
-    id: led
-    name: None
-    disabled_by_default: true
-    entity_category: config
-    pin: GPIO27
-    default_transition_length: 0s
-    chipset: SK6812
-    num_leds: 1
-    rgb_order: grb
-    effects:
-      - pulse:
-          name: "Slow Pulse"
-          transition_length: 250ms
-          update_interval: 250ms
-          min_brightness: 50%
-          max_brightness: 100%
-      - pulse:
-          name: "Fast Pulse"
-          transition_length: 100ms
-          update_interval: 100ms
-          min_brightness: 50%
-          max_brightness: 100%
+#light:
+#  - platform: esp32_rmt_led_strip
+#    id: led
+#    name: None
+#    disabled_by_default: true
+#    entity_category: config
+#    pin: GPIO27
+#    default_transition_length: 0s
+#    chipset: SK6812
+#    num_leds: 1
+#    rgb_order: grb
+#    effects:
+#      - pulse:
+#          name: "Slow Pulse"
+#          transition_length: 250ms
+#          update_interval: 250ms
+#          min_brightness: 50%
+#          max_brightness: 100%
+#      - pulse:
+#          name: "Fast Pulse"
+#          transition_length: 100ms
+#          update_interval: 100ms
+#          min_brightness: 50%
+#          max_brightness: 100%
 
 #voice_assistant:
 #  id: va
@@ -175,7 +172,7 @@ light:
 #  noise_suppression_level: 2
 #  auto_gain: 31dBFS
 
-button:
+#button:
 #  - platform: template
 #    name: Start/Stop assistant
 #    id: start_assistant
@@ -188,6 +185,6 @@ button:
 #            - voice_assistant.stop
 #          else:
 #            - voice_assistant.start
-  - platform: factory_reset
-    id: factory_reset_btn
-    name: Factory reset
+#  - platform: factory_reset
+#    id: factory_reset_btn
+#    name: Factory reset
