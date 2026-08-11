@@ -17,7 +17,7 @@ mdns:
   disabled: true
   
 debug:
-  update_interval: 60s
+  update_interval: 10s
   
 esp32:
   board: m5stack-atom
