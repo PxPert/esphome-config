@@ -34,9 +34,7 @@ esp32:
       CONFIG_BT_AVRCP_CT_COVER_ART_ENABLED: n
       CONFIG_BTDM_CTRL_MODE_BR_EDR_ONLY: y
       CONFIG_BTDM_CTRL_BR_EDR_MAX_ACL_CONN: "1"
-      
-      
-    version: 6.0.2
+#    version: 6.0.2
     advanced:
       enable_ota_rollback: false
       sram1_as_iram: true
@@ -90,7 +88,7 @@ speaker:
     i2s_dout_pin: GPIO22
     dac_type: external
     num_channels: 1
-    channel: stereo
+#    channel: stereo
     bits_per_sample: 16bit
     buffer_duration: 30ms        
     timeout: 1s
@@ -158,8 +156,8 @@ media_player:
 #          brightness: 100%
 #          effect: none
         
-  - platform: sendspin
-    name: "Sendspin Group"
+#  - platform: sendspin
+#    name: "Sendspin Group"
     
   - platform: speaker_source
     name: None
