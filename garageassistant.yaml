@@ -157,7 +157,7 @@ media_player:
     id: echo_media_player
     announcement_pipeline:
       speaker: src_music
-      format: FLAC
+      format: WAV
       sample_rate: 48000
       num_channels: 1
       sources:
