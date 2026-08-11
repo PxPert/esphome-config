@@ -166,7 +166,18 @@ media_player:
         - bluetooth
 
 #    volume_min: 0.8
+switch:
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    id: "btConnection"
+    restore_mode: ALWAYS_OFF
 
+  - platform: a2dp_sink
+    type: bluetooth
+    name: "Bluetooth state"
+    id: "btState"
+    restore_mode: RESTORE_DEFAULT_OFF
 #light:
 #  - platform: esp32_rmt_led_strip
 #    id: led
