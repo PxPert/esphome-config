@@ -84,7 +84,7 @@ sendspin:
 
 a2dp_sink:
   name: test
-  minimal_bluetooth: true
+  minimal_bluetooth: false
   on_connection_state:
     then:
       - lambda: |-
