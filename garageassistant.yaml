@@ -90,7 +90,7 @@ speaker:
 #    num_channels: 1
     channel: stereo
     bits_per_sample: 16bit
-    buffer_duration: 30ms        
+    buffer_duration: 15ms        
 #    buffer_duration: 100ms
 #  - platform: mixer
 #    num_channels: 1
@@ -174,12 +174,6 @@ media_player:
 
 #    volume_min: 0.8
 switch:
-  - platform: a2dp_sink
-    type: connection
-    name: "Bluetooth connection"
-    id: "btConnection"
-    restore_mode: ALWAYS_OFF
-
   - platform: a2dp_sink
     type: bluetooth
     name: "Bluetooth state"
