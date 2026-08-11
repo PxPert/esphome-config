@@ -59,7 +59,7 @@ speaker:
     id: src_music
     i2s_dout_pin: GPIO22
     dac_type: external
-    num_channels: 1
+    num_channels: 2
 #    channel: 
     bits_per_sample: 16bit
     buffer_duration: 60ms        
@@ -131,7 +131,7 @@ media_player:
     announcement_pipeline:
       speaker: src_music
       format: FLAC
-      sample_rate: 44100
+      sample_rate: 48000
       num_channels: 1
       sources:
         - source_http
