@@ -6,10 +6,17 @@ namespace esphome::a2dp_sink {
 
 static const char *const TAG = "a2dp_sink.text_sensor";
 
+/**
+ * @brief Log the text sensor configuration.
+ */
 void A2DPSinkTextSensor::dump_config() { LOG_TEXT_SENSOR("", "A2DPSink", this); }
 
 
 // Dedup to avoid frontend churn; TextSensor::publish_state already dedups the string assign but still notifies.
+/**
+ * @brief Publish a new text value only if it differs from the current state.
+ * @param value The new text value.
+ */
 void A2DPSinkTextSensor::publish_if_changed_(const char *value) {
   if (this->get_raw_state() != value) {
     this->publish_state(value);
@@ -20,6 +27,13 @@ void A2DPSinkTextSensor::publish_if_changed_(const char *value) {
 
 // THREAD CONTEXT: Main loop. The registered metadata callback also fires on the main loop
 // (SendspinHub dispatches metadata from client_->loop()).
+/**
+ * @brief Initialize the metadata text sensor.
+ *
+ * Disables the loop, requests the specific metadata attribute from the parent hub,
+ * and subscribes to metadata update callbacks. Filters by metadata type and publishes
+ * the matching text value.
+ */
 void A2DPMetadataTextSensor::setup() {
   this->disable_loop();
 
@@ -37,6 +51,13 @@ void A2DPMetadataTextSensor::setup() {
 
 #ifdef USE_A2DP_PEER_NAME
 
+/**
+ * @brief Initialize the peer text sensor.
+ *
+ * Disables the loop and subscribes to peer name callbacks. When the peer
+ * name is resolved, publishes either the device name or the Bluetooth
+ * MAC address (formatted as a string) depending on the configured peer type.
+ */
 void A2DPSinkPeerTextSensor::setup() {
   this->disable_loop();
 

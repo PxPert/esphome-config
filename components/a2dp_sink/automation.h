@@ -12,6 +12,11 @@ namespace esphome {
 namespace a2dp_sink {
 
 #ifdef USE_A2DP_CONNECTION_STATE
+/**
+ * @brief Trigger fired when the A2DP connection state changes.
+ *
+ * Emits the new connection state as a uint8_t value.
+ */
 class ConnectionStateTrigger : public Trigger<uint8_t> {
  public:
   explicit ConnectionStateTrigger(A2DPSinkHub *parent) {
@@ -23,6 +28,11 @@ class ConnectionStateTrigger : public Trigger<uint8_t> {
 #endif
 
 #ifdef USE_A2DP_PLAYBACK_STATUS
+/**
+ * @brief Trigger fired when the AVRC playback status changes.
+ *
+ * Emits the new playback status as a uint8_t value.
+ */
 class PlaybackStatusTrigger : public Trigger<uint8_t> {
  public:
   explicit PlaybackStatusTrigger(A2DPSinkHub *parent) {
@@ -34,6 +44,11 @@ class PlaybackStatusTrigger : public Trigger<uint8_t> {
 #endif
 
 #ifdef USE_A2DP_POS
+/**
+ * @brief Trigger fired when the playback position changes.
+ *
+ * Emits the current position in milliseconds as a uint32_t.
+ */
 class PlaybackPositionTrigger : public Trigger<uint32_t> {
  public:
   explicit PlaybackPositionTrigger(A2DPSinkHub *parent) {
@@ -45,6 +60,11 @@ class PlaybackPositionTrigger : public Trigger<uint32_t> {
 #endif
 
 #ifdef USE_A2DP_RSSI
+/**
+ * @brief Trigger fired when the RSSI signal strength delta changes.
+ *
+ * Emits the RSSI delta value as an int8_t.
+ */
 class RssiTrigger : public Trigger<int8_t> {
  public:
   explicit RssiTrigger(A2DPSinkHub *parent) {
@@ -56,6 +76,11 @@ class RssiTrigger : public Trigger<int8_t> {
 #endif
 
 #ifdef USE_A2DP_METADATA
+/**
+ * @brief Trigger fired when AVRC metadata is updated.
+ *
+ * Emits the metadata attribute type as uint8_t and the text value as std::string.
+ */
 class MetadataUpdateTrigger : public Trigger<uint8_t, std::string> {
  public:
   explicit MetadataUpdateTrigger(A2DPSinkHub *parent) {
@@ -67,6 +92,11 @@ class MetadataUpdateTrigger : public Trigger<uint8_t, std::string> {
 #endif
 
 #ifdef USE_A2DP_PEER_NAME
+/**
+ * @brief Trigger fired when the peer device name is resolved.
+ *
+ * Emits the peer device name as a std::string.
+ */
 class PeerNameTrigger : public Trigger<std::string> {
  public:
   explicit PeerNameTrigger(A2DPSinkHub *parent) {
@@ -78,6 +108,11 @@ class PeerNameTrigger : public Trigger<std::string> {
 #endif
 
 #ifdef USE_A2DP_VOLUME
+/**
+ * @brief Trigger fired when the A2DP volume changes.
+ *
+ * Emits the new volume level as a uint8_t.
+ */
 class VolumeChangeTrigger : public Trigger<uint8_t> {
  public:
   explicit VolumeChangeTrigger(A2DPSinkHub *parent) {
@@ -89,6 +124,11 @@ class VolumeChangeTrigger : public Trigger<uint8_t> {
 #endif
 
 #ifdef USE_A2DP_AUDIO_STATE
+/**
+ * @brief Trigger fired when the A2DP audio state changes.
+ *
+ * Emits the new audio state as a uint8_t.
+ */
 class AudioStateTrigger : public Trigger<uint8_t> {
  public:
   explicit AudioStateTrigger(A2DPSinkHub *parent) {
@@ -100,6 +140,11 @@ class AudioStateTrigger : public Trigger<uint8_t> {
 #endif
 
 #ifdef USE_A2DP_SAMPLE_RATE
+/**
+ * @brief Trigger fired when the A2DP sample rate changes.
+ *
+ * Emits the new sample rate in Hz as a uint16_t.
+ */
 class SampleRateTrigger : public Trigger<uint16_t> {
  public:
   explicit SampleRateTrigger(A2DPSinkHub *parent) {
@@ -111,6 +156,11 @@ class SampleRateTrigger : public Trigger<uint16_t> {
 #endif
 
 #ifdef USE_A2DP_AVRCP_CONNECTION_STATE
+/**
+ * @brief Trigger fired when the AVRCP connection state changes.
+ *
+ * Emits a bool indicating whether AVRCP is connected.
+ */
 class AVRCPConnectionStateTrigger : public Trigger<bool> {
  public:
   explicit AVRCPConnectionStateTrigger(A2DPSinkHub *parent) {

@@ -6,10 +6,17 @@ namespace esphome::a2dp_sink {
 
 static const char *const TAG = "a2dp_sink.sensor";
 
+/**
+ * @brief Log the numeric sensor configuration.
+ */
 void A2DPSinkNumericSensor::dump_config() { LOG_SENSOR("", "A2DPSink Numeric", this); }
 
 
 // Dedup to avoid frontend churn; Sensor::publish_state already dedups the float assign but still notifies.
+/**
+ * @brief Publish a new sensor value only if it differs from the current state.
+ * @param value The new sensor value.
+ */
 void A2DPSinkNumericSensor::publish_if_changed_(float value) {
   if (this->get_raw_state() != value) {
     this->publish_state(value);
@@ -18,6 +25,13 @@ void A2DPSinkNumericSensor::publish_if_changed_(float value) {
 
 #ifdef USE_A2DP_METADATA
 
+/**
+ * @brief Initialize the metadata numeric sensor.
+ *
+ * Disables the loop, requests the specific metadata attribute from the parent hub,
+ * and subscribes to metadata update callbacks. Filters by metadata type and parses
+ * the string value to a float before publishing.
+ */
 void A2DPMetadataNumericSensor::setup() {
   this->disable_loop();
 
@@ -38,6 +52,12 @@ void A2DPMetadataNumericSensor::setup() {
 
 #ifdef USE_A2DP_POS
 
+/**
+ * @brief Initialize the track position sensor.
+ *
+ * Disables the loop and subscribes to playback position callbacks,
+ * publishing the position value as a float.
+ */
 void A2DPSinkTrackPositionSensor::setup() {
   this->disable_loop();
 
@@ -50,6 +70,12 @@ void A2DPSinkTrackPositionSensor::setup() {
 
 #ifdef USE_A2DP_RSSI
 
+/**
+ * @brief Initialize the RSSI sensor.
+ *
+ * Disables the loop and subscribes to RSSI delta callbacks,
+ * publishing the RSSI delta value as a float.
+ */
 void A2DPSinkRssiSensor::setup() {
   this->disable_loop();
 
@@ -62,6 +88,12 @@ void A2DPSinkRssiSensor::setup() {
 
 #ifdef USE_A2DP_SAMPLE_RATE
 
+/**
+ * @brief Initialize the sample rate sensor.
+ *
+ * Disables the loop and subscribes to sample rate callbacks,
+ * publishing the sample rate value as a float.
+ */
 void A2DPSinkSampleRateSensor::setup() {
   this->disable_loop();
 
@@ -70,7 +102,13 @@ void A2DPSinkSampleRateSensor::setup() {
   });
 }
 
-void A2DPSinkChannelsSensor::setup() {
+    /**
+     * @brief Initialize the channels sensor.
+     *
+     * Disables the loop and subscribes to sample rate callbacks (which also
+     * trigger on channel changes), publishing the channel count as a float.
+     */
+    void A2DPSinkChannelsSensor::setup() {
   this->disable_loop();
 
   this->parent_->add_sample_rate_callback([this](uint16_t /*sample_rate*/) {

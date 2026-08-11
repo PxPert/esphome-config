@@ -15,8 +15,14 @@ namespace esphome::a2dp_sink {
         static constexpr const char *const URI_PREFIX = "a2dp://";
         static const char *TAG = "a2dp_sink_media_source";
 
+        /** @brief Global singleton pointer to the active A2DP media source instance. */
         static A2DPSinkMediaSource *g_a2dp_sink_instance = nullptr;
 
+        /**
+         * @brief Main loop for the A2DP media source.
+         *
+         * Currently a no-op; the component is event-driven via callbacks.
+         */
         void A2DPSinkMediaSource::loop() {
             /*
             static unsigned long int last_stub_time_ = 0;
@@ -30,6 +36,13 @@ namespace esphome::a2dp_sink {
             */
 
         }
+        /**
+         * @brief Initialize the A2DP media source.
+         *
+         * Sets up the stream reader callback, AVRCP connection state,
+         * audio state, playback status, connection state, and sample rate
+         * callbacks to synchronize media source state with A2DP events.
+         */
         void A2DPSinkMediaSource::setup()
         {
             ESP_LOGI(TAG, "A2DP Sink Media Source initializing");
@@ -97,11 +110,19 @@ namespace esphome::a2dp_sink {
             ESP_LOGI(TAG, "A2DP Sink Media Source initialized");
         }
 
+        /**
+         * @brief Log the A2DP media source configuration.
+         */
         void A2DPSinkMediaSource::dump_config()
         {
             ESP_LOGCONFIG(TAG, "A2DP Sink Media Source");
         }
 
+        /**
+         * @brief Start playing the given URI.
+         * @param uri The media URI to play (must start with "a2dp://").
+         * @return bool True if the URI was accepted, false otherwise.
+         */
         bool A2DPSinkMediaSource::play_uri(const std::string &uri) {
             ESP_LOGD(TAG, "Play URI: '%s'", uri.c_str());
             
@@ -125,6 +146,17 @@ namespace esphome::a2dp_sink {
             return true;
         }
 
+        /**
+         * @brief Handle a media source command.
+         *
+         * Routes the command to the appropriate A2DP action:
+         * - STOP: disconnects from the A2DP source
+         * - PAUSE: pauses the A2DP stream
+         * - PLAY: resumes the A2DP stream
+         * - NEXT: skips to the next track
+         * - PREVIOUS: skips to the previous track
+         * @param command The media source command to execute.
+         */
         void A2DPSinkMediaSource::handle_command(media_source::MediaSourceCommand command) {
             ESP_LOGD(TAG, "Handling media command: %d", command);
             switch (command) {
@@ -182,11 +214,24 @@ namespace esphome::a2dp_sink {
             }
         }
 
+        /**
+         * @brief Check if this media source can handle the given URI.
+         * @param uri The URI to check.
+         * @return bool True if the URI starts with "a2dp://".
+         */
         bool A2DPSinkMediaSource::can_handle(const std::string &uri) const {
             // ESP_LOGE(TAG, "Check URI: '%s'", uri.c_str());
             return uri.starts_with(URI_PREFIX);
         }
 
+        /**
+         * @brief Process incoming A2DP audio data.
+         *
+         * If the media source is in the PLAYING state, writes the audio
+         * data to the output stream.
+         * @param data Pointer to the audio data buffer.
+         * @param length Size of the audio data in bytes.
+         */
         void A2DPSinkMediaSource::a2dp_data_stream(const uint8_t *data, uint32_t length) {
 
             if (this->get_state() == media_source::MediaSourceState::PLAYING) {
