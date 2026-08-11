@@ -14,12 +14,12 @@ esp32:
 #    version: 6.0.2
     advanced:
       enable_ota_rollback: false
- #     sram1_as_iram: true
+      sram1_as_iram: true
       minimum_chip_revision: "1.1"
 logger:
-  level: DEBUG
-#  task_log_buffer_size: 0B
-#  tx_buffer_size: 160B
+  level: INFO
+  task_log_buffer_size: 0B
+  tx_buffer_size: 160B
   
 api:
 
