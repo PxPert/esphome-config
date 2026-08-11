@@ -103,7 +103,7 @@ speaker:
 #  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
 #  id: timer_finished_wave_file
 
-sendspin:
+# sendspin:
   
 #http_request:
 #  buffer_size_rx: 1024
