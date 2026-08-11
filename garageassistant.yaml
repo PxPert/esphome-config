@@ -123,7 +123,7 @@ a2dp_sink:
 media_source:
   - platform: audio_http
     id: source_http
-    buffer_size: 5000
+    buffer_size: 6000
 #  - platform: audio_file
 #    id: source_file
 #  - platform: sendspin
