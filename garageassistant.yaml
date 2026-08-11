@@ -13,6 +13,7 @@ esp32:
     type: esp-idf
 #    version: 6.0.2
     advanced:
+      enable_ota_rollback: false
  #     sram1_as_iram: true
       minimum_chip_revision: "1.1"
 logger:
