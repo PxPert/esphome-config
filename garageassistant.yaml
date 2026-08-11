@@ -132,7 +132,7 @@ speaker:
 #    num_channels: 1
     channel: stereo
     bits_per_sample: 16bit
-    buffer_duration: 15ms        
+    buffer_duration: 30ms        
 #    buffer_duration: 100ms
 #  - platform: mixer
 #    num_channels: 1
