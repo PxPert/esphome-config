@@ -34,7 +34,7 @@ esp32:
       sram1_as_iram: true
       minimum_chip_revision: "1.1"
 logger:
-  level: INFO
+  level: DEBUG
   task_log_buffer_size: 0B
   tx_buffer_size: 160B
   
