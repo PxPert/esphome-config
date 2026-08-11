@@ -118,9 +118,9 @@ media_source:
     buffer_size: 5000
 #  - platform: audio_file
 #    id: source_file
-  - platform: sendspin
-    id: source_sendspin
-    buffer_size: 35000
+#  - platform: sendspin
+#    id: source_sendspin
+#    buffer_size: 35000
   - platform: a2dp_sink
     id: bluetooth
     
@@ -162,7 +162,7 @@ media_player:
       sources:
         - source_http
 #        - source_file
-        - source_sendspin
+#        - source_sendspin
         - bluetooth
 
 #    volume_min: 0.8
