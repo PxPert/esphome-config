@@ -41,11 +41,11 @@ esp32:
       minimum_chip_revision: "1.1"
       
 logger:
-  level: DEBUG
+  level: INFO
   task_log_buffer_size: 0B
   tx_buffer_size: 160B
   
-api:
+# api:
 
 ota:
   - platform: esphome
