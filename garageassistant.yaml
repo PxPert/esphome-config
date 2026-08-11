@@ -80,8 +80,8 @@ speaker:
     id: src_music
     i2s_dout_pin: GPIO22
     dac_type: external
-    num_channels: 1
-#    channel: 
+    num_channels: 2
+    channel: stereo
     bits_per_sample: 16bit
     buffer_duration: 30ms        
     timeout: 1s
@@ -104,7 +104,7 @@ speaker:
 #  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
 #  id: timer_finished_wave_file
 
-# sendspin:
+sendspin:
   
 #http_request:
 #  buffer_size_rx: 1024
@@ -114,14 +114,14 @@ a2dp_sink:
   name: Garage
   
 media_source:
-  - platform: audio_http
-    id: source_http
-    buffer_size: 5000
+#  - platform: audio_http
+#    id: source_http
+#    buffer_size: 5000
 #  - platform: audio_file
 #    id: source_file
-#  - platform: sendspin
-#    id: source_sendspin
-#    buffer_size: 35000
+  - platform: sendspin
+    id: source_sendspin
+    buffer_size: 35000
   - platform: a2dp_sink
     id: bluetooth
     
@@ -149,8 +149,8 @@ media_player:
 #          brightness: 100%
 #          effect: none
         
-#  - platform: sendspin
-#    name: "Sendspin Group"
+  - platform: sendspin
+    name: "Sendspin Group"
     
   - platform: speaker_source
     name: None
@@ -159,11 +159,11 @@ media_player:
       speaker: src_music
       format: WAV
       sample_rate: 48000
-      num_channels: 1
+      num_channels: 2
       sources:
-        - source_http
+#        - source_http
 #        - source_file
-#        - source_sendspin
+        - source_sendspin
         - bluetooth
 
 #    volume_min: 0.8
