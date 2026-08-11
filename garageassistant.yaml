@@ -43,7 +43,7 @@ esp32:
       CONFIG_BT_ALARM_MAX_NUM: "20"   # default 50
       
 #      CONFIG_BT_BTU_TASK_STACK_SIZE: "3072"   # default 4096
-      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "10"      # default 10 / Tweaked to 6
+      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "11"      # default 10 / Tweaked to 6
       CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM: "16"    # default 32
       CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM: "16"    # default 32
       CONFIG_ESP32_WIFI_TX_BUFFER_TYPE: "1"            # dynamic
