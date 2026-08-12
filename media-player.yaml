@@ -64,7 +64,7 @@ ota:
 external_components:
   - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
-    refresh: 0s
+    refresh: never
 
 packages:
   device_base: !include includes/dev_museluxe_base.yaml
