@@ -6,6 +6,19 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  libraries:
+#    - SBCDecoder=https://github.com/pschatzmann/arduino-libsbc
+#    - AACDecoder=https://github.com/pschatzmann/arduino-libhelix
+#    - AudioTools=https://github.com/pschatzmann/arduino-audio-tools
+#    - BluetoothA2DPSink=https://github.com/PxPert/ESP32-A2DP
+#    - BluetoothA2DPSink="file:///config/lib/ESP32-A2DP"
+  platformio_options:
+    build_flags: 
+      - -DUSE_DEFAULT_STDLIB
+      - -DUSE_IDF_LOGGER
+      - -DEXIT_ON_STOP
+#  includes:
+#    - includes/advanced_bt_component.h
 
 psram:
   mode: quad
@@ -21,7 +34,7 @@ esp32:
   
   framework:
     type: esp-idf
-#    version: 6.0.2
+    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
       sram1_as_iram: true
@@ -51,7 +64,7 @@ ota:
 external_components:
   - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
-    refresh: 0s
+    refresh: never
 
 packages:
   device_base: !include includes/dev_museluxe_base.yaml
