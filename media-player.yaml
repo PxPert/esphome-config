@@ -21,7 +21,7 @@ esp32:
   
   framework:
     type: esp-idf
-    version: 6.0.2
+#    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
       sram1_as_iram: true
