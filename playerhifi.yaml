@@ -383,7 +383,7 @@ display:
         // Player inattivo: gestisci il timer
         if (id(idle_start_time) < 0) {
           // Prima volta che entriamo in idle: registra il timestamp
-          if(idle_start_time) = id(ha_time).now().timestamp;
+          id(idle_start_time) = id(ha_time).now().timestamp;
         }
         // Calcola quanto tempo siamo in idle
         float idle_seconds = id(ha_time).now().timestamp - id(idle_start_time);
