@@ -8,7 +8,7 @@ esphome:
 
 psram:
   mode: quad
-  speed: 80MHZ
+  speed: 120MHZ
 #  ignore_not_found: false
   
 mdns:
@@ -33,8 +33,11 @@ wifi:
     
 logger:
   hardware_uart: UART0
-  level: DEBUG
-  baud_rate: 115200
+  level: WARN
+  
+  baud_rate: 0
+  task_log_buffer_size: 0
+  tx_buffer_size: 160
 
 api:
   encryption:
@@ -67,11 +70,13 @@ speaker:
     sample_rate: 44100
     i2s_dout_pin: GPIO32
     spdif_mode: true
+    buffer_duration: 100ms
   - platform: resampler
     output_speaker: speaker_spdif
     sample_rate: 44100
     task_stack_in_psram: true
     id: speaker_resampler
+    buffer_duration: 100ms
     
 
 media_source:
@@ -160,7 +165,8 @@ button:
 i2c:
   sda: GPIO19
   scl: GPIO18
-  frequency: 100kHz
+  frequency: 10kHz
+  scan: false
 
 # --- Display OLED SSD1306 ---
 display:
@@ -205,7 +211,7 @@ binary_sensor:
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
-    name: "Pulsante Play/Stop"
+    name: "Pulsante Play-Stop"
     on_press:
       then:
         - logger.log:
