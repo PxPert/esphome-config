@@ -9,7 +9,7 @@ esphome:
 psram:
   mode: quad
   speed: 80MHZ
-  ignore_not_found: false
+  ignore_not_found: true
   
 mdns:
   disabled: true
