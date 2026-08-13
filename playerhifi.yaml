@@ -252,7 +252,8 @@ sensor:
   - platform: template
     id: co_progress
     name: "Song position"
-    update_interval: never          
+    update_interval: never 
+    internal: true
   - platform: template
     id: co_duration
     name: "Song duration"
