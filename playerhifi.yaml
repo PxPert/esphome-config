@@ -349,7 +349,7 @@ display:
       } else if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED) {
         status_icon = "\U000F03E4"; // Pause icon
       }
-      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,disc_icon);
+      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
 
       it.print(0, 0, id(font_header), id(co_source).state());
 
