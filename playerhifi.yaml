@@ -176,8 +176,8 @@ media_player:
           
 font:
   - file: "fonts/Roboto-Regular.ttf"
-    id: font_regular
-    size: 16
+    id: font_header
+    size: 14
     glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
   - file: "fonts/Roboto-Light.ttf"
     id: font_light
@@ -351,8 +351,16 @@ display:
       }
       it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,disc_icon);
 
-      it.rectangle(0, 0, 128, 17);
-      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
+      it.print(0, 0, id(font_header), id(co_source).state());
+
+      if (
+          (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
+          ||
+          (id(external_media_player).state == MEDIA_PLAYER_STATE_PAUSED) 
+          )
+        {
+        }
+
 
     flip_x: true
     flip_y: true
