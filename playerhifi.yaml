@@ -386,32 +386,23 @@ display:
       it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", position_secs / 60, position_secs % 60 );
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
-      it.print(40, 0, id(font_header), id(co_title).state.c_str());
 
       it.print(40, 15, id(md_state_icons_small), "\U000F0803");
-      it.print(55, 15, id(font_small), id(co_artist).state.c_str());
 
       it.print(40, 30, id(md_state_icons_small), "\U000F0025");
-      it.print(55, 30, id(font_small), id(co_album).state.c_str());
+
+      // Barra di base
+      it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
 
       // Barra di progresso con cursore
       float duration = id(co_duration).state;
       float progress = id(co_progress).state;
       const int bar_start = 40;
       const int bar_end = 124;
-      const int bar_y = 56;
+      const int bar_y = 57;
       const int bar_height = 2;
       const int cursor_width = 3;
-
-      // Barra di base
-      it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
-
-      // Cursore
-      if (duration > 0) {
-        float ratio = fminf(fmaxf(progress / duration, 0.0f), 1.0f);
-        int cursor_x = bar_start + (int)(ratio * (bar_end - bar_start));
-        it.filled_rectangle(cursor_x - (cursor_width / 2), bar_y - 3, cursor_width, bar_height + 6);
-      }
+      int cursor_x = 0;
       
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
@@ -419,7 +410,17 @@ display:
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PAUSED) 
           )
         {
+          it.print(40, 0, id(font_header), id(co_title).state.c_str());
+          it.print(55, 15, id(font_small), id(co_artist).state.c_str());
+          it.print(55, 30, id(font_small), id(co_album).state.c_str());
+          // Cursore
+          if (duration > 0) {
+            float ratio = fminf(fmaxf(progress / duration, 0.0f), 1.0f);
+            int cursor_x = bar_start + (int)(ratio * (bar_end - bar_start));
+          }
         }
+        it.filled_rectangle(cursor_x - (cursor_width / 2), bar_y - 3, cursor_width, bar_height + 6);
+
 
 
     flip_x: true
