@@ -398,7 +398,7 @@ display:
       float duration = id(co_duration).state;
       float progress = id(co_progress).state;
       const int bar_start = 40;
-      const int bar_end = 126;
+      const int bar_end = 124;
       const int bar_y = 56;
       const int bar_height = 2;
       const int cursor_width = 3;
