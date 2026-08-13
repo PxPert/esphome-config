@@ -20,7 +20,7 @@ esp32:
   
   framework:
     type: esp-idf
-    version: 6.0.2
+#    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
       enable_ota_rollback: false
@@ -69,14 +69,14 @@ speaker:
     dac_type: external
     channel: stereo
     use_apll: true
-    sample_rate: 44100
+    sample_rate: 48000
     i2s_dout_pin: GPIO32
     spdif_mode: true
     buffer_duration: 100ms
     timeout: never
   - platform: resampler
     output_speaker: speaker_spdif
-    sample_rate: 44100
+    sample_rate: 48000
     task_stack_in_psram: true
     id: speaker_resampler
     buffer_duration: 100ms
@@ -96,7 +96,7 @@ media_player:
     media_pipeline:
       format: FLAC
       num_channels: 2
-      sample_rate: 44100
+      sample_rate: 48000
       speaker: speaker_resampler
 #      speaker: speaker_spdif
       sources:
