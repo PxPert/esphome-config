@@ -140,7 +140,7 @@ speaker:
 
 a2dp_sink:
   name: Garage
-  minimal_bluetooth: True
+#  minimal_bluetooth: True
   
 media_source:
   - platform: audio_http
