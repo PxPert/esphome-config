@@ -350,7 +350,7 @@ font:
 
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: md_state_icons_small
-    size: 12
+    size: 13
     glyphs:
       - "\U000F0025" # Album
       - "\U000F0803" # Artist
@@ -380,19 +380,19 @@ display:
           break;
       }
       
-      it.printf(0, 14, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
-      it.print(0, 50, id(font_small), TextAlign::TOP_CENTER, "00:00");
+      it.printf(20, 14, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
+      it.print(20, 50, id(font_small), TextAlign::TOP_CENTER, "00:00");
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
       it.print(40, 0, id(font_header), id(co_title).state.c_str());
 
       it.print(40, 15, id(md_state_icons_small), "\U000F0803");
-      it.print(54, 14, id(font_header), id(co_artist).state.c_str());
+      it.print(55, 15, id(font_small), id(co_artist).state.c_str());
 
-      it.print(40, 27, id(md_state_icons_small), "\U000F0025");
-      it.print(54, 28, id(font_header), id(co_album).state.c_str());
+      it.print(40, 28, id(md_state_icons_small), "\U000F0025");
+      it.print(55, 28, id(font_small), id(co_album).state.c_str());
 
-      it.print(40, 42, id(font_header), "Qui la barra");
+      it.print(40, 50, id(font_header), "Qui la barra");
 
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
