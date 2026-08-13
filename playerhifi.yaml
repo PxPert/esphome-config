@@ -323,11 +323,11 @@ font:
   - file: "fonts/Roboto-Regular.ttf"
     id: font_header
     size: 14
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
   - file: "fonts/Roboto-Light.ttf"
     id: font_small
     size: 13
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
 #  - file: "fonts/Roboto-Condensed.ttf"
 #    id: font_condensed
 #    size: 16
@@ -383,7 +383,7 @@ display:
       
       it.printf(20, 11, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
       uint16_t position_secs = id(co_progress).state / 1000;
-      it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", position_secs / 60, position_secs % 60000 );
+      it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", position_secs / 60, position_secs % 60 );
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
       it.print(40, 0, id(font_header), id(co_title).state.c_str());
@@ -399,7 +399,7 @@ display:
       float progress = id(co_progress).state;
       const int bar_start = 40;
       const int bar_end = 126;
-      const int bar_y = 50;
+      const int bar_y = 56;
       const int bar_height = 2;
       const int cursor_width = 3;
 
