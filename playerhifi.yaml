@@ -268,11 +268,21 @@ text_sensor:
     name: "Album"
     id: sp_album
     internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_album
+          state: !lambda 'return x;'
   - platform: sendspin
     type: title
     name: "Title"
     id: sp_title
     internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_title
+          state: !lambda 'return x;'
 
   - platform: template
     name: "Artist"
