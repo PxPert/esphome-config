@@ -319,7 +319,7 @@ text_sensor:
 i2c:
   sda: GPIO19
   scl: GPIO18
-  frequency: 100kHz
+  frequency: 400kHz
   scan: false
 
 font:
