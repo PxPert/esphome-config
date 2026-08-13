@@ -14,8 +14,8 @@ psram:
 mdns:
   disabled: true
   
-debug:
-  update_interval: 10s
+#debug:
+#  update_interval: 10s
   
 esp32:
   board: esp-wrover-kit
@@ -59,11 +59,11 @@ wifi:
   
 logger:
   hardware_uart: UART0
-  level: DEBUG
+  level: WARN
   
-  baud_rate: 115200
-  task_log_buffer_size: 0
-  tx_buffer_size: 160
+  baud_rate: 0
+#  task_log_buffer_size: 0
+#  tx_buffer_size: 160
 
 api:
   encryption:
@@ -261,11 +261,11 @@ sensor:
           id: co_source
           state: !lambda 'return (x==0?"Stopped":(x==1?"Bluetooth":"Sendspin"));'
     
-  - platform: debug
-    free:
-      name: Free
-    fragmentation:
-      name: Fragmentation
+#  - platform: debug
+#    free:
+#      name: Free
+#    fragmentation:
+#      name: Fragmentation
 
 text_sensor:
   - platform: sendspin
