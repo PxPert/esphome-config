@@ -9,7 +9,7 @@ esphome:
 psram:
   mode: quad
   speed: 80MHZ
-  ignore_not_found: true
+  ignore_not_found: false
   
 mdns:
   disabled: true
@@ -113,9 +113,9 @@ media_source:
     id: media_source_sendspin
     static_delay_adjustable: true
     buffer_size: 350000
-  - platform: audio_http
-    id: media_source_http
-    buffer_size: 16000
+#  - platform: audio_http
+#    id: media_source_http
+#    buffer_size: 16000
   - platform: a2dp_sink
     id: media_source_bluetooth
     
@@ -138,24 +138,24 @@ media_player:
         - lambda: |-
             ESP_LOGW("TEST","TEST player state %d", id(external_media_player).state);
             ESP_LOGW("TEST","TEST bluetooth state %d", id(media_source_bluetooth).get_state());
-            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_http).get_state());
+            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_sendspin).get_state());
 
 
           
-#font:
-#  - file: "fonts/Roboto-Regular.ttf"
-#    id: font_regular
-#    size: 16
-#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-#  - file: "fonts/Roboto-Light.ttf"
-#    id: font_light
-#    size: 24
-#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-#  - file: "fonts/Roboto-Condensed.ttf"
-#    id: font_condensed
-#    size: 16
-#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-    
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_regular
+    size: 16
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+  - file: "fonts/Roboto-Light.ttf"
+    id: font_light
+    size: 24
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+  - file: "fonts/Roboto-Condensed.ttf"
+    id: font_condensed
+    size: 16
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+   
 #  - file: "fonts/materialdesignicons-webfont.ttf"
 #    id: font_mdi
 #    size: 24
@@ -202,24 +202,25 @@ sensor:
       name: Free
     fragmentation:
       name: Fragmentation
+      
 # --- I2C Bus ---
-#i2c:
-#  sda: GPIO19
-#  scl: GPIO18
-#  frequency: 100kHz
-#  scan: false
+i2c:
+  sda: GPIO19
+  scl: GPIO18
+  frequency: 100kHz
+  scan: false
 
 # --- Display OLED SSD1306 ---
-#display:
-#  - platform: ssd1306_i2c
-#    model: SSD1306_128X64
-#    address: 0x3C
-#    lambda: |-
-#      it.rectangle(0, 0, 128, 17);
-#      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
-#
-#    flip_x: true
-#    flip_y: true
+display:
+  - platform: ssd1306_i2c
+    model: SSD1306_128X64
+    address: 0x3C
+    lambda: |-
+      it.rectangle(0, 0, 128, 17);
+      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
+
+    flip_x: true
+    flip_y: true
 
 ## --- Pulsanti GPIO ---
 #binary_sensor:
