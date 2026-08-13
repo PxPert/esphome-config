@@ -176,6 +176,7 @@ display:
 # --- Pulsanti GPIO ---
 binary_sensor:
   - platform: gpio
+    internal: true
     pin:
       number: GPIO12
       mode: INPUT_PULLUP
@@ -187,6 +188,7 @@ binary_sensor:
             format: "Pulsante Avanti premuto"
 
   - platform: gpio
+    internal: true
     pin:
       number: GPIO27
       mode: INPUT_PULLUP
@@ -198,6 +200,7 @@ binary_sensor:
             format: "Pulsante Indietro premuto"
 
   - platform: gpio
+    internal: true
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
