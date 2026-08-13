@@ -77,7 +77,7 @@ external_components:
     components: [ a2dp_sink ]
 #    refresh: never
   
-sendspin:
+#sendspin:
 #  task_stack_in_psram: true
 
 a2dp_sink:
@@ -93,25 +93,27 @@ speaker:
     dac_type: external
     channel: stereo
     use_apll: true
-    sample_rate: 44100
+    sample_rate: 48000
     i2s_dout_pin: GPIO32
     spdif_mode: true
     buffer_duration: 100ms
     timeout: 1s
   - platform: resampler
     output_speaker: speaker_spdif
-    sample_rate: 44100
+    sample_rate: 48000
     task_stack_in_psram: true
     id: speaker_resampler
     buffer_duration: 100ms
     
 
 media_source:
-  - platform: sendspin
-    id: media_source_sendspin
-    static_delay_adjustable: true
-    buffer_size: 350000
-
+#  - platform: sendspin
+#    id: media_source_sendspin
+#    static_delay_adjustable: true
+#    buffer_size: 350000
+  - platform: audio_http
+    id: media_source_http
+    buffer_size: 16000
   - platform: a2dp_sink
     id: media_source_bluetooth
     
@@ -122,18 +124,18 @@ media_player:
     media_pipeline:
       format: FLAC
       num_channels: 2
-      sample_rate: 44100
+      sample_rate: 48000
       speaker: speaker_resampler
 #      speaker: speaker_spdif
       sources:
-        - media_source_sendspin
+#        - media_source_sendspin
         - media_source_bluetooth
     on_state:
       - then: 
         - lambda: |-
             ESP_LOGW("TEST","TEST player state %d", id(external_media_player).state);
             ESP_LOGW("TEST","TEST bluetooth state %d", id(media_source_bluetooth).get_state());
-            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_sendspin).get_state());
+            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_http).get_state());
 
 
           
