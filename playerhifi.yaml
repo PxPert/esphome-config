@@ -154,9 +154,9 @@ media_player:
       - then: 
         - lambda: |-
             if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING) {
-              if (id(media_source_bluetooth).get_state() == media_player::MEDIA_PLAYER_STATE_PLAYING) {
+              if (id(media_source_bluetooth).get_state() == media_player::MEDIA_SOURCE_STATE_PLAYING) {
                 id(co_source_type).publish_state(1);
-              } else if (id(media_source_sendspin).get_state() == media_player::MEDIA_PLAYER_STATE_PLAYING) {
+              } else if (id(media_source_sendspin).get_state() == media_player::MEDIA_SOURCE_STATE_PLAYING) {
                 id(co_source_type).publish_state(2);
               } else {
                 id(co_source_type).publish_state(0);
