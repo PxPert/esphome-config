@@ -267,7 +267,7 @@ sensor:
     on_value:
       - text_sensor.template.publish:
           id: co_source
-          state: !lambda 'return (x==0?"":(x==1?"Bluetooth":"Sendspin"));'
+          state: !lambda 'return (x==0?"Stopped":(x==1?"Bluetooth":"Sendspin"));'
     
   - platform: debug
     free:
