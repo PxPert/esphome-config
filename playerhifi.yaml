@@ -160,7 +160,8 @@ display:
     address: 0x3C
     lambda: |-
       it.rectangle(0, 0, 128, 17);
-      // it.printf(64, 32, TextAlign::CENTER, "Player HiFi");
+      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
+
     flip_x: true
     flip_y: true
 
