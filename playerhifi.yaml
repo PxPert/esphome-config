@@ -380,7 +380,7 @@ display:
           break;
       }
       
-      it.printf(20, 14, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
+      it.printf(20, 12, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
       it.print(20, 50, id(font_small), TextAlign::TOP_CENTER, "00:00");
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
