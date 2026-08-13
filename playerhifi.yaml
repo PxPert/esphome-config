@@ -92,13 +92,13 @@ a2dp_sink:
           args: [type, text.c_str()]
       - lambda: |- 
           switch (type) {
-            case a2dp_sink::A2DPSinkMetadataTypes::TITLE:
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::TITLE:
               id(co_title).publish_state(text);
               break;
-            case a2dp_sink::A2DPSinkMetadataTypes::ARTIST:
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::ARTIST:
               id(co_artist).publish_state(text);
               break;
-            case a2dp_sink::A2DPSinkMetadataTypes::ALBUM:
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::ALBUM:
               id(co_album).publish_state(text);
               break;
           }
