@@ -381,6 +381,8 @@ display:
       }
       
       it.printf(0, 14, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
+      it.print(0, 54, id(font_small), "00:00");
+      
       it.print(13, 0, id(md_state_icons_header), source_icon);
       it.print(40, 0, id(font_header), id(co_title).state.c_str());
 
