@@ -130,6 +130,7 @@ media_player:
       sources:
 #        - media_source_sendspin
         - media_source_bluetooth
+        - media_source_http
     on_state:
       - then: 
         - lambda: |-
