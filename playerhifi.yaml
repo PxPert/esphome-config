@@ -64,10 +64,14 @@ speaker:
     dac_type: external
     channel: stereo
     use_apll: true
-    sample_rate: 44100
-#    min_sample_rate: 44100
+    sample_rate: 48000
     i2s_dout_pin: GPIO32
     spdif_mode: true
+  - platform: resampler
+    output_speaker: speaker_spdif
+    task_stack_in_psram: true
+    id: speaker_resampler
+    
 
 media_source:
   - platform: sendspin
@@ -84,7 +88,7 @@ media_player:
       format: FLAC
       num_channels: 2
       sample_rate: 44100
-      speaker: speaker_spdif
+      speaker: speaker_resampler
       sources:
         - media_source_sendspin
         - media_source_bluetooth
