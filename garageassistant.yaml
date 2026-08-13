@@ -132,7 +132,7 @@ speaker:
 #  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
 #  id: timer_finished_wave_file
 
-#sendspin:
+sendspin:
   
 #http_request:
 #  buffer_size_rx: 1024
@@ -143,14 +143,14 @@ a2dp_sink:
   minimal_bluetooth: True
   
 media_source:
-  - platform: audio_http
-    id: source_http
-    buffer_size: 8000
+#  - platform: audio_http
+#    id: source_http
+#    buffer_size: 8000
 #  - platform: audio_file
 #    id: source_file
-#  - platform: sendspin
-#    id: source_sendspin
-#    buffer_size: 35000
+  - platform: sendspin
+    id: source_sendspin
+    buffer_size: 35000
   - platform: a2dp_sink
     id: bluetooth
     
@@ -190,9 +190,9 @@ media_player:
       sample_rate: 48000
 #      num_channels: 1
       sources:
-        - source_http
+#        - source_http
 #        - source_file
-#        - source_sendspin
+        - source_sendspin
         - bluetooth
 
 #    volume_min: 0.8
