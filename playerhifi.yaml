@@ -224,19 +224,29 @@ sensor:
     id: sp_progress
     internal: true
     type: track_progress
+    on_value:
+      - sensor.template.publish:
+          id: co_progress
+          state: !lambda 'return x;'
+          
   - platform: sendspin
     id: sp_duration
     internal: true
     type: track_duration
-  
+    on_value:
+      - sensor.template.publish:
+          id: co_duration
+          state: !lambda 'return x;'
+
+
+          
   - platform: template
     id: co_progress
     name: "Song position"
-    update_interval: never
+    update_interval: never          
   - platform: template
     id: co_duration
     name: "Song duration"
-
   - platform: template
     id: co_source_type
     internal: true
