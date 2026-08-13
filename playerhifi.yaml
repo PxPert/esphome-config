@@ -185,40 +185,40 @@ button:
 #    flip_y: true
 
 # --- Pulsanti GPIO ---
-binary_sensor:
-  - platform: gpio
-    internal: true
-    pin:
-      number: GPIO12
-      mode: INPUT_PULLUP
-    name: "Pulsante Avanti"
-    on_press:
-      then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Avanti premuto"
+#binary_sensor:
+#  - platform: gpio
+#    internal: true
+#    pin:
+#      number: GPIO12
+#      mode: INPUT_PULLUP
+#    name: "Pulsante Avanti"
+#    on_press:
+#      then:
+#        - logger.log:
+#            level: INFO
+#            format: "Pulsante Avanti premuto"
+#
+#  - platform: gpio
+#    internal: true
+#    pin:
+#      number: GPIO27
+#      mode: INPUT_PULLUP
+#    name: "Pulsante Indietro"
+#    on_press:
+#      then:
+#        - logger.log:
+#            level: INFO
+#            format: "Pulsante Indietro premuto"
 
-  - platform: gpio
-    internal: true
-    pin:
-      number: GPIO27
-      mode: INPUT_PULLUP
-    name: "Pulsante Indietro"
-    on_press:
-      then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Indietro premuto"
-
-  - platform: gpio
-    internal: true
-    pin:
-      number: GPIO14
-      mode: INPUT_PULLUP
-    name: "Pulsante Play-Stop"
-    on_press:
-      then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Play/Stop premuto"
+#  - platform: gpio
+#    internal: true
+#    pin:
+#      number: GPIO14
+#      mode: INPUT_PULLUP
+#    name: "Pulsante Play-Stop"
+#    on_press:
+#      then:
+#        - logger.log:
+#            level: INFO
+#            format: "Pulsante Play/Stop premuto"
 
