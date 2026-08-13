@@ -84,7 +84,7 @@ speaker:
   - platform: i2s_audio
     dac_type: external
     i2s_dout_pin: GPIOXX
-    
+    spdif_mode: true
 
 number:
   - platform: a2dp_sink
