@@ -106,7 +106,7 @@ a2dp_sink:
               break;
             case (int)a2dp_sink::A2DPSinkMetadataTypes::PLAYINGTIME:
               float value = 0.0f;
-              if (sscanf((const char*)metadata.text(), "%f", &value) == 1) {
+              if (sscanf(text.c_str(), "%f", &value) == 1) {
                 id(co_progress).publish_state(value);
               }
               break;
