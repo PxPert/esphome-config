@@ -87,7 +87,7 @@ a2dp_sink:
   minimal_bluetooth: true
   on_playback_position:
     then:
-      - lambda: id(co_duration).publish_state(x);
+      - lambda: id(co_duration).publish_state(pos);
   on_metadata:
     then:
       - logger.log:
