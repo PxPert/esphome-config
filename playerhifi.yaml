@@ -392,13 +392,11 @@ display:
       it.print(40, 30, id(md_state_icons_small), "\U000F0025");
       it.print(55, 30, id(font_small), id(co_album).state.c_str());
 
-      it.print(40, 50, id(font_header), "Qui la barra");
-
       // Barra di progresso con cursore
       float duration = id(co_duration).state;
       float progress = id(co_progress).state;
       const int bar_start = 40;
-      const int bar_end = 128;
+      const int bar_end = 126;
       const int bar_y = 48;
       const int bar_height = 5;
 
