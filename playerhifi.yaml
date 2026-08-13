@@ -28,7 +28,7 @@ esp32:
 #    version: 6.1-beta1
     advanced:
       enable_ota_rollback: false
-      sram1_as_iram: true
+#      sram1_as_iram: true
     sdkconfig_options: 
       # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
 #      CONFIG_MBEDTLS_TLS_DISABLED: y
