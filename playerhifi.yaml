@@ -17,6 +17,7 @@ mdns:
 esp32:
   board: esp-wrover-kit
 #  partitions: partition_layouts/huge_app_esp32.csv
+  cpu_frequency: 240MHZ
   
   framework:
     type: esp-idf
@@ -25,7 +26,27 @@ esp32:
     advanced:
       enable_ota_rollback: false
       sram1_as_iram: true
-  cpu_frequency: 240MHZ
+    sdkconfig_options: 
+      # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
+#      CONFIG_MBEDTLS_TLS_DISABLED: y
+      CONFIG_MBEDTLS_CERTIFICATE_BUNDLE: n
+#      CONFIG_MBEDTLS_TLS_SERVER_AND_CLIENT: n
+      CONFIG_MBEDTLS_KEY_EXCHANGE_RSA: y
+      CONFIG_MBEDTLS_KEY_EXCHANGE_ELLIPTIC_CURVE: n
+      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_RSA: n
+      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA: n
+      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA: n
+      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_RSA: n
+      CONFIG_MBEDTLS_SSL_ALPN: n
+      CONFIG_MBEDTLS_SSL_RENEGOTIATION: n
+      CONFIG_MBEDTLS_CLIENT_SSL_SESSION_TICKETS: n
+      CONFIG_MBEDTLS_SERVER_SSL_SESSION_TICKETS: n
+      CONFIG_MBEDTLS_PEM_PARSE_C: n
+      CONFIG_MBEDTLS_PEM_WRITE_C: n
+      CONFIG_MBEDTLS_X509_CRL_PARSE_C: n
+      CONFIG_MBEDTLS_X509_CSR_PARSE_C: n
+      CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS: n
+  
 
 wifi:
   power_save_mode: none
