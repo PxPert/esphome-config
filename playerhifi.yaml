@@ -398,7 +398,7 @@ display:
       const int bar_y = 57;
       const int bar_height = 2;
       const int cursor_width = 3;
-      int cursor_x = 0;
+      int cursor_x = bar_start;
       
       // Barra di base
       it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
@@ -457,6 +457,4 @@ binary_sensor:
     name: "Pulsante Play-Stop"
     on_press:
       then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Play/Stop premuto"
+        - media_player.toggle: external_media_player
