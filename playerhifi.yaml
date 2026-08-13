@@ -98,11 +98,11 @@ speaker:
     spdif_mode: true
     timeout: 1s
     buffer_duration: 100ms
-  - platform: resampler
-    output_speaker: speaker_spdif
-    sample_rate: 48000
-    task_stack_in_psram: true
-    id: speaker_resampler
+#  - platform: resampler
+#    output_speaker: speaker_spdif
+#    sample_rate: 48000
+#    task_stack_in_psram: true
+#    id: speaker_resampler
 #    buffer_duration: 100ms
     
 
@@ -125,8 +125,8 @@ media_player:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
-      speaker: speaker_resampler
-#      speaker: speaker_spdif
+#      speaker: speaker_resampler
+      speaker: speaker_spdif
       sources:
 #        - media_source_sendspin
         - media_source_bluetooth
@@ -140,19 +140,19 @@ media_player:
 
 
           
-font:
-  - file: "fonts/Roboto-Regular.ttf"
-    id: font_regular
-    size: 16
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-  - file: "fonts/Roboto-Light.ttf"
-    id: font_light
-    size: 24
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-  - file: "fonts/Roboto-Condensed.ttf"
-    id: font_condensed
-    size: 16
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#font:
+#  - file: "fonts/Roboto-Regular.ttf"
+#    id: font_regular
+#    size: 16
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#  - file: "fonts/Roboto-Light.ttf"
+#    id: font_light
+#    size: 24
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#  - file: "fonts/Roboto-Condensed.ttf"
+#    id: font_condensed
+#    size: 16
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
     
 #  - file: "fonts/materialdesignicons-webfont.ttf"
 #    id: font_mdi
@@ -178,18 +178,18 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
 
     
-button:
-  - platform: template
-    name: next
-    on_press:
-      - then:
-          - media_player.next: external_media_player
-  - platform: template
-    name: previous
-    on_press:
-      - then:
-          - media_player.previous: external_media_player
-            
+#button:
+#  - platform: template
+#    name: next
+#    on_press:
+#      - then:
+#          - media_player.next: external_media_player
+#  - platform: template
+#    name: previous
+#    on_press:
+#      - then:
+#          - media_player.previous: external_media_player
+#            
   - platform: restart
     name: "restart"
     id: button_restart_1
@@ -201,59 +201,59 @@ sensor:
     fragmentation:
       name: Fragmentation
 # --- I2C Bus ---
-i2c:
-  sda: GPIO19
-  scl: GPIO18
-  frequency: 10kHz
-  scan: false
+#i2c:
+#  sda: GPIO19
+#  scl: GPIO18
+#  frequency: 100kHz
+#  scan: false
 
 # --- Display OLED SSD1306 ---
-display:
-  - platform: ssd1306_i2c
-    model: SSD1306_128X64
-    address: 0x3C
-    lambda: |-
-      it.rectangle(0, 0, 128, 17);
-      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
+#display:
+#  - platform: ssd1306_i2c
+#    model: SSD1306_128X64
+#    address: 0x3C
+#    lambda: |-
+#      it.rectangle(0, 0, 128, 17);
+#      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
+#
+#    flip_x: true
+#    flip_y: true
 
-    flip_x: true
-    flip_y: true
-
-# --- Pulsanti GPIO ---
-binary_sensor:
-  - platform: gpio
-    internal: true
-    pin:
-      number: GPIO12
-      mode: INPUT_PULLUP
-    name: "Pulsante Avanti"
-    on_press:
-      then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Avanti premuto"
-
-  - platform: gpio
-    internal: true
-    pin:
-      number: GPIO27
-      mode: INPUT_PULLUP
-    name: "Pulsante Indietro"
-    on_press:
-      then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Indietro premuto"
-
-  - platform: gpio
-    internal: true
-    pin:
-      number: GPIO14
-      mode: INPUT_PULLUP
-    name: "Pulsante Play-Stop"
-    on_press:
-      then:
-        - logger.log:
-            level: INFO
-            format: "Pulsante Play/Stop premuto"
+## --- Pulsanti GPIO ---
+#binary_sensor:
+#  - platform: gpio
+#    internal: true
+#    pin:
+#      number: GPIO12
+#      mode: INPUT_PULLUP
+#    name: "Pulsante Avanti"
+#    on_press:
+#      then:
+#        - logger.log:
+#            level: INFO
+#            format: "Pulsante Avanti premuto"
+#
+#  - platform: gpio
+#    internal: true
+#    pin:
+#      number: GPIO27
+#      mode: INPUT_PULLUP
+#    name: "Pulsante Indietro"
+#    on_press:
+#      then:
+#        - logger.log:
+#            level: INFO
+#            format: "Pulsante Indietro premuto"
+#
+#  - platform: gpio
+#    internal: true
+#    pin:
+#      number: GPIO14
+#      mode: INPUT_PULLUP
+#    name: "Pulsante Play-Stop"
+#    on_press:
+#      then:
+#        - logger.log:
+#            level: INFO
+#            format: "Pulsante Play/Stop premuto"
 
