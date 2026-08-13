@@ -12,7 +12,6 @@ psram:
   
 mdns:
   disabled: false
-
   
 esp32:
   board: esp-wrover-kit
@@ -52,13 +51,26 @@ a2dp_sink:
   name: test
   minimal_bluetooth: true
           
+i2s_audio:
+  - id: i2s_spdif
+    
+speaker:
+  - platform: i2s_audio
+    id: speaker_spdif
+    dac_type: external
+    channel: stereo
+    use_apll: true
+    sample_rate: 48000
+    i2s_dout_pin: GPIO32
+    spdif_mode: true
+
 media_source:
   - platform: sendspin
     id: sendspin_media_source
     static_delay_adjustable: true
   - platform: a2dp_sink
     id: bluetooth
-  
+    
 media_player:
   - platform: sendspin
     id: sendspin_group_media_player
@@ -70,21 +82,19 @@ media_player:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
-      speaker: luxe_speaker
+      speaker: speaker_spdif
       sources:
         - sendspin_media_source
         - bluetooth
-  
-speaker:
-  - platform: i2s_audio
-    dac_type: external
-    i2s_dout_pin: GPIO32
-    spdif_mode: true
 
+
+
+          
 number:
   - platform: a2dp_sink
     name: "Bluetooth Volume"
 
+    
 switch:
   - platform: a2dp_sink
     type: connection
