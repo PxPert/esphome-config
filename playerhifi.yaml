@@ -1,0 +1,254 @@
+# Basic Config
+substitutions:
+  friendly_name: Player HiFi
+  device_name: player-hifi
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+psram:
+  mode: quad
+  speed: 80MHZ
+  
+mdns:
+  disabled: false
+
+  
+esp32:
+  board: esp-wrover-kit
+#  partitions: partition_layouts/huge_app_esp32.csv
+  
+  framework:
+    type: esp-idf
+    version: 6.0.2
+#    version: 6.1-beta1
+    advanced:
+      sram1_as_iram: true
+  cpu_frequency: 240MHZ
+
+wifi:
+  power_save_mode: none
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  enable_btm: true
+  enable_rrm: true
+  manual_ip:
+    static_ip: 192.168.1.102
+    subnet: 255.255.255.0
+    gateway: 192.168.1.1
+    
+logger:
+  hardware_uart: UART0
+  level: DEBUG
+  baud_rate: 115200
+
+api:
+
+ota:
+  platform: esphome
+
+external_components:
+  - source: github://PxPert/a2dp_sink@master
+    components: [ a2dp_sink ]
+    refresh: never
+
+packages:
+  device_base: !include includes/dev_museluxe_base.yaml
+#  device_ext: !include includes/dev_museluxe_voice_extensions.yaml
+  
+sendspin:
+#  task_stack_in_psram: false
+
+a2dp_sink:
+  name: test
+  minimal_bluetooth: true
+  on_connection_state:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Connection state: %u", (uint8_t)state);
+  on_playback_status:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Playback status: %u", (uint8_t)playback);
+  on_playback_position:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Playback position: %lu", (unsigned long)pos);
+  on_rssi:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "RSSI delta: %d", rssi_delta);
+  on_metadata:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Metadata type: %d, text: %s", type, text.c_str());
+  on_peer_name:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Peer name: %s", name.c_str());
+  on_volume_change:
+    then:
+      - lambda: |-
+          ESP_LOGD("a2dp", "Volume: %d", volume);
+  on_sample_rate:
+    then:
+      - logger.log:
+          format: "Sample rate changed to: %d"
+          args: ["sample_rate"]
+          
+media_source:
+  - platform: sendspin
+#    fixed_delay: 10ms
+    id: sendspin_media_source
+#    task_stack_in_psram: true
+#    decode_memory: internal
+#    buffer_size: 2000000
+    static_delay_adjustable: true
+  - platform: a2dp_sink
+    id: bluetooth
+
+audio:
+  codecs: 
+    mp3:
+  
+media_player:
+  - platform: sendspin
+    id: sendspin_group_media_player
+    
+  - platform: speaker_source
+    id: external_media_player
+    name: Media Player
+    media_pipeline:
+      format: FLAC
+      num_channels: 2
+      sample_rate: 48000
+      speaker: luxe_speaker
+      sources:
+        - sendspin_media_source
+        - bluetooth
+#        - http_source
+  
+   
+speaker:
+  - platform: i2s_audio
+    id: luxe_speaker
+    i2s_audio_id: i2s_audio_bus
+    dac_type: external
+    i2s_dout_pin: GPIO26
+    channel: stereo
+    sample_rate: 44100
+    timeout: 500ms
+#    sample_rate: 44100
+
+number:
+  - platform: a2dp_sink
+    name: "Volume"
+    
+sensor:
+  - platform: sendspin
+    type: track
+    name: traccia
+    id: sensor_sendspin_1
+  - platform: a2dp_sink
+    type: tracknum
+    id: "btTrackNr"
+    name: "Track Number"
+  - platform: a2dp_sink
+    type: playingtime
+    id: "btPlayingTime"
+    name: "Playing Time"
+  - platform: a2dp_sink
+    type: num_tracks
+    id: "btNumTracks"
+    name: "Total Tracks"
+  - platform: a2dp_sink
+    type: trackposition
+    id: "btTrackPos"
+    name: "Track Position"
+  - platform: a2dp_sink
+    type: rssi
+    id: "btRSSI"
+    name: "RSSI"
+  - platform: a2dp_sink
+    type: samplereate
+    id: "btSampleRate"
+    name: "A2DP Sample Rate"
+  - platform: a2dp_sink
+    type: channels
+    id: "btChannels"
+    name: "A2DP Channels"
+        
+text_sensor:
+  - platform: a2dp_sink
+    id: "bt_artist"
+    type: "artist"
+    name: "Artist"
+  - platform: a2dp_sink
+    id: "bt_album"
+    type: "album"
+    name: "Album"
+  - platform: a2dp_sink
+    id: "bt_titlea"
+    type: "title"
+    name: "Title"
+  - platform: a2dp_sink
+    id: "bt_peername"
+    type: "peername"
+    name: "Peer name"
+  - platform: a2dp_sink
+    id: "bt_peeraddr"
+    type: "peeraddr"
+    name: "Peer address"
+#  - platform: wifi_info
+#    ip_address:
+#      name: "IP Address"
+#  - platform: sendspin
+#    type: title
+#    name: titolo
+#    id: text_sensor_sendspin_1
+#  - platform: sendspin
+#    type: artist
+#    name: artista
+#    id: text_sensor_sendspin_2
+
+switch:
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    id: "btConnection"
+    restore_mode: ALWAYS_OFF
+
+  - platform: a2dp_sink
+    type: bluetooth
+    name: "Bluetooth state"
+    id: "btState"
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: gpio
+    name: amplifier
+    id: amplifier_enable
+    pin:
+      number: GPIO21
+      inverted: true
+    restore_mode: ALWAYS_OFF
+    
+button:
+  - platform: template
+    name: next
+    on_press:
+      - then:
+          - logger.log:
+              level: INFO
+              format: Next
+          - media_player.next: external_media_player
+  - platform: template
+    name: previous
+    on_press:
+      - then:
+          - media_player.previous: external_media_player
+            
+  - platform: restart
+    name: "restart"
+    id: button_restart_1
+
