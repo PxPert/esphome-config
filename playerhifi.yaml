@@ -50,7 +50,6 @@ external_components:
 #    refresh: never
   
 sendspin:
-  task_stack_in_psram: true
 
 a2dp_sink:
   name: HiFiPlayer
@@ -65,7 +64,8 @@ speaker:
     dac_type: external
     channel: stereo
     use_apll: true
-    sample_rate: 44100
+    sample_rate: 48000
+    min_sample_rate: 44100
     i2s_dout_pin: GPIO32
     spdif_mode: true
 
@@ -83,7 +83,7 @@ media_player:
     media_pipeline:
       format: FLAC
       num_channels: 2
-      sample_rate: 44100
+#      sample_rate: 48000
       speaker: speaker_spdif
       sources:
         - media_source_sendspin
