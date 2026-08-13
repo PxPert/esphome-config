@@ -12,20 +12,44 @@ psram:
   ignore_not_found: true
   
 mdns:
-  disabled: false
+  disabled: true
+  
+debug:
+  update_interval: 10s
   
 esp32:
   board: esp-wrover-kit
 #  partitions: partition_layouts/huge_app_esp32.csv
+  cpu_frequency: 240MHZ
   
   framework:
     type: esp-idf
-#    version: 6.0.2
+    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
       enable_ota_rollback: false
       sram1_as_iram: true
-  cpu_frequency: 240MHZ
+    sdkconfig_options: 
+      # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
+#      CONFIG_MBEDTLS_TLS_DISABLED: y
+      CONFIG_MBEDTLS_CERTIFICATE_BUNDLE: n
+#      CONFIG_MBEDTLS_TLS_SERVER_AND_CLIENT: n
+#      CONFIG_MBEDTLS_KEY_EXCHANGE_RSA: y
+#      CONFIG_MBEDTLS_KEY_EXCHANGE_ELLIPTIC_CURVE: n
+#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_RSA: y
+#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA: n
+#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA: n
+#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_RSA: n
+      CONFIG_MBEDTLS_SSL_ALPN: n
+      CONFIG_MBEDTLS_SSL_RENEGOTIATION: n
+      CONFIG_MBEDTLS_CLIENT_SSL_SESSION_TICKETS: n
+      CONFIG_MBEDTLS_SERVER_SSL_SESSION_TICKETS: n
+      CONFIG_MBEDTLS_PEM_PARSE_C: n
+      CONFIG_MBEDTLS_PEM_WRITE_C: n
+      CONFIG_MBEDTLS_X509_CRL_PARSE_C: n
+      CONFIG_MBEDTLS_X509_CSR_PARSE_C: n
+      CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS: n
+  
 
 wifi:
   power_save_mode: none
@@ -34,9 +58,9 @@ wifi:
     
 logger:
   hardware_uart: UART0
-  level: INFO
+  level: DEBUG
   
-  baud_rate: 0
+  baud_rate: 115200
   task_log_buffer_size: 0
   tx_buffer_size: 160
 
@@ -51,7 +75,9 @@ ota:
 external_components:
   - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
-    refresh: 1s
+  - source: esphome-git/esphome/components
+    components: [ i2s_audio ]
+#    refresh: never
   
 sendspin:
   task_stack_in_psram: true
@@ -59,6 +85,32 @@ sendspin:
 a2dp_sink:
   name: HiFiPlayer
   minimal_bluetooth: true
+  on_playback_position:
+    then:
+      - lambda: id(co_progress).publish_state(pos);
+  on_metadata:
+    then:
+      - logger.log:
+          format: "Metadata type %d: %s"
+          args: [type, text.c_str()]
+      - lambda: |- 
+          switch (type) {
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::TITLE:
+              id(co_title).publish_state(text);
+              break;
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::ARTIST:
+              id(co_artist).publish_state(text);
+              break;
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::ALBUM:
+              id(co_album).publish_state(text);
+              break;
+            case (int)a2dp_sink::A2DPSinkMetadataTypes::PLAYINGTIME:
+              float value = 0.0f;
+              if (sscanf(text.c_str(), "%f", &value) == 1) {
+                id(co_duration).publish_state(value);
+              }
+              break;
+          }
           
 i2s_audio:
   - id: i2s_spdif
@@ -72,20 +124,24 @@ speaker:
     sample_rate: 48000
     i2s_dout_pin: GPIO32
     spdif_mode: true
-    buffer_duration: 100ms
-    timeout: never
-  - platform: resampler
-    output_speaker: speaker_spdif
-    sample_rate: 48000
-    task_stack_in_psram: true
-    id: speaker_resampler
-    buffer_duration: 100ms
+    timeout: 1s
+    buffer_duration: 30ms
+#  - platform: resampler
+#    output_speaker: speaker_spdif
+#    sample_rate: 48000
+#    task_stack_in_psram: true
+#    id: speaker_resampler
+#    buffer_duration: 100ms
     
 
 media_source:
   - platform: sendspin
     id: media_source_sendspin
     static_delay_adjustable: true
+    buffer_size: 350000
+#  - platform: audio_http
+#    id: media_source_http
+#    buffer_size: 16000
   - platform: a2dp_sink
     id: media_source_bluetooth
     
@@ -97,39 +153,31 @@ media_player:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
-      speaker: speaker_resampler
-#      speaker: speaker_spdif
+#      speaker: speaker_resampler
+      speaker: speaker_spdif
       sources:
         - media_source_sendspin
         - media_source_bluetooth
+#        - media_source_http
     on_state:
       - then: 
         - lambda: |-
-            ESP_LOGW("TEST","TEST player state %d", id(external_media_player).state);
-            ESP_LOGW("TEST","TEST bluetooth state %d", id(media_source_bluetooth).get_state());
-            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_sendspin).get_state());
-
-
+            if (
+              (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
+              ||
+              (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
+            ) {
+              if (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING) {
+                id(co_source_type).publish_state(1);
+              } else if (id(media_source_sendspin).get_state() == media_source::MediaSourceState::PLAYING) {
+                id(co_source_type).publish_state(2);
+              }              
+            } else {
+              id(co_source_type).publish_state(0);
+            }
           
-#font:
-#  - file: "fonts/Roboto-Regular.ttf"
-#    id: font_regular
-#    size: 16
-#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-#  - file: "fonts/Roboto-Light.ttf"
-#    id: font_light
-#    size: 24
-#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-#  - file: "fonts/Roboto-Condensed.ttf"
-#    id: font_condensed
-#    size: 16
-#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-    
-#  - file: "fonts/materialdesignicons-webfont.ttf"
-#    id: font_mdi
-#    size: 24
-#    glyphs: !lambda return {};
 
+        
 number:
   - platform: a2dp_sink
     name: "Bluetooth Volume"
@@ -165,26 +213,200 @@ button:
     name: "restart"
     id: button_restart_1
 
+sensor:
+  - platform: sendspin
+    id: sp_progress
+    internal: true
+    type: track_progress
+    on_value:
+      - sensor.template.publish:
+          id: co_progress
+          state: !lambda 'return x;'
+          
+  - platform: sendspin
+    id: sp_duration
+    internal: true
+    type: track_duration
+    on_value:
+      - sensor.template.publish:
+          id: co_duration
+          state: !lambda 'return x;'
+
+
+          
+  - platform: template
+    id: co_progress
+    name: "Song position"
+    update_interval: never 
+    internal: true
+  - platform: template
+    id: co_duration
+    name: "Song duration"
+  - platform: template
+    id: co_source_type
+    internal: true
+    update_interval: never
+    on_value:
+      - text_sensor.template.publish:
+          id: co_source
+          state: !lambda 'return (x==0?"Stopped":(x==1?"Bluetooth":"Sendspin"));'
+    
+  - platform: debug
+    free:
+      name: Free
+    fragmentation:
+      name: Fragmentation
+
+text_sensor:
+  - platform: sendspin
+    type: artist
+    id: sp_artist
+    internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_artist
+          state: !lambda 'return x;'
+          
+  - platform: sendspin
+    type: album
+    name: "Album"
+    id: sp_album
+    internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_album
+          state: !lambda 'return x;'
+  - platform: sendspin
+    type: title
+    name: "Title"
+    id: sp_title
+    internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_title
+          state: !lambda 'return x;'
+
+  - platform: template
+    name: "Artist"
+    update_interval: never
+    icon: "mdi:account"
+    id: co_artist
+  - platform: template
+    name: "Album"
+    update_interval: never
+    icon: "mdi:disc"
+    id: co_album
+  - platform: template
+    name: "Title"
+    update_interval: never
+    id: co_title
+    icon: "mdi:music-note"
+  - platform: template
+    name: "Source"
+    update_interval: never
+    id: co_source
+    icon: "mdi:source-fork"
+    
+    
 # --- I2C Bus ---
-#i2c:
-#  sda: GPIO19
-#  scl: GPIO18
-#  frequency: 10kHz
-#  scan: false
+i2c:
+  sda: GPIO19
+  scl: GPIO18
+  frequency: 100kHz
+  scan: false
 
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_header
+    size: 14
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+  - file: "fonts/Roboto-Light.ttf"
+    id: font_small
+    size: 13
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+  - file: "fonts/Roboto-Condensed.ttf"
+    id: font_condensed
+    size: 16
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+   
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons
+    size: 40
+    glyphs:
+      - "\U000F040A" # play
+      - "\U000F03E4" # pause
+      - "\U000F04DB" # stop
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons_header
+    size: 14
+    glyphs:
+      - "\U000F04DB" # stop
+      - "\U000F00B0" # bluetooth
+      - "\U000F0469" # wireless
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons_small
+    size: 13
+    glyphs:
+      - "\U000F0025" # Album
+      - "\U000F0803" # Artist
 # --- Display OLED SSD1306 ---
-#display:
-#  - platform: ssd1306_i2c
-#    model: SSD1306_128X64
-#    address: 0x3C
-#    lambda: |-
-#      it.rectangle(0, 0, 128, 17);
-#      it.printf(64, 32, id(font_light), TextAlign::CENTER, "Player HiFi");
-#
-#    flip_x: true
-#    flip_y: true
+display:
+  - platform: ssd1306_i2c
+    model: SSD1306_128X64
+    address: 0x3C
+    lambda: |-
+      // Icon
+      const char* status_icon = "\U000F04DB"; // Stop icon
+      if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING) {
+        status_icon = "\U000F040A"; // Play icon
+      } else if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED) {
+        status_icon = "\U000F03E4"; // Pause icon
+      }
 
-# --- Pulsanti GPIO ---
+      const char* source_icon = "\U000F04DB"; // Stop icon
+      switch ((uint8_t)id(co_source_type).state) {
+        case 1:
+          source_icon = "\U000F00B0"; // Bluetooth icon
+          break;
+        case 2:
+          source_icon = "\U000F0469"; // Wireless icon
+          break;
+        default:
+          break;
+      }
+      
+      it.printf(20, 11, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
+      it.print(20, 50, id(font_small), TextAlign::TOP_CENTER, "00:00");
+      
+      it.print(13, 0, id(md_state_icons_header), source_icon);
+      it.print(40, 0, id(font_header), id(co_title).state.c_str());
+
+      it.print(40, 15, id(md_state_icons_small), "\U000F0803");
+      it.print(55, 15, id(font_small), id(co_artist).state.c_str());
+
+      it.print(40, 30, id(md_state_icons_small), "\U000F0025");
+      it.print(55, 30, id(font_small), id(co_album).state.c_str());
+
+      it.print(40, 50, id(font_header), "Qui la barra");
+
+      if (
+          (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
+          ||
+          (id(external_media_player).state == MEDIA_PLAYER_STATE_PAUSED) 
+          )
+        {
+        }
+
+
+    flip_x: true
+    flip_y: true
+
+## --- Pulsanti GPIO ---
 #binary_sensor:
 #  - platform: gpio
 #    internal: true
@@ -209,7 +431,7 @@ button:
 #        - logger.log:
 #            level: INFO
 #            format: "Pulsante Indietro premuto"
-
+#
 #  - platform: gpio
 #    internal: true
 #    pin:
