@@ -154,13 +154,16 @@ media_player:
       - then: 
         - lambda: |-
             if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING) {
-              
+              if (id(media_source_bluetooth).get_state() == media_player::MEDIA_PLAYER_STATE_PLAYING) {
+                id(co_source_type).publish_state(1);
+              } else if (id(media_source_sendspin).get_state() == media_player::MEDIA_PLAYER_STATE_PLAYING) {
+                id(co_source_type).publish_state(2);
+              } else {
+                id(co_source_type).publish_state(0);
+              }              
+            } else {
+              id(co_source_type).publish_state(0);
             }
-            ESP_LOGW("TEST","TEST player state %d", id(external_media_player).state);
-            ESP_LOGW("TEST","TEST bluetooth state %d", id(media_source_bluetooth).get_state());
-            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_sendspin).get_state());
-
-
           
 font:
   - file: "fonts/Roboto-Regular.ttf"
@@ -233,6 +236,15 @@ sensor:
   - platform: template
     id: co_duration
     name: "Song duration"
+
+  - platform: template
+    id: co_source_type
+    internal: true
+    update_interval: never
+    on_value:
+      - text_sensor.template.publish:
+          id: co_source
+          state: !lambda 'return (x==0?"":(x==1?"Bluetooth":"Sendspin"));'
     
   - platform: debug
     free:
