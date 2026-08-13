@@ -70,10 +70,10 @@ speaker:
 
 media_source:
   - platform: sendspin
-    id: sendspin_media_source
+    id: media_source_sendspin
     static_delay_adjustable: true
   - platform: a2dp_sink
-    id: bluetooth
+    id: media_source_bluetooth
     
 media_player:    
   - platform: speaker_source
@@ -85,12 +85,14 @@ media_player:
       sample_rate: 48000
       speaker: speaker_spdif
       sources:
-        - sendspin_media_source
-        - bluetooth
+        - media_source_sendspin
+        - media_source_bluetooth
     on_state:
       - then: 
         - lambda: |-
-            ESP_LOGD("TEST","TEST %d", id(external_media_player).state);
+            ESP_LOGW("TEST","TEST player state %d", id(external_media_player).state);
+            ESP_LOGW("TEST","TEST bluetooth state %d", id(media_source_bluetooth).get_state());
+            ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_sendspin).get_state());
 
 
           
