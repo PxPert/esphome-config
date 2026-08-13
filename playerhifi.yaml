@@ -96,14 +96,14 @@ speaker:
     sample_rate: 48000
     i2s_dout_pin: GPIO32
     spdif_mode: true
-    buffer_duration: 100ms
+#    buffer_duration: 100ms
     timeout: 1s
   - platform: resampler
     output_speaker: speaker_spdif
     sample_rate: 48000
     task_stack_in_psram: true
     id: speaker_resampler
-    buffer_duration: 100ms
+#    buffer_duration: 100ms
     
 
 media_source:
