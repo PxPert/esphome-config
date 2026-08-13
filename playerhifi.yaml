@@ -361,7 +361,7 @@ display:
       }
 
       const char* source_icon = "\U000F04DB"; // Stop icon
-      switch (id(co_source_type)) {
+      switch (id(co_source_type).state) {
         case 1:
           source_icon = "\U000F00B0"; // Bluetooth icon
           break;
