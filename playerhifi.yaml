@@ -351,7 +351,7 @@ display:
       }
       it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
 
-      it.print(0, 0, id(font_header), id(co_source).state;
+      it.print(0, 0, id(font_header), id(co_source).state);
 
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
