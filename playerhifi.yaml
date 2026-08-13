@@ -96,8 +96,8 @@ speaker:
     sample_rate: 48000
     i2s_dout_pin: GPIO32
     spdif_mode: true
-#    buffer_duration: 100ms
     timeout: 1s
+    buffer_duration: 100ms
   - platform: resampler
     output_speaker: speaker_spdif
     sample_rate: 48000
