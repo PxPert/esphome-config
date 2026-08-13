@@ -85,6 +85,23 @@ sendspin:
 a2dp_sink:
   name: HiFiPlayer
   minimal_bluetooth: true
+  on_metadata:
+    then:
+      - logger.log:
+          format: "Metadata type %d: %s"
+          args: [type, text.c_str()]
+      - lambda: |- 
+          switch (type) {
+            case a2dp_sink::TITLE:
+              id(co_title).publish_state(text);
+              break;
+            case a2dp_sink::ARTIST:
+              id(co_artist).publish_state(text);
+              break;
+            case a2dp_sink::ALBUM:
+              id(co_album).publish_state(text);
+              break;
+          }
           
 i2s_audio:
   - id: i2s_spdif
@@ -228,6 +245,12 @@ text_sensor:
     type: artist
     id: sp_artist
     internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_artist
+          state: !lambda 'return x;'
+          
   - platform: sendspin
     type: album
     name: "Album"
