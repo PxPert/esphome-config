@@ -79,8 +79,8 @@ external_components:
     components: [ i2s_audio ]
 #    refresh: never
   
-#sendspin:
-#  task_stack_in_psram: true
+sendspin:
+  task_stack_in_psram: true
 
 a2dp_sink:
   name: HiFiPlayer
@@ -109,10 +109,10 @@ speaker:
     
 
 media_source:
-#  - platform: sendspin
-#    id: media_source_sendspin
-#    static_delay_adjustable: true
-#    buffer_size: 350000
+  - platform: sendspin
+    id: media_source_sendspin
+    static_delay_adjustable: true
+    buffer_size: 350000
   - platform: audio_http
     id: media_source_http
     buffer_size: 16000
@@ -130,9 +130,9 @@ media_player:
 #      speaker: speaker_resampler
       speaker: speaker_spdif
       sources:
-#        - media_source_sendspin
+        - media_source_sendspin
         - media_source_bluetooth
-        - media_source_http
+#        - media_source_http
     on_state:
       - then: 
         - lambda: |-
