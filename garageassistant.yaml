@@ -27,7 +27,7 @@ esp32:
       CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM: "16"    # default 32
       CONFIG_ESP32_WIFI_DYNAMIC_TX_BUFFER_NUM: "16"    # default 32
       CONFIG_ESP32_WIFI_TX_BUFFER_TYPE: "1"            # dynamic
-#      CONFIG_LWIP_MAX_SOCKETS: "6"          # default 10
+      CONFIG_LWIP_MAX_SOCKETS: "6"          # default 10
       CONFIG_LWIP_TCP_MSS: "1440"
       CONFIG_LWIP_MAX_ACTIVE_TCP: "8"      # default 16
       CONFIG_LWIP_MAX_LISTENING_TCP: "4"   # default 16
@@ -109,10 +109,10 @@ speaker:
     id: src_music
     i2s_dout_pin: GPIO22
     dac_type: external
-#    num_channels: 1
-    channel: stereo
+    num_channels: 1
+    channel: mono
     bits_per_sample: 16bit
-    buffer_duration: 30ms        
+    buffer_duration: 60ms        
 #    buffer_duration: 100ms
 #  - platform: mixer
 #    num_channels: 1
@@ -132,7 +132,7 @@ speaker:
 #  file: https://github.com/esphome/wake-word-voice-assistants/raw/main/sounds/timer_finished.wav
 #  id: timer_finished_wave_file
 
-sendspin:
+#sendspin:
   
 #http_request:
 #  buffer_size_rx: 1024
@@ -143,14 +143,14 @@ a2dp_sink:
   minimal_bluetooth: True
   
 media_source:
-#  - platform: audio_http
-#    id: source_http
-#    buffer_size: 8000
+  - platform: audio_http
+    id: source_http
+    buffer_size: 8000
 #  - platform: audio_file
 #    id: source_file
-  - platform: sendspin
-    id: source_sendspin
-    buffer_size: 35000
+#  - platform: sendspin
+#    id: source_sendspin
+#    buffer_size: 35000
   - platform: a2dp_sink
     id: bluetooth
     
@@ -188,11 +188,11 @@ media_player:
       speaker: src_music
       format: WAV
       sample_rate: 48000
-#      num_channels: 1
+      num_channels: 1
       sources:
-#        - source_http
+        - source_http
 #        - source_file
-        - source_sendspin
+#        - source_sendspin
         - bluetooth
 
 #    volume_min: 0.8
