@@ -79,7 +79,13 @@ external_components:
   - source: esphome-git/esphome/components
     components: [ i2s_audio ]
 #    refresh: never
-  
+
+
+globals:
+  - id: idle_start_time
+    type: float
+    initial_value: '-1.0f'
+
 sendspin:
   task_stack_in_psram: true
 
@@ -313,13 +319,14 @@ text_sensor:
     update_interval: never
     id: co_source
     icon: "mdi:source-fork"
-    
+
+
     
 # --- I2C Bus ---
 i2c:
   sda: GPIO19
   scl: GPIO18
-  frequency: 400kHz
+  frequency: 1MHz
   scan: false
 
 font:
@@ -364,6 +371,41 @@ display:
     model: SSD1306_128X64
     address: 0x3C
     lambda: |-
+      // Controlla se il player è attivo (playing/paused)
+      bool is_active = (id(external_media_player).state == media_player::MEDIA_PLAYER_STATE_PLAYING) ||
+                      (id(external_media_player).state == media_player::MEDIA_PLAYER_STATE_PAUSED);
+
+      // Gestisci il timer idle
+      if (is_active) {
+        // Player attivo: resetta il timer idle
+        idle_start_time = -1.0f;
+      } else {
+        // Player inattivo: gestisci il timer
+        if (idle_start_time < 0) {
+          // Prima volta che entriamo in idle: registra il timestamp
+          idle_start_time = id(ha_time).now().timestamp;
+        }
+        // Calcola quanto tempo siamo in idle
+        float idle_seconds = id(ha_time).now().timestamp - idle_start_time;
+        
+        // Dopo 30 secondi di inattività, mostra ora e data
+        if (idle_seconds > 30.0f) {
+          auto dt = id(ha_time).now();
+          
+          // Mostra l'ora in grande al centro
+          char time_buf[16];
+          snprintf(time_buf, sizeof(time_buf), "%02d:%02d:%02d", dt.hour, dt.minute, dt.second);
+          it.printf(64, 20, id(font_header), TextAlign::CENTER, time_buf);
+          
+          // Mostra la data sotto
+          char date_buf[32];
+          snprintf(date_buf, sizeof(date_buf), "%02d/%02d/%04d", dt.day, dt.month, dt.year);
+          it.printf(64, 45, id(font_small), TextAlign::CENTER, date_buf);
+          
+          return; // Salta il resto del rendering
+        }
+      }
+      
       // Icon
       const char* status_icon = "\U000F04DB"; // Stop icon
       if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING) {
@@ -469,3 +511,7 @@ binary_sensor:
         then:
           - logger.log: Long click
           - media_player.stop: external_media_player
+
+time:
+  platform: homeassistant
+  id: ha_time
