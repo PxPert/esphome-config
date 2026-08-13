@@ -375,9 +375,9 @@ display:
       it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
       it.print(0, 0, id(md_state_icons_header), source_icon);
 
-      it.print(0, 24, id(md_state_icons_header), id(co_title).state.c_str());
-      it.print(0, 30, id(md_state_icons_header), id(co_artist).state.c_str());
-      it.print(0, 36, id(md_state_icons_header), id(co_album).state.c_str());
+      it.print(0, 24, id(font_header), id(co_title).state.c_str());
+      it.print(0, 30, id(font_header), id(co_artist).state.c_str());
+      it.print(0, 36, id(font_header), id(co_album).state.c_str());
 
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
