@@ -52,7 +52,7 @@ external_components:
 sendspin:
 
 a2dp_sink:
-  name: test
+  name: HiFiPlayer
   minimal_bluetooth: true
           
 i2s_audio:
