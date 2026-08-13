@@ -455,6 +455,14 @@ binary_sensor:
       number: GPIO14
       mode: INPUT_PULLUP
     name: "Pulsante Play-Stop"
-    on_press:
-      then:
-        - media_player.toggle: external_media_player
+    on_multi_click:
+      - timing:
+          - ON for at most 2000ms
+        then:
+          - logger.log: "Normal click"
+          - media_player.toggle: external_media_player
+      - timing:
+          - ON for at least 2001ms
+        then:
+          - logger.log: Long click
+          - media_player.stop: external_media_player
