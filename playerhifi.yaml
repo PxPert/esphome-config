@@ -90,7 +90,7 @@ media_player:
     on_state:
       - then: 
         - lambda: |-
-            ESP_LOGD("TEST","TEST %d", id(external_media_player).state)
+            ESP_LOGD("TEST","TEST %d", id(external_media_player).state);
 
 
           
