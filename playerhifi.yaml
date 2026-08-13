@@ -129,3 +129,57 @@ button:
     name: "restart"
     id: button_restart_1
 
+# --- I2C Bus ---
+i2c:
+  sda: GPIO19
+  scl: GPIO18
+  frequency: 100kHz
+
+# --- Display OLED SSD1306 ---
+display:
+  - platform: ssd1306_i2c
+    model: SSD1306
+    address: 0x60
+    width: 128
+    height: 64
+    h_flip: true
+    v_flip: true
+    lambda: |-
+      it.rectangle(0, 0, 128, 64, COLOR_OFF, COLOR_ON);
+      it.printf(64, 32, TextAlign::CENTER, "Player HiFi");
+
+# --- Pulsanti GPIO ---
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO12
+      mode: INPUT_PULLUP
+    name: "Pulsante Avanti"
+    on_press:
+      then:
+        - logger.log:
+            level: INFO
+            format: "Pulsante Avanti premuto"
+
+  - platform: gpio
+    pin:
+      number: GPIO27
+      mode: INPUT_PULLUP
+    name: "Pulsante Indietro"
+    on_press:
+      then:
+        - logger.log:
+            level: INFO
+            format: "Pulsante Indietro premuto"
+
+  - platform: gpio
+    pin:
+      number: GPIO14
+      mode: INPUT_PULLUP
+    name: "Pulsante Play/Stop"
+    on_press:
+      then:
+        - logger.log:
+            level: INFO
+            format: "Pulsante Play/Stop premuto"
+
