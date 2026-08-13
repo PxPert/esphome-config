@@ -180,18 +180,18 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
 
     
-#button:
-#  - platform: template
-#    name: next
-#    on_press:
-#      - then:
-#          - media_player.next: external_media_player
-#  - platform: template
-#    name: previous
-#    on_press:
-#      - then:
-#          - media_player.previous: external_media_player
-#            
+button:
+  - platform: template
+    name: next
+    on_press:
+      - then:
+          - media_player.next: external_media_player
+  - platform: template
+    name: previous
+    on_press:
+      - then:
+          - media_player.previous: external_media_player
+            
   - platform: restart
     name: "restart"
     id: button_restart_1
