@@ -87,7 +87,7 @@ a2dp_sink:
   minimal_bluetooth: true
   on_playback_position:
     then:
-      - lambda: id(co_duration).publish_state(pos);
+      - lambda: id(co_progress).publish_state(pos);
   on_metadata:
     then:
       - logger.log:
@@ -107,7 +107,7 @@ a2dp_sink:
             case (int)a2dp_sink::A2DPSinkMetadataTypes::PLAYINGTIME:
               float value = 0.0f;
               if (sscanf(text.c_str(), "%f", &value) == 1) {
-                id(co_progress).publish_state(value);
+                id(co_duration).publish_state(value);
               }
               break;
           }
