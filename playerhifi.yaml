@@ -136,6 +136,9 @@ media_player:
     on_state:
       - then: 
         - lambda: |-
+            if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING) {
+              
+            }
             ESP_LOGW("TEST","TEST player state %d", id(external_media_player).state);
             ESP_LOGW("TEST","TEST bluetooth state %d", id(media_source_bluetooth).get_state());
             ESP_LOGW("TEST","TEST sendspin state %d", id(media_source_sendspin).get_state());
@@ -197,12 +200,67 @@ button:
     id: button_restart_1
 
 sensor:
+  - platform: sendspin
+    id: sp_progress
+    internal: true
+    type: track_progress
+  - platform: sendspin
+    id: sp_duration
+    internal: true
+    type: track_duration
+  
+  - platform: template
+    id: co_progress
+    name: "Song position"
+    update_interval: never
+  - platform: template
+    id: co_duration
+    name: "Song duration"
+    
   - platform: debug
     free:
       name: Free
     fragmentation:
       name: Fragmentation
-      
+
+text_sensor:
+  - platform: sendspin
+    type: artist
+    id: sp_artist
+    internal: true
+  - platform: sendspin
+    type: album
+    name: "Album"
+    id: sp_album
+    internal: true
+  - platform: sendspin
+    type: title
+    name: "Title"
+    id: sp_title
+    internal: true
+
+  - platform: template
+    name: "Artist"
+    update_interval: never
+    icon: "mdi:account"
+    id: co_artist
+  - platform: template
+    name: "Album"
+    update_interval: never
+    icon: "mdi:disc"
+    id: co_album
+  - platform: template
+    name: "Title"
+    update_interval: never
+    id: co_title
+    icon: "mdi:music-note"
+  - platform: template
+    name: "Source"
+    update_interval: never
+    id: co_source
+    icon: "mdi:source-fork"
+    
+    
 # --- I2C Bus ---
 i2c:
   sda: GPIO19
