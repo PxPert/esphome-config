@@ -110,6 +110,7 @@ media_source:
   - platform: sendspin
     id: media_source_sendspin
     static_delay_adjustable: true
+    buffer_size: 350000
   - platform: a2dp_sink
     id: media_source_bluetooth
     
