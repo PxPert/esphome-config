@@ -197,6 +197,14 @@ font:
       - "\U000F040A" # play
       - "\U000F03E4" # pause
       - "\U000F04DB" # stop
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons_header
+    size: 14
+    glyphs:
+      - "\U000F04DB" # stop
+      - "\U000F00B0" # bluetooth
+      - "\U000F0469" # wireless
         
 number:
   - platform: a2dp_sink
@@ -351,9 +359,21 @@ display:
       } else if (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED) {
         status_icon = "\U000F03E4"; // Pause icon
       }
-      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
 
-      it.print(0, 0, id(font_header), id(co_source).state.c_str());
+      const char* source_icon = "\U000F04DB"; // Stop icon
+      switch id(co_source_type) {
+        case 1:
+          source_icon = "\U000F00B0"; // Bluetooth icon
+          break;
+        case 2:
+          source_icon = "\U000F0469"; // Wireless icon
+          break;
+        default:
+          break;
+      }
+      it.printf(0, 22, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
+    
+      it.print(0, 0, id(md_state_icons_header), source_icon);
 
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
