@@ -389,8 +389,8 @@ display:
       it.print(40, 15, id(md_state_icons_small), "\U000F0803");
       it.print(55, 15, id(font_small), id(co_artist).state.c_str());
 
-      it.print(40, 28, id(md_state_icons_small), "\U000F0025");
-      it.print(55, 28, id(font_small), id(co_album).state.c_str());
+      it.print(40, 30, id(md_state_icons_small), "\U000F0025");
+      it.print(55, 30, id(font_small), id(co_album).state.c_str());
 
       it.print(40, 50, id(font_header), "Qui la barra");
 
