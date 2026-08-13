@@ -111,6 +111,7 @@ media_source:
     id: media_source_sendspin
     static_delay_adjustable: true
     buffer_size: 350000
+
   - platform: a2dp_sink
     id: media_source_bluetooth
     
@@ -121,7 +122,7 @@ media_player:
     media_pipeline:
       format: FLAC
       num_channels: 2
-      sample_rate: 48000
+      sample_rate: 44100
       speaker: speaker_resampler
 #      speaker: speaker_spdif
       sources:
