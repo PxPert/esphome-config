@@ -9,7 +9,7 @@ esphome:
 psram:
   mode: quad
   speed: 80MHZ
-#  ignore_not_found: false
+  ignore_not_found: true
   
 mdns:
   disabled: false
@@ -34,7 +34,7 @@ wifi:
     
 logger:
   hardware_uart: UART0
-  level: WARN
+  level: INFO
   
   baud_rate: 0
   task_log_buffer_size: 0
