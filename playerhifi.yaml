@@ -24,7 +24,7 @@ esp32:
   
   framework:
     type: esp-idf
-#    version: 6.0.2
+    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
       enable_ota_rollback: false
