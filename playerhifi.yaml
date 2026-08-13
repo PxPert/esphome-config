@@ -88,7 +88,7 @@ speaker:
 
 number:
   - platform: a2dp_sink
-    name: "Volume"
+    name: "Bluetooth Volume"
 
 switch:
   - platform: a2dp_sink
