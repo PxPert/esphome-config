@@ -55,7 +55,8 @@ wifi:
   power_save_mode: none
   ssid: !secret wifi_dmz_ssid
   password: !secret wifi_dmz_password
-    
+  post_connect_roaming: false
+  
 logger:
   hardware_uart: UART0
   level: DEBUG
@@ -401,13 +402,13 @@ display:
       const int bar_height = 5;
 
       // Barra di base
-      it.rectangle(bar_start, bar_y, bar_end, bar_y + bar_height);
+      it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
 
       // Cursore
       if (duration > 0) {
         float ratio = fminf(fmaxf(progress / duration, 0.0f), 1.0f);
         int cursor_x = bar_start + (int)(ratio * (bar_end - bar_start));
-        it.rectangle(cursor_x, bar_y - 2, cursor_x + 1, bar_y + bar_height + 1);
+        it.rectangle(cursor_x, bar_y - 2, cursor_x + 1, bar_height + 2);
       }
       
       if (
