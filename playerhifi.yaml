@@ -391,9 +391,6 @@ display:
 
       it.print(40, 30, id(md_state_icons_small), "\U000F0025");
 
-      // Barra di base
-      it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
-
       // Barra di progresso con cursore
       float duration = id(co_duration).state;
       float progress = id(co_progress).state;
@@ -403,6 +400,9 @@ display:
       const int bar_height = 2;
       const int cursor_width = 3;
       int cursor_x = 0;
+      
+      // Barra di base
+      it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
       
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
