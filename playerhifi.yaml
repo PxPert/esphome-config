@@ -394,7 +394,7 @@ display:
           auto dt = id(ha_time).now();
           
           // Mostra l'ora in grande al centro
-          it.printf(64, 20, id(font_header), TextAlign::CENTER, "%02d:%02d:%02d", dt.hour, dt.minute, dt.second);
+          it.printf(64, 24, id(font_header), TextAlign::CENTER, "%02d:%02d:%02d", dt.hour, dt.minute, dt.second);
           
           // Mostra la data sotto
           it.printf(64, 45, id(font_small), TextAlign::CENTER, "%02d/%02d/%04d", dt.day_of_month, dt.month, dt.year);
