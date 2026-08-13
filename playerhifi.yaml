@@ -386,8 +386,8 @@ display:
           id(idle_start_time) = id(ha_time).now().timestamp;
         }
         // Calcola quanto tempo siamo in idle
-        float idle_seconds = id(ha_time).now().timestamp - id(idle_start_time);
-        ESP_LOGD("TEST","Idle seconds: %d, idle_start_time: %d",(int)idle_seconds, (int)id(idle_start_time));
+        time_t idle_seconds = id(ha_time).now().timestamp - id(idle_start_time);
+        ESP_LOGD("TEST","Idle seconds: %d, idle_start_time: %d",idle_seconds, id(idle_start_time));
         
         // Dopo 30 secondi di inattività, mostra ora e data
         if (idle_seconds > 5.0f) {
