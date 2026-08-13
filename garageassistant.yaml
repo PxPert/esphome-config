@@ -95,9 +95,8 @@ ota:
     password: !secret ota_pwd_sec
 
 external_components:
-  - source: github://PxPert/a2dp_sink@master
+  - source: /config/components/a2dp_sink/components/
     components: [ a2dp_sink ]
-    refresh: 0s
     
 wifi:
   networks:
