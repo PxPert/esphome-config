@@ -397,10 +397,10 @@ display:
       // Barra di progresso con cursore
       float duration = id(co_duration).state;
       float progress = id(co_progress).state;
-      int bar_start = 40;
-      int bar_end = 128;
-      int bar_y = 48;
-      int bar_height = 5;
+      const int bar_start = 40;
+      const int bar_end = 128;
+      const int bar_y = 48;
+      const int bar_height = 5;
 
       // Barra di base
       it.rectangle(bar_start, bar_y, bar_end, bar_y + bar_height);
