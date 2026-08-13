@@ -176,35 +176,7 @@ media_player:
               id(co_source_type).publish_state(0);
             }
           
-font:
-  - file: "fonts/Roboto-Regular.ttf"
-    id: font_header
-    size: 14
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-  - file: "fonts/Roboto-Light.ttf"
-    id: font_small
-    size: 12
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-  - file: "fonts/Roboto-Condensed.ttf"
-    id: font_condensed
-    size: 16
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-   
-  - file: "fonts/materialdesignicons-webfont.ttf"
-    id: md_state_icons
-    size: 40
-    glyphs:
-      - "\U000F040A" # play
-      - "\U000F03E4" # pause
-      - "\U000F04DB" # stop
 
-  - file: "fonts/materialdesignicons-webfont.ttf"
-    id: md_state_icons_header
-    size: 14
-    glyphs:
-      - "\U000F04DB" # stop
-      - "\U000F00B0" # bluetooth
-      - "\U000F0469" # wireless
         
 number:
   - platform: a2dp_sink
@@ -346,6 +318,42 @@ i2c:
   frequency: 100kHz
   scan: false
 
+font:
+  - file: "fonts/Roboto-Regular.ttf"
+    id: font_header
+    size: 14
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+  - file: "fonts/Roboto-Light.ttf"
+    id: font_small
+    size: 12
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+  - file: "fonts/Roboto-Condensed.ttf"
+    id: font_condensed
+    size: 16
+    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+   
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons
+    size: 40
+    glyphs:
+      - "\U000F040A" # play
+      - "\U000F03E4" # pause
+      - "\U000F04DB" # stop
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons_header
+    size: 14
+    glyphs:
+      - "\U000F04DB" # stop
+      - "\U000F00B0" # bluetooth
+      - "\U000F0469" # wireless
+
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: md_state_icons_small
+    size: 12
+    glyphs:
+      - "\U000F0025" # Album
+      - "\U000F0803" # Artist
 # --- Display OLED SSD1306 ---
 display:
   - platform: ssd1306_i2c
@@ -372,11 +380,16 @@ display:
           break;
       }
       
-      it.printf(0, 16, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
+      it.printf(0, 14, id(md_state_icons), TextAlign::TOP_LEFT,status_icon);
       it.print(13, 0, id(md_state_icons_header), source_icon);
-      it.print(40, 0, id(font_header), id(co_title).state.c_str());      
-      it.print(40, 14, id(font_small), id(co_artist).state.c_str());
-      it.print(40, 26, id(font_small), id(co_album).state.c_str());
+      it.print(40, 0, id(font_header), id(co_title).state.c_str());
+
+      it.print(40, 14, id(md_state_icons_small), "\U000F0803");
+      it.print(54, 14, id(font_small), id(co_artist).state.c_str());
+
+      it.print(40, 26, id(md_state_icons_small), "\U000F0025");
+      it.print(54, 26, id(font_small), id(co_album).state.c_str());
+      
 
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
