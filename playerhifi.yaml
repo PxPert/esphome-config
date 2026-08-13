@@ -394,14 +394,10 @@ display:
           auto dt = id(ha_time).now();
           
           // Mostra l'ora in grande al centro
-          char time_buf[16];
-          snprintf(time_buf, sizeof(time_buf), "%02d:%02d:%02d", dt.hour, dt.minute, dt.second);
-          it.printf(64, 20, id(font_header), TextAlign::CENTER, time_buf);
+          it.printf(64, 20, id(font_header), TextAlign::CENTER, "%02d:%02d:%02d", dt.hour, dt.minute, dt.second);
           
           // Mostra la data sotto
-          char date_buf[32];
-          snprintf(date_buf, sizeof(date_buf), "%02d/%02d/%04d", dt.day_of_month, dt.month, dt.year);
-          it.printf(64, 45, id(font_small), TextAlign::CENTER, date_buf);
+          it.printf(64, 45, id(font_small), TextAlign::CENTER, "%02d/%02d/%04d", dt.day_of_month, dt.month, dt.year);
           
           return; // Salta il resto del rendering
         }
