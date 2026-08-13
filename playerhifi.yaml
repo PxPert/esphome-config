@@ -383,7 +383,6 @@ display:
       
       it.printf(20, 11, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
       uint16_t position_secs = id(co_progress).state / 1000;
-      it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", position_secs / 60, position_secs % 60 );
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
 
@@ -410,6 +409,8 @@ display:
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PAUSED) 
           )
         {
+          it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", position_secs / 60, position_secs % 60 );
+          
           it.print(40, 0, id(font_header), id(co_title).state.c_str());
           it.print(55, 15, id(font_small), id(co_artist).state.c_str());
           it.print(55, 30, id(font_small), id(co_album).state.c_str());
