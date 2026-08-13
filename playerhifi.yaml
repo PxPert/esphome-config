@@ -378,18 +378,18 @@ display:
       // Gestisci il timer idle
       if (is_active) {
         // Player attivo: resetta il timer idle
-        idle_start_time = -1.0f;
+        id(idle_start_time) = -1.0f;
       } else {
         // Player inattivo: gestisci il timer
-        if (idle_start_time < 0) {
+        if (id(idle_start_time) < 0) {
           // Prima volta che entriamo in idle: registra il timestamp
-          idle_start_time = id(ha_time).now().timestamp;
+          if(idle_start_time) = id(ha_time).now().timestamp;
         }
         // Calcola quanto tempo siamo in idle
-        float idle_seconds = id(ha_time).now().timestamp - idle_start_time;
+        float idle_seconds = id(ha_time).now().timestamp - id(idle_start_time);
         
         // Dopo 30 secondi di inattività, mostra ora e data
-        if (idle_seconds > 30.0f) {
+        if (idle_seconds > 5.0f) {
           auto dt = id(ha_time).now();
           
           // Mostra l'ora in grande al centro
