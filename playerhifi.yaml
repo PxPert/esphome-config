@@ -164,7 +164,7 @@ media_player:
       - then: 
         - logger.log:
             format: "New mediaplayer state: %d"
-            args: [x]
+            args: [id(external_media_player).state]
         - lambda: |-
             if (
               (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
