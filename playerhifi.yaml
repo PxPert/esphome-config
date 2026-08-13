@@ -162,6 +162,9 @@ media_player:
 #        - media_source_http
     on_state:
       - then: 
+        - logger.log:
+            format: "New mediaplayer state: %d"
+            args: [x]
         - lambda: |-
             if (
               (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
