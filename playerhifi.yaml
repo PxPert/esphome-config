@@ -516,3 +516,4 @@ binary_sensor:
 time:
   platform: homeassistant
   id: ha_time
+  timezone: Europe/Rome
