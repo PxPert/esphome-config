@@ -382,7 +382,8 @@ display:
       }
       
       it.printf(20, 11, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
-      it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", id(co_progress).state / 60000, id(co_progress).state % 60000 );
+      uint16_t position_secs = id(co_progress).state / 1000;
+      it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", position_secs / 60, position_secs % 60000 );
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
       it.print(40, 0, id(font_header), id(co_title).state.c_str());
