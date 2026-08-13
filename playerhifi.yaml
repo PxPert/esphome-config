@@ -83,7 +83,7 @@ external_components:
 
 globals:
   - id: idle_start_time
-    type: float
+    type: time_t
     initial_value: '-1.0f'
 
 sendspin:
