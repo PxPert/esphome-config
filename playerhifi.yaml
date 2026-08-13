@@ -75,10 +75,7 @@ media_source:
   - platform: a2dp_sink
     id: bluetooth
     
-media_player:
-  - platform: sendspin
-    id: sendspin_group_media_player
-    
+media_player:    
   - platform: speaker_source
     id: external_media_player
     name: Media Player
@@ -90,7 +87,10 @@ media_player:
       sources:
         - sendspin_media_source
         - bluetooth
-
+    on_state:
+      - then: 
+        - lambda: |-
+            ESP_LOGD("TEST","TEST %d", id(external_media_player).state)
 
 
           
