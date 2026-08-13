@@ -327,10 +327,10 @@ font:
     id: font_small
     size: 13
     glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-  - file: "fonts/Roboto-Condensed.ttf"
-    id: font_condensed
-    size: 16
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#  - file: "fonts/Roboto-Condensed.ttf"
+#    id: font_condensed
+#    size: 16
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
    
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: md_state_icons
@@ -381,7 +381,7 @@ display:
       }
       
       it.printf(20, 11, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
-      it.print(20, 50, id(font_small), TextAlign::TOP_CENTER, "00:00");
+      it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", co_progress.state / 60, co_progress.state % 60 );
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
       it.print(40, 0, id(font_header), id(co_title).state.c_str());
@@ -394,6 +394,24 @@ display:
 
       it.print(40, 50, id(font_header), "Qui la barra");
 
+      // Barra di progresso con cursore
+      float duration = id(co_duration).state;
+      float progress = id(co_progress).state;
+      int bar_start = 40;
+      int bar_end = 128;
+      int bar_y = 48;
+      int bar_height = 5;
+
+      // Barra di base
+      it.rectangle(bar_start, bar_y, bar_end, bar_y + bar_height);
+
+      // Cursore
+      if (duration > 0) {
+        float ratio = fminf(fmaxf(progress / duration, 0.0f), 1.0f);
+        int cursor_x = bar_start + (int)(ratio * (bar_end - bar_start));
+        it.rectangle(cursor_x, bar_y - 2, cursor_x + 1, bar_y + bar_height + 1);
+      }
+      
       if (
           (id(external_media_player).state == MEDIA_PLAYER_STATE_PLAYING) 
           ||
