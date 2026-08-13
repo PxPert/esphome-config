@@ -382,7 +382,7 @@ display:
       }
       
       it.printf(20, 11, id(md_state_icons), TextAlign::TOP_CENTER,status_icon);
-      // it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", id(co_progress).state / 60, id(co_progress).state % 60 );
+      // it.printf(20, 50, id(font_small), TextAlign::TOP_CENTER, "%02d:%02d", id(co_progress).state / 60000, id(co_progress).state % 60000 );
       
       it.print(13, 0, id(md_state_icons_header), source_icon);
       it.print(40, 0, id(font_header), id(co_title).state.c_str());
@@ -398,8 +398,9 @@ display:
       float progress = id(co_progress).state;
       const int bar_start = 40;
       const int bar_end = 126;
-      const int bar_y = 48;
+      const int bar_y = 50;
       const int bar_height = 5;
+      const int cursor_width = 3;
 
       // Barra di base
       it.filled_rectangle(bar_start, bar_y, bar_end - bar_start, bar_height);
@@ -408,7 +409,7 @@ display:
       if (duration > 0) {
         float ratio = fminf(fmaxf(progress / duration, 0.0f), 1.0f);
         int cursor_x = bar_start + (int)(ratio * (bar_end - bar_start));
-        it.rectangle(cursor_x, bar_y - 2, cursor_x + 1, bar_height + 2);
+        it.filled_rectangle(cursor_x - (cursor_width / 2), bar_y - 2, cursor_width, bar_height + 4);
       }
       
       if (
