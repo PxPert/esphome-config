@@ -9,10 +9,13 @@ esphome:
 psram:
   mode: quad
   speed: 80MHZ
-  ignore_not_found: true
+  ignore_not_found: false
   
 mdns:
   disabled: true
+  
+debug:
+  update_interval: 10s
   
 esp32:
   board: esp-wrover-kit
@@ -186,6 +189,12 @@ button:
     name: "restart"
     id: button_restart_1
 
+sensor:
+  - platform: debug
+    free:
+      name: Free
+    fragmentation:
+      name: Fragmentation
 # --- I2C Bus ---
 #i2c:
 #  sda: GPIO19
