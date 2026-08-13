@@ -9,7 +9,7 @@ esphome:
 psram:
   mode: quad
   speed: 80MHZ
-  ignore_not_found: false
+#  ignore_not_found: false
   
 mdns:
   disabled: false
@@ -102,18 +102,18 @@ media_player:
 
           
 font:
-  - file: "fonts/Roboto-Regular.ttf"
-    id: font_regular
-    size: 16
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#  - file: "fonts/Roboto-Regular.ttf"
+#    id: font_regular
+#    size: 16
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
   - file: "fonts/Roboto-Light.ttf"
     id: font_light
     size: 24
     glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
-  - file: "fonts/Roboto-Condensed.ttf"
-    id: font_condensed
-    size: 16
-    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
+#  - file: "fonts/Roboto-Condensed.ttf"
+#    id: font_condensed
+#    size: 16
+#    glyphs: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-,+/°:() "
     
 #  - file: "fonts/materialdesignicons-webfont.ttf"
 #    id: font_mdi
