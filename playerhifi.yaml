@@ -54,6 +54,7 @@ external_components:
 #    refresh: never
   
 sendspin:
+  task_stack_in_psram: true
 
 a2dp_sink:
   name: HiFiPlayer
@@ -97,6 +98,7 @@ media_player:
       num_channels: 2
       sample_rate: 44100
       speaker: speaker_resampler
+#      speaker: speaker_spdif
       sources:
         - media_source_sendspin
         - media_source_bluetooth
