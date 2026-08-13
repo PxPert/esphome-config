@@ -75,6 +75,8 @@ ota:
 external_components:
   - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
+  - source: esphome-git/esphome/components
+    components: [ i2s_audio ]
 #    refresh: never
   
 #sendspin:
