@@ -36,9 +36,12 @@ logger:
   baud_rate: 115200
 
 api:
+  encryption:
+    key: !secret api_key
 
 ota:
-  platform: esphome
+  - platform: esphome
+    password: !secret ota_pwd_sec
 
 external_components:
   - source: github://PxPert/a2dp_sink@master
