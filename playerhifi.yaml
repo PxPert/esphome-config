@@ -93,14 +93,14 @@ speaker:
     dac_type: external
     channel: stereo
     use_apll: true
-    sample_rate: 48000
+    sample_rate: 44100
     i2s_dout_pin: GPIO32
     spdif_mode: true
     buffer_duration: 100ms
-    timeout: never
+    timeout: 1s
   - platform: resampler
     output_speaker: speaker_spdif
-    sample_rate: 48000
+    sample_rate: 44100
     task_stack_in_psram: true
     id: speaker_resampler
     buffer_duration: 100ms
