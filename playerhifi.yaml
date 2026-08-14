@@ -8,7 +8,7 @@ esphome:
 
 psram:
   mode: quad
-  speed: 120MHZ
+  speed: 80MHZ
   ignore_not_found: true
   
 mdns:
@@ -81,9 +81,9 @@ logger:
 #  task_log_buffer_size: 0
 #  tx_buffer_size: 160
 
-api:
-  encryption:
-    key: !secret api_key
+#api:
+#  encryption:
+#    key: !secret api_key
 
 ota:
   - platform: esphome
@@ -588,6 +588,10 @@ binary_sensor:
           - media_player.stop: external_media_player
 
 time:
-  platform: homeassistant
+#  platform: homeassistant
+  platform: sntp
+  
   id: ha_time
   timezone: Europe/Rome
+  servers:
+    - 192.168.2.1
