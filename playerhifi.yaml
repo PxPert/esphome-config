@@ -173,7 +173,6 @@ media_source:
     id: media_source_sendspin
     static_delay_adjustable: true
     buffer_size: 1000000
-    decode_memory: internal
     
 #  - platform: audio_http
 #    id: media_source_http
