@@ -153,7 +153,7 @@ speaker:
     i2s_dout_pin: GPIO32
     spdif_mode: true
     timeout: 1s
-    buffer_duration: 30ms
+    buffer_duration: 50ms
     
 
 media_source:
