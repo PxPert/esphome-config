@@ -65,12 +65,12 @@ interval:
           size_t free_ext = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
           ESP_LOGW("Test","Internal memory free: %d, Largest allocatable block: %d", free_int, max_int);
           ESP_LOGW("Test","External memory free: %d, Largest allocatable block: %d", free_ext, max_ext);
-#wifi:
-#  power_save_mode: none
-#  ssid: !secret wifi_dmz_ssid
-#  password: !secret wifi_dmz_password
-#  post_connect_roaming: false
-#  use_address: 192.168.2.135
+wifi:
+  power_save_mode: none
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  post_connect_roaming: false
+  use_address: 192.168.2.135
   
 logger:
   hardware_uart: UART0
@@ -96,15 +96,6 @@ external_components:
   - source: components
     components: [ sendspin ]
 #    refresh: never
-
-ethernet:
-  type: ENC28J60
-  clk_pin: GPIO13
-  mosi_pin: GPIO23
-  miso_pin: GPIO4
-  cs_pin: GPIO5
-  interrupt_pin: GPIO10
-  reset_pin: GPIO9
   
 globals:
   - id: idle_start_time
