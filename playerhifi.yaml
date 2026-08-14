@@ -72,6 +72,7 @@ wifi:
   ssid: !secret wifi_dmz_ssid
   password: !secret wifi_dmz_password
   post_connect_roaming: false
+  use_address: 192.168.2.135
   
 logger:
   hardware_uart: UART0
