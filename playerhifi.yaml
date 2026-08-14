@@ -21,6 +21,7 @@ esp32:
   board: esp-wrover-kit
 #  partitions: partition_layouts/huge_app_esp32.csv
   cpu_frequency: 240MHZ
+  flash_frequency: 80MHz
   
   framework:
     type: esp-idf
