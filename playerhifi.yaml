@@ -93,6 +93,9 @@ external_components:
 globals:
   - id: idle_start_time
     type: time_t
+    initial_value: '-1.0'
+  - id: source_type
+    type: int8_t
     initial_value: '-1.0f'
 
 sendspin:
@@ -109,24 +112,28 @@ a2dp_sink:
       - logger.log:
           format: "Metadata type %d: %s"
           args: [type, text.c_str()]
-      - lambda: |- 
-          switch (type) {
-            case (int)a2dp_sink::A2DPSinkMetadataTypes::TITLE:
-              id(co_title).publish_state(text);
-              break;
-            case (int)a2dp_sink::A2DPSinkMetadataTypes::ARTIST:
-              id(co_artist).publish_state(text);
-              break;
-            case (int)a2dp_sink::A2DPSinkMetadataTypes::ALBUM:
-              id(co_album).publish_state(text);
-              break;
-            case (int)a2dp_sink::A2DPSinkMetadataTypes::PLAYINGTIME:
-              float value = 0.0f;
-              if (sscanf(text.c_str(), "%f", &value) == 1) {
-                id(co_duration).publish_state(value);
-              }
-              break;
-          }
+      - if:
+          condition:
+            lambda: return id(source_type) == 2; 
+          then:
+            - lambda: |- 
+                switch (type) {
+                  case (int)a2dp_sink::A2DPSinkMetadataTypes::TITLE:
+                    id(co_title).publish_state(text);
+                    break;
+                  case (int)a2dp_sink::A2DPSinkMetadataTypes::ARTIST:
+                    id(co_artist).publish_state(text);
+                    break;
+                  case (int)a2dp_sink::A2DPSinkMetadataTypes::ALBUM:
+                    id(co_album).publish_state(text);
+                    break;
+                  case (int)a2dp_sink::A2DPSinkMetadataTypes::PLAYINGTIME:
+                    float value = 0.0f;
+                    if (sscanf(text.c_str(), "%f", &value) == 1) {
+                      id(co_duration).publish_state(value);
+                    }
+                    break;
+                }
           
 i2s_audio:
   - id: i2s_spdif
@@ -178,12 +185,16 @@ media_player:
               (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
             ) {
               if (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING) {
-                id(co_source_type).publish_state(1);
+                id(source_type) = 1;
+                id(co_source).publish_state("Bluetooth");                
                } else if (id(media_source_sendspin).get_state() == media_source::MediaSourceState::PLAYING) {
-                id(co_source_type).publish_state(2);
+                id(source_type) = 2;
+                id(co_source).publish_state("Sendspin");
+                
               }              
             } else {
-              id(co_source_type).publish_state(0);
+              id(source_type) = 0;
+              id(co_source).publish_state("Stopped");
             }
           
 
@@ -229,21 +240,29 @@ sensor:
     internal: true
     type: track_progress
     on_value:
-      - sensor.template.publish:
-          id: co_progress
-          state: !lambda 'return x;'
+      then:
+        - if:
+            condition:
+              lambda: return id(source_type) == 1;
+            then:
+            - sensor.template.publish:
+                id: co_progress
+                state: !lambda 'return x;'
           
   - platform: sendspin
     id: sp_duration
     internal: true
     type: track_duration
     on_value:
-      - sensor.template.publish:
-          id: co_duration
-          state: !lambda 'return x;'
-
-
-          
+      then:
+        - if:
+            condition:
+              lambda: return id(source_type) == 1;
+            then:
+            - sensor.template.publish:
+                id: co_duration
+                state: !lambda 'return x;'
+                
   - platform: template
     id: co_progress
     name: "Song position"
@@ -252,14 +271,6 @@ sensor:
   - platform: template
     id: co_duration
     name: "Song duration"
-  - platform: template
-    id: co_source_type
-    internal: true
-    update_interval: never
-    on_value:
-      - text_sensor.template.publish:
-          id: co_source
-          state: !lambda 'return (x==0?"Stopped":(x==1?"Bluetooth":"Sendspin"));'
     
 #  - platform: debug
 #    free:
@@ -274,10 +285,13 @@ text_sensor:
     internal: true
     on_value:
       then:
-      - text_sensor.template.publish:
-          id: co_artist
-          state: !lambda 'return x;'
-          
+        - if:
+            condition:
+              lambda: return id(source_type) == 1;
+            then:
+            - text_sensor.template.publish:
+                id: co_artist
+                state: !lambda return x;          
   - platform: sendspin
     type: album
     name: "Album"
@@ -285,9 +299,13 @@ text_sensor:
     internal: true
     on_value:
       then:
-      - text_sensor.template.publish:
-          id: co_album
-          state: !lambda 'return x;'
+        - if:
+            condition:
+              lambda: return id(source_type) == 1;
+            then:
+            - text_sensor.template.publish:
+                id: co_album
+                state: !lambda 'return x;'
   - platform: sendspin
     type: title
     name: "Title"
@@ -295,9 +313,13 @@ text_sensor:
     internal: true
     on_value:
       then:
-      - text_sensor.template.publish:
-          id: co_title
-          state: !lambda 'return x;'
+        - if:
+            condition:
+              lambda: return id(source_type) == 1;
+            then:
+            - text_sensor.template.publish:
+                id: co_title
+                state: !lambda 'return x;'
 
   - platform: template
     name: "Artist"
@@ -415,7 +437,7 @@ display:
       }
 
       const char* source_icon = "\U000F04DB"; // Stop icon
-      switch ((uint8_t)id(co_source_type).state) {
+      switch (id(source_type)) {
         case 1:
           source_icon = "\U000F00B0"; // Bluetooth icon
           break;
