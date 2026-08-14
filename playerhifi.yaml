@@ -56,25 +56,26 @@ esp32:
       CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "512" # was 1024
 
 #     Used to trace Core usage
-      CONFIG_FREERTOS_USE_TRACE_FACILITY: y
-      CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS: y
-      CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER: y
+#      CONFIG_FREERTOS_USE_TRACE_FACILITY: y
+#      CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS: y
+#      CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER: y
       
-interval:
-  - interval: 10s
-    then: 
-      - lambda: |-
-          size_t max_int = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-          size_t max_ext = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
-          size_t free_int = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-          size_t free_ext = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
-          static char stats_buffer[1024];
-          vTaskGetRunTimeStats(stats_buffer);
-          
-          ESP_LOGW("DEBUG-CPU", "Task Name\tAbs Time\t%% Time\n%s", stats_buffer);
-          
-          ESP_LOGW("DEBUG-MEMORY","Internal memory free: %d, Largest allocatable block: %d", free_int, max_int);
-          ESP_LOGW("DEBUG-MEMORY","External memory free: %d, Largest allocatable block: %d", free_ext, max_ext);
+#interval:
+#  - interval: 10s
+#    then: 
+#      - lambda: |-
+#          size_t max_int = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+#          size_t max_ext = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+#          size_t free_int = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+#          size_t free_ext = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+#          static char stats_buffer[1024];
+#          vTaskGetRunTimeStats(stats_buffer);
+#          
+#          ESP_LOGW("DEBUG-CPU", "Task Name\tAbs Time\t%% Time\n%s", stats_buffer);
+#          
+#          ESP_LOGW("DEBUG-MEMORY","Internal memory free: %d, Largest allocatable block: %d", free_int, max_int);
+#          ESP_LOGW("DEBUG-MEMORY","External memory free: %d, Largest allocatable block: %d", free_ext, max_ext);
+
 wifi:
   power_save_mode: none
   ssid: !secret wifi_dmz_ssid
