@@ -250,6 +250,9 @@ button:
           esp_bluedroid_deinit();
           esp_bt_controller_disable();
           esp_bt_controller_deinit();
+
+          // DEFINITIVO
+          esp_bt_mem_release(ESP_BT_MODE_CLASSIC_BT);
           ESP_LOGW("bt_radio", "Bluetooth controller disabilitato");
 
   - platform: template
