@@ -50,7 +50,16 @@ esp32:
       CONFIG_MBEDTLS_X509_CSR_PARSE_C: n
       CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS: n
   
-
+interval:
+  - interval: 10s
+    then: 
+      - lambda: |-
+          size_t max_int = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+          size_t max_ext = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+          size_t free_int = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+          size_t free_ext = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+          ESP_LOGW("Test","Internal memory free: %d, Largest allocatable block: %d", free_int, max_int);
+          ESP_LOGW("Test","External memory free: %d, Largest allocatable block: %d", free_ext, max_ext);
 wifi:
   power_save_mode: none
   ssid: !secret wifi_dmz_ssid
