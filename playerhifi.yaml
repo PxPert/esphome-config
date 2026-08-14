@@ -114,7 +114,7 @@ a2dp_sink:
           args: [type, text.c_str()]
       - if:
           condition:
-            lambda: return id(source_type) == 2; 
+            lambda: return id(source_type) != 1;
           then:
             - lambda: |- 
                 switch (type) {
@@ -243,7 +243,7 @@ sensor:
       then:
         - if:
             condition:
-              lambda: return id(source_type) == 1;
+              lambda: return id(source_type) != 2;
             then:
             - sensor.template.publish:
                 id: co_progress
@@ -257,7 +257,7 @@ sensor:
       then:
         - if:
             condition:
-              lambda: return id(source_type) == 1;
+              lambda: return id(source_type) != 2;
             then:
             - sensor.template.publish:
                 id: co_duration
@@ -287,7 +287,7 @@ text_sensor:
       then:
         - if:
             condition:
-              lambda: return id(source_type) == 1;
+              lambda: return id(source_type) != 2;
             then:
             - text_sensor.template.publish:
                 id: co_artist
@@ -301,7 +301,7 @@ text_sensor:
       then:
         - if:
             condition:
-              lambda: return id(source_type) == 1;
+              lambda: return id(source_type) != 2;
             then:
             - text_sensor.template.publish:
                 id: co_album
@@ -315,7 +315,7 @@ text_sensor:
       then:
         - if:
             condition:
-              lambda: return id(source_type) == 1;
+              lambda: return id(source_type) != 2;
             then:
             - text_sensor.template.publish:
                 id: co_title
