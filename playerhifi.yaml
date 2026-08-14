@@ -32,7 +32,7 @@ esp32:
       sram1_as_iram: true
     sdkconfig_options: 
       # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
-#      CONFIG_MBEDTLS_TLS_DISABLED: y
+      CONFIG_MBEDTLS_TLS_DISABLED: y
       CONFIG_MBEDTLS_CERTIFICATE_BUNDLE: n
 #      CONFIG_MBEDTLS_TLS_SERVER_AND_CLIENT: n
 #      CONFIG_MBEDTLS_KEY_EXCHANGE_RSA: y
@@ -54,7 +54,7 @@ esp32:
       CONFIG_BTDM_CTRL_BR_EDR_MAX_ACL_CONN: "1"
       CONFIG_BT_ACL_CONNECTIONS: "1"
       CONFIG_FREERTOS_TIMER_QUEUE_LENGTH: "16"
-      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "512" # was 1024
+      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "512"
 
 #     Used to trace Core usage
 #      CONFIG_FREERTOS_USE_TRACE_FACILITY: y
@@ -87,7 +87,6 @@ wifi:
 logger:
   hardware_uart: UART0
   level: WARN
-  
   baud_rate: 0
 #  task_log_buffer_size: 0
 #  tx_buffer_size: 160
@@ -206,14 +205,13 @@ media_player:
               ||
               (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
             ) {
-              // if (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING) {
-              //  id(source_type) = 1;
-              //  id(co_source).publish_state("Bluetooth");                
-              // } else if (id(media_source_sendspin).get_state() == media_source::MediaSourceState::PLAYING) {
+              if (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING) {
+                id(source_type) = 1;
+                id(co_source).publish_state("Bluetooth");                
+              } else if (id(media_source_sendspin).get_state() == media_source::MediaSourceState::PLAYING) {
                 id(source_type) = 2;
                 id(co_source).publish_state("Sendspin");
-                
-              // }              
+              }
             } else {
               id(source_type) = 0;
               id(co_source).publish_state("Stopped");
@@ -239,7 +237,6 @@ switch:
     id: "btState"
     restore_mode: RESTORE_DEFAULT_OFF
 
-    
 button:
   - platform: template
     name: next
@@ -256,48 +253,48 @@ button:
     name: "restart"
     id: button_restart_1
 
-  - platform: template
-    name: "Bluetooth radio - Disattiva"
-    id: bt_radio_off
-    on_press:
-      - lambda: |-
-          esp_bluedroid_disable();
-          esp_bluedroid_deinit();
-          esp_bt_controller_disable();
-          esp_bt_controller_deinit();
-
-          // DEFINITIVO
-          // esp_bt_mem_release(ESP_BT_MODE_CLASSIC_BT);
-          esp_bt_mem_release(ESP_BT_MODE_BTDM);
-          ESP_LOGW("bt_radio", "Bluetooth controller disabilitato");
-
-  - platform: template
-    name: "Bluetooth radio - Riattiva"
-    id: bt_radio_on
-    on_press:
-      - lambda: |-
-          esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-          esp_err_t err = esp_bt_controller_init(&bt_cfg);
-          if (err != ESP_OK) {
-            ESP_LOGE("bt_radio", "esp_bt_controller_init fallito: %d", err);
-            return;
-          }
-          err = esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT);
-          if (err != ESP_OK) {
-            ESP_LOGE("bt_radio", "esp_bt_controller_enable fallito: %d", err);
-            return;
-          }
-          err = esp_bluedroid_init();
-          if (err != ESP_OK) {
-            ESP_LOGE("bt_radio", "esp_bluedroid_init fallito: %d", err);
-            return;
-          }
-          err = esp_bluedroid_enable();
-          if (err != ESP_OK) {
-            ESP_LOGE("bt_radio", "esp_bluedroid_enable fallito: %d", err);
-            return;
-          }
-          ESP_LOGW("bt_radio", "Bluetooth controller riattivato");
+#  - platform: template
+#    name: "Bluetooth radio - Disattiva"
+#    id: bt_radio_off
+#    on_press:
+#      - lambda: |-
+#          esp_bluedroid_disable();
+#          esp_bluedroid_deinit();
+#          esp_bt_controller_disable();
+#          esp_bt_controller_deinit();
+#
+#          // DEFINITIVO
+#          // esp_bt_mem_release(ESP_BT_MODE_CLASSIC_BT);
+#          esp_bt_mem_release(ESP_BT_MODE_BTDM);
+#          ESP_LOGW("bt_radio", "Bluetooth controller disabilitato");
+#
+#  - platform: template
+#    name: "Bluetooth radio - Riattiva"
+#    id: bt_radio_on
+#    on_press:
+#      - lambda: |-
+#          esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+#          esp_err_t err = esp_bt_controller_init(&bt_cfg);
+#          if (err != ESP_OK) {
+#            ESP_LOGE("bt_radio", "esp_bt_controller_init fallito: %d", err);
+#            return;
+#          }
+#          err = esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT);
+#          if (err != ESP_OK) {
+#            ESP_LOGE("bt_radio", "esp_bt_controller_enable fallito: %d", err);
+#            return;
+#          }
+#          err = esp_bluedroid_init();
+#          if (err != ESP_OK) {
+#            ESP_LOGE("bt_radio", "esp_bluedroid_init fallito: %d", err);
+#            return;
+#          }
+#          err = esp_bluedroid_enable();
+#          if (err != ESP_OK) {
+#            ESP_LOGE("bt_radio", "esp_bluedroid_enable fallito: %d", err);
+#            return;
+#          }
+#          ESP_LOGW("bt_radio", "Bluetooth controller riattivato");
           
 sensor:
   - platform: sendspin
@@ -408,8 +405,6 @@ text_sensor:
     icon: "mdi:source-fork"
 
 
-    
-# --- I2C Bus ---
 i2c:
   sda: GPIO19
   scl: GPIO18
@@ -456,6 +451,7 @@ font:
     glyphs:
       - "\U000F0025" # Album
       - "\U000F0803" # Artist
+        
 # --- Display OLED SSD1306 ---
 display:
   - platform: ssd1306_i2c
@@ -553,9 +549,7 @@ display:
           }
         }
         it.filled_rectangle(cursor_x - (cursor_width / 2), bar_y - 3, cursor_width, bar_height + 6);
-
-
-
+        
     flip_x: true
     flip_y: true
 
@@ -604,9 +598,5 @@ binary_sensor:
 
 time:
   platform: homeassistant
-#  platform: sntp
-  
   id: ha_time
   timezone: Europe/Rome
-#  servers:
-#    - 192.168.2.1
