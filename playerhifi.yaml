@@ -172,7 +172,7 @@ media_player:
     id: external_media_player
     name: Media Player
     media_pipeline:
-      format: FLAC
+      format: WAV
       num_channels: 2
       sample_rate: 48000
 #      speaker: speaker_resampler
