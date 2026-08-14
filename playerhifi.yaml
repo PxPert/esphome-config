@@ -32,15 +32,7 @@ esp32:
       sram1_as_iram: true
     sdkconfig_options: 
       # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
-      CONFIG_MBEDTLS_TLS_DISABLED: y
       CONFIG_MBEDTLS_CERTIFICATE_BUNDLE: n
-#      CONFIG_MBEDTLS_TLS_SERVER_AND_CLIENT: n
-#      CONFIG_MBEDTLS_KEY_EXCHANGE_RSA: y
-#      CONFIG_MBEDTLS_KEY_EXCHANGE_ELLIPTIC_CURVE: n
-#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_RSA: y
-#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA: n
-#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA: n
-#      CONFIG_MBEDTLS_KEY_EXCHANGE_ECDH_RSA: n
       CONFIG_MBEDTLS_SSL_ALPN: n
       CONFIG_MBEDTLS_SSL_RENEGOTIATION: n
       CONFIG_MBEDTLS_CLIENT_SSL_SESSION_TICKETS: n
@@ -55,27 +47,33 @@ esp32:
       CONFIG_BT_ACL_CONNECTIONS: "1"
       CONFIG_FREERTOS_TIMER_QUEUE_LENGTH: "16"
       CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "512"
+      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: y
+      CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC: n
+      
 
 #     Used to trace Core usage
 #      CONFIG_FREERTOS_USE_TRACE_FACILITY: y
 #      CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS: y
 #      CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER: y
       
-#interval:
+interval:
+  - interval: 10s
+    then: 
+      - lambda: |-
+          size_t max_int = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+          size_t max_ext = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+          size_t free_int = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+          size_t free_ext = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+          ESP_LOGW("DEBUG-MEMORY","Internal memory free: %d, Largest allocatable block: %d", free_int, max_int);
+          ESP_LOGW("DEBUG-MEMORY","External memory free: %d, Largest allocatable block: %d", free_ext, max_ext);
 #  - interval: 10s
 #    then: 
 #      - lambda: |-
-#          size_t max_int = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-#          size_t max_ext = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
-#          size_t free_int = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-#          size_t free_ext = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
 #          static char stats_buffer[1024];
 #          vTaskGetRunTimeStats(stats_buffer);
 #          
 #          ESP_LOGW("DEBUG-CPU", "Task Name\tAbs Time\t%% Time\n%s", stats_buffer);
 #          
-#          ESP_LOGW("DEBUG-MEMORY","Internal memory free: %d, Largest allocatable block: %d", free_int, max_int);
-#          ESP_LOGW("DEBUG-MEMORY","External memory free: %d, Largest allocatable block: %d", free_ext, max_ext);
 
 wifi:
   power_save_mode: none
