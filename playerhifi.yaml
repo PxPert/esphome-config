@@ -479,6 +479,7 @@ binary_sensor:
     pin:
       number: GPIO12
       mode: INPUT_PULLUP
+      inverted: true
     name: "Pulsante Avanti"
     on_press:
       then:
@@ -489,6 +490,7 @@ binary_sensor:
     pin:
       number: GPIO27
       mode: INPUT_PULLUP
+      inverted: true
     name: "Pulsante Indietro"
     on_press:
       then:
@@ -499,6 +501,7 @@ binary_sensor:
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
+      inverted: true
     name: "Pulsante Play-Stop"
     on_multi_click:
       - timing:
