@@ -8,7 +8,7 @@ esphome:
 
 psram:
   mode: quad
-  speed: 80MHZ
+  speed: 120MHZ
   ignore_not_found: true
   
 mdns:
@@ -24,7 +24,7 @@ esp32:
   
   framework:
     type: esp-idf
-    version: 6.0.2
+#    version: 6.0.2
 #    version: 6.1-beta1
     advanced:
       enable_ota_rollback: false
