@@ -95,8 +95,8 @@ globals:
     type: time_t
     initial_value: '-1.0f'
 
-#sendspin:
-#  task_stack_in_psram: false
+sendspin:
+  task_stack_in_psram: false
 
 a2dp_sink:
   name: HiFiPlayer
@@ -145,10 +145,10 @@ speaker:
     
 
 media_source:
-#  - platform: sendspin
-#    id: media_source_sendspin
-#    static_delay_adjustable: true
-#    buffer_size: 1000000
+  - platform: sendspin
+    id: media_source_sendspin
+    static_delay_adjustable: true
+    buffer_size: 1000000
   - platform: a2dp_sink
     id: media_source_bluetooth
     
@@ -163,7 +163,7 @@ media_player:
 #      speaker: speaker_resampler
       speaker: speaker_spdif
       sources:
-#        - media_source_sendspin
+        - media_source_sendspin
         - media_source_bluetooth
 #        - media_source_http
     on_state:
@@ -179,8 +179,8 @@ media_player:
             ) {
               if (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING) {
                 id(co_source_type).publish_state(1);
-              // } else if (id(media_source_sendspin).get_state() == media_source::MediaSourceState::PLAYING) {
-              //  id(co_source_type).publish_state(2);
+               } else if (id(media_source_sendspin).get_state() == media_source::MediaSourceState::PLAYING) {
+                id(co_source_type).publish_state(2);
               }              
             } else {
               id(co_source_type).publish_state(0);
@@ -224,23 +224,23 @@ button:
     id: button_restart_1
 
 sensor:
-#  - platform: sendspin
-#    id: sp_progress
-#    internal: true
-#    type: track_progress
-#    on_value:
-#      - sensor.template.publish:
-#          id: co_progress
-#          state: !lambda 'return x;'
+  - platform: sendspin
+    id: sp_progress
+    internal: true
+    type: track_progress
+    on_value:
+      - sensor.template.publish:
+          id: co_progress
+          state: !lambda 'return x;'
           
-#  - platform: sendspin
-#    id: sp_duration
-#    internal: true
-#    type: track_duration
-#    on_value:
-#      - sensor.template.publish:
-#          id: co_duration
-#          state: !lambda 'return x;'
+  - platform: sendspin
+    id: sp_duration
+    internal: true
+    type: track_duration
+    on_value:
+      - sensor.template.publish:
+          id: co_duration
+          state: !lambda 'return x;'
 
 
           
@@ -268,36 +268,36 @@ sensor:
 #      name: Fragmentation
 
 text_sensor:
-#  - platform: sendspin
-#    type: artist
-#    id: sp_artist
-#    internal: true
-#    on_value:
-#      then:
-#      - text_sensor.template.publish:
-#          id: co_artist
-#          state: !lambda 'return x;'
+  - platform: sendspin
+    type: artist
+    id: sp_artist
+    internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_artist
+          state: !lambda 'return x;'
           
-#  - platform: sendspin
-#    type: album
-#    name: "Album"
-#    id: sp_album
-#    internal: true
-#    on_value:
-#      then:
-#      - text_sensor.template.publish:
-#          id: co_album
-#          state: !lambda 'return x;'
-#  - platform: sendspin
-#    type: title
-#    name: "Title"
-#    id: sp_title
-#    internal: true
-#    on_value:
-#      then:
-#      - text_sensor.template.publish:
-#          id: co_title
-#          state: !lambda 'return x;'
+  - platform: sendspin
+    type: album
+    name: "Album"
+    id: sp_album
+    internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_album
+          state: !lambda 'return x;'
+  - platform: sendspin
+    type: title
+    name: "Title"
+    id: sp_title
+    internal: true
+    on_value:
+      then:
+      - text_sensor.template.publish:
+          id: co_title
+          state: !lambda 'return x;'
 
   - platform: template
     name: "Artist"
