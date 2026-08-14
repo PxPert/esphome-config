@@ -96,7 +96,7 @@ globals:
     initial_value: '-1.0f'
 
 sendspin:
-  task_stack_in_psram: true
+  task_stack_in_psram: false
 
 a2dp_sink:
   name: HiFiPlayer
