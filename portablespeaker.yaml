@@ -1,0 +1,25 @@
+esphome:
+  name: portablespeaker
+  friendly_name: PortableSpeaker
+
+# Replace this with your actual platform if you aren't using ESP32.
+esp32:
+  board: esp32dev
+
+logger:
+
+api:
+  encryption:
+    key: "JllQcCYeikd33FAy/rvWHh+OsujDUXR0BGAVyF4DwjA="
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: PortableSpeaker Fallback Hotspot
+    password: "eYgGXktNgNxY"
+
+captive_portal:
