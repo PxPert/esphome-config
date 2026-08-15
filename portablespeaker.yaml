@@ -8,15 +8,24 @@ esphome:
 
 esp32:
   board: esp-wrover-kit
+  flash_frequency: 80MHz
   framework:
     type: esp-idf
 
+psram:
+  mode: quad
+  speed: 80MHZ
+  ignore_not_found: true
+  
 logger:
+  
 api:
+  encryption:
+    key: !secret api_key
 
 ota:
   - platform: esphome
-    id: ota_esphome
+    password: !secret ota_pwd_sec
 
 i2c:
   - id: i2c_bus
@@ -24,7 +33,6 @@ i2c:
     scl: GPIO23
 
 wifi:
-  power_save_mode: none
   ssid: !secret wifi_dmz_ssid
   password: !secret wifi_dmz_password
 
