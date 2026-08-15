@@ -45,22 +45,22 @@ external_components:
     refresh: 0s
   - source: github://jesserockz/esphome-components
     components: [file]
-  - source: github://pr#7672
-    components:
-      - audio
-      - speaker
-      - i2s_audio
-      - speaker
-    refresh: 0s
-  - source: github://pr#5230
-    components:
-      - esp_adf
-    refresh: 0s
+#  - source: github://pr#7672
+#    components:
+#      - audio
+#      - speaker
+#      - i2s_audio
+#      - speaker
+#    refresh: 0s
+#  - source: github://pr#5230
+#    components:
+#      - esp_adf
+#    refresh: 0s
 
     
 es8388:
 
-esp_adf:
+#esp_adf:
 
 globals:
   - id: wifi_connected
@@ -120,6 +120,7 @@ speaker:
     i2s_dout_pin: GPIO26
     channel: mono
     sample_rate: 44100
+    
 #    mute_pin:
 #      number: GPIO21
 #      inverted: true
@@ -147,8 +148,8 @@ media_player:
     id: nabu_media_player
     name: Media Player
     internal: false
-    speaker: board_external_speakers
-    sample_rate: 44100
+    announcement_pipeline: 
+      speaker: board_external_speakers
     volume_increment: 0.05
     volume_min: 0.4
     volume_max: 0.85
