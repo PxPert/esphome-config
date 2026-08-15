@@ -1,25 +1,207 @@
+substitutions:
+  friendly_name: Portable speaker
+  device_name: portable-speaker
+  
 esphome:
-  name: portablespeaker
-  friendly_name: PortableSpeaker
+  name: ${device_name}
+  friendly_name: ${friendly_name}
 
-# Replace this with your actual platform if you aren't using ESP32.
 esp32:
-  board: esp32dev
+  board: esp-wrover-kit
+  framework:
+    type: esp-idf
 
 logger:
-
 api:
-  encryption:
-    key: "JllQcCYeikd33FAy/rvWHh+OsujDUXR0BGAVyF4DwjA="
 
 ota:
   - platform: esphome
+    id: ota_esphome
+
+i2c:
+  - id: i2c_bus
+    sda: GPIO18
+    scl: GPIO23
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  ap:
-    ssid: PortableSpeaker Fallback Hotspot
-    password: "eYgGXktNgNxY"
+  power_save_mode: none
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
 
-captive_portal:
+external_components:
+  - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
+    components: [es8388]
+    refresh: 0s
+
+es8388:
+
+i2s_audio:
+  - id: i2s_audio_bus
+    i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO5
+
+speaker:
+  - platform: i2s_audio
+    id: luxe_speaker
+    dac_type: external
+    i2s_dout_pin: GPIO26
+    channel: stereo
+
+media_player:
+  - platform: speaker
+    name: None
+    id: luxe_out
+    announcement_pipeline:
+      speaker: luxe_speaker
+
+microphone:
+  - platform: i2s_audio
+    id: luxe_microphone
+    i2s_din_pin: GPIO35
+    adc_type: external
+    pdm: false
+
+voice_assistant:
+  microphone: luxe_microphone
+  media_player: luxe_out
+  on_start:
+    - light.turn_on:
+        id: top_led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: none
+  on_tts_start:
+    - light.turn_on:
+        id: top_led
+        blue: 60%
+        red: 20%
+        green: 20%
+        effect: none
+  on_tts_end:
+    - media_player.play_media: !lambda return x;
+    - light.turn_on:
+        id: top_led
+        blue: 60%
+        red: 20%
+        green: 20%
+        effect: pulse
+  on_end:
+    - delay: 1s
+    - wait_until:
+        not:
+          media_player.is_playing: luxe_out
+    - light.turn_off: top_led
+  on_error:
+    - light.turn_on:
+        id: top_led
+        blue: 0%
+        red: 100%
+        green: 0%
+        effect: none
+    - delay: 1s
+    - light.turn_off: top_led
+
+sensor:
+  - platform: adc
+    id: battery_sensor
+    pin: GPIO33
+    name: Battery
+    icon: "mdi:battery-outline"
+    device_class: voltage
+    state_class: measurement
+    entity_category: diagnostic
+    unit_of_measurement: V
+    update_interval: 15s
+    accuracy_decimals: 3
+    attenuation: 11db
+    raw: true
+    filters:
+      - multiply: 0.00173913  # 2300 -> 4, for attenuation 11db, based on Olivier's code
+      - exponential_moving_average:
+          alpha: 0.2
+          send_every: 2
+      - delta: 0.002
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO19
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Volume Up
+    id: volume_up
+    on_click:
+      - media_player.volume_up:
+          id: luxe_out
+  - platform: gpio
+    pin:
+      number: GPIO32
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Volume Down
+    id: volume_down
+    on_click:
+      - media_player.volume_down:
+          id: luxe_out
+  - platform: gpio
+    pin:
+      number: GPIO12
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    name: Action
+    id: action_button
+    on_multi_click:
+      - timing:
+          - ON FOR AT MOST 350ms
+          - OFF FOR AT LEAST 10ms
+        then:
+          - media_player.toggle:
+              id: luxe_out
+      - timing:
+          - ON FOR AT LEAST 350ms
+        then:
+          - voice_assistant.start:
+      - timing:
+          - ON FOR AT LEAST 350ms
+          - OFF FOR AT LEAST 10ms
+        then:
+          - voice_assistant.stop:
+
+switch:
+  - platform: gpio
+    id: amplifier_enable
+    pin:
+      number: GPIO21
+      inverted: true
+    restore_mode: RESTORE_DEFAULT_ON
+    internal: true
+
+light:
+  - platform: esp32_rmt_led_strip
+    name: None
+    id: top_led
+    pin: GPIO22
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    gamma_correct: 2.8
+    effects:
+      - pulse:
+          transition_length: 250ms
+          update_interval: 250ms
+
+button:
+  - platform: safe_mode
+    id: button_safe_mode
+    name: Safe Mode Boot
+
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
