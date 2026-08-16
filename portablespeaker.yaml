@@ -72,6 +72,9 @@ globals:
   - id: source_type
     type: int8_t
     initial_value: '0'
+  - id: source_type_before_va
+    type: int8_t
+    initial_value: '0'
     
 external_components:
   - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
@@ -108,29 +111,6 @@ speaker:
     dac_type: external
     channel: stereo
     buffer_duration: 100ms
-#    audio_dac: es8388_dac # <<< adding this line breaks volume control in MA.
-#  - platform: mixer
-#    id: mixing_speaker
-#    output_speaker: luxe_speaker
-#    num_channels: 2
-#    task_stack_in_psram: true
-#    source_speakers:
-#      - id: announcement_mixing_input
-#      - id: media_mixing_input
-
-#  - platform: resampler
-#    id: announcement_resampling_speaker
-#    output_speaker: announcement_mixing_input
-#    sample_rate: 48000
-#    bits_per_sample: 16
-#    task_stack_in_psram: true
-
-#  - platform: resampler
-#    id: media_resampling_speaker
-#    output_speaker: media_mixing_input
-#    sample_rate: 48000
-#    bits_per_sample: 16
-#    task_stack_in_psram: true
 
 microphone:
   - platform: i2s_audio
@@ -169,7 +149,7 @@ switch:
     type: bluetooth
     name: "Bluetooth state"
     id: "btState"
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: RESTORE_DEFAULT_ON
     
 light:
   - platform: esp32_rmt_led_strip
@@ -256,30 +236,35 @@ media_player:
     volume_min: 0.4
     volume_max: 0.9
     on_state:
-      - then: 
-        - logger.log:
-            format: "New mediaplayer state: %d"
-            args: [id(external_media_player).state]
-        - if: 
-            condition:
-              lambda: |-
-                return (              
-                  (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
-                  ||
-                  (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
-                );
-            then:
-              - if:
-                  condition:
-                    lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);"
-                  then:
-                    - lambda: "id(source_type) = 1;"
-                  else:
-                    - lambda: "id(source_type) = 2;"
-                    - switch.turn_off: btState
-            else:
-              - lambda: "id(source_type) = 0;"
-              - switch.turn_on: btState
+      - then:
+          - logger.log:
+              format: 'New mediaplayer state: %d'
+              args:
+                - id(external_media_player).state
+          - if:
+              condition:
+                lambda: |
+                  return (              
+                    (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
+                    ||
+                    (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
+                  );
+              then:
+                - if:
+                    condition:
+                      lambda: return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);
+                    then:
+                      - lambda: id(source_type) = 1;
+                    else:
+                      - lambda: id(source_type) = 2;
+                      - script.execute:
+                          id: start_stop_bt
+                          s: 'false'
+              else:
+                - lambda: id(source_type) = 0;
+                - script.execute:
+                    id: start_stop_bt
+                    s: 'false'
       
 voice_assistant:
   id: va
@@ -289,11 +274,6 @@ voice_assistant:
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 2.0
-
-  on_listening:
-    then:
-      - logger.log: "IS LISTENING!!"
-
   on_end:
     - wait_until:
         condition:
@@ -308,9 +288,13 @@ voice_assistant:
             - not:
                 speaker.is_playing:
                   id: luxe_speaker
-    - media_player.play: 
-        id: sendspin_media_player
-                  
+    - if: 
+        condition:
+          lambda: "return id(source_type_before_va)==2;"
+        then:
+          - media_player.play: 
+              id: sendspin_media_player
+
 sensor:
   - platform: adc
     id: battery_sensor
@@ -387,26 +371,37 @@ binary_sensor:
 #          - voice_assistant.stop:
 
 script:
-  id: start_assistant_script
-  mode: single
-  then:
-    - if:
-        condition:
-          - speaker.is_playing:
-              id: luxe_speaker
-        then:
-          - logger.log: "STOP PLAY!!"
-          - if: 
-              condition:
-                  lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);"
-              then:
-                - media_player.stop: 
-                    id: external_media_player
-              else:
-                - media_player.pause: 
-                    id: external_media_player
-          - wait_until:
-            - not:
-              - speaker.is_playing:
-                  id: luxe_speaker
-    - voice_assistant.start: 
+  - id: start_stop_bt
+    mode: restart
+    parameters:
+      s: bool
+    then:
+      - delay: 5s
+      - switch.control:
+          id: btState
+          state: !lambda "return s;"
+
+  - id: start_assistant_script
+    mode: single
+    then:
+      - lambda: "id(source_type_before_va)=0;"
+      - if:
+          condition:
+            - speaker.is_playing:
+                id: luxe_speaker
+          then:
+            - if: 
+                condition:
+                    lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);"
+                then:
+                  - media_player.stop: 
+                      id: external_media_player
+                else:
+                  - lambda: "id(source_type_before_va)=2;"
+                  - media_player.pause: 
+                      id: external_media_player
+            - wait_until:
+              - not:
+                - speaker.is_playing:
+                    id: luxe_speaker
+      - voice_assistant.start: 
