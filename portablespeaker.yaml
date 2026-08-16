@@ -253,11 +253,11 @@ media_player:
                   (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
                   ||
                   (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
-                )
+                );
             then:
               - if:
                   condition:
-                    lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING)"
+                    lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);"
                   then:
                     - lambda: "id(source_type) = 1;"
                   else:
