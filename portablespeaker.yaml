@@ -106,7 +106,7 @@ speaker:
     id: mixing_speaker
     output_speaker: luxe_speaker
     num_channels: 2
-    task_stack_in_psram: false
+    task_stack_in_psram: true
     source_speakers:
       - id: announcement_mixing_input
       - id: media_mixing_input
@@ -116,12 +116,14 @@ speaker:
     output_speaker: announcement_mixing_input
     sample_rate: 48000
     bits_per_sample: 16
+    task_stack_in_psram: true
 
   - platform: resampler
     id: media_resampling_speaker
     output_speaker: media_mixing_input
     sample_rate: 48000
     bits_per_sample: 16
+    task_stack_in_psram: true
 
 microphone:
   - platform: i2s_audio
@@ -135,7 +137,7 @@ microphone:
 
 sendspin:
   id: sendspin_hub
-  task_stack_in_psram: false
+  task_stack_in_psram: true
 
 a2dp_sink:
   name: MuseLuxe
