@@ -1,78 +1,140 @@
 substitutions:
-  i2c_sda_pin: GPIO4
-  i2c_scl_pin: GPIO5
-  TAS58XX_VARIANT: TAS5805M
-  tas58xx_variant: TAS5805M
-  tas58xx_enable_pin: 10
-  i2s_lrclk_pin: GPIO12
-  i2s_bclk_pin: GPIO13
-  i2s_dout_pin: GPIO14
-  task_stack_in_psram: true
-  rgb_led_pin: GPIO15
-  ir_rx_pin: GPIO16
-  
-  
-  
-psram:
-  
+  friendly_name: Sample device
+  device_name: sample-device
+
 esphome:
-  name: test-v
-  friendly_name: test_v
+  name: ${device_name}
+  friendly_name: ${friendly_name}
 
-# Replace this with your actual platform if you aren't using ESP32.
+psram:
+  mode: quad
+  speed: 80MHZ
+  ignore_not_found: true
+  
+mdns:
+  disabled: true
+  
 esp32:
-  board: esp32dev
+  board: esp-wrover-kit
+  cpu_frequency: 240MHZ
+  flash_frequency: 80MHz
+  
+  framework:
+    type: esp-idf
+    advanced:
+      enable_ota_rollback: false
+      sram1_as_iram: true
+    sdkconfig_options: 
+      # Disabilita il protocollo SSL/TLS (mantiene solo le primitive crypto per WiFi)
+      CONFIG_MBEDTLS_CERTIFICATE_BUNDLE: n
+      CONFIG_MBEDTLS_SSL_ALPN: n
+      CONFIG_MBEDTLS_SSL_RENEGOTIATION: n
+      CONFIG_MBEDTLS_CLIENT_SSL_SESSION_TICKETS: n
+      CONFIG_MBEDTLS_SERVER_SSL_SESSION_TICKETS: n
+      CONFIG_MBEDTLS_PEM_PARSE_C: n
+      CONFIG_MBEDTLS_PEM_WRITE_C: n
+      CONFIG_MBEDTLS_X509_CRL_PARSE_C: n
+      CONFIG_MBEDTLS_X509_CSR_PARSE_C: n
+      CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS: n
+      CONFIG_BT_ALLOCATION_FROM_SPIRAM_FIRST: y
+      CONFIG_BTDM_CTRL_BR_EDR_MAX_ACL_CONN: "1"
+      CONFIG_BT_ACL_CONNECTIONS: "1"
+      CONFIG_FREERTOS_TIMER_QUEUE_LENGTH: "16"
+      CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL: "512"
+      CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC: y
+      CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC: n
+  
 
+wifi:
+  power_save_mode: none
+  ssid: !secret wifi_dmz_ssid
+  password: !secret wifi_dmz_password
+  post_connect_roaming: false
+  
 logger:
+  hardware_uart: UART0
+  level: WARN
+  baud_rate: 0
 
 api:
   encryption:
-    key: "4if8DEsZ6QcJfymGuspX8Zi0Db20epkf0YwnedS1LK8="
+    key: !secret api_key
 
 ota:
   - platform: esphome
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  ap:
-    ssid: test_v Fallback Hotspot
-    password: "g42UOfgMMU6m"
-
-captive_portal:
-
-# ===== Packages =====
-packages:
-  esparagus_remote:
-    url: https://github.com/sonocotta/esp32-audio-dock
-    ref: main
-    files:
-      # Option A: TAS58xx configured with ganged 15-band EQ
-      - firmware/esphome/packages/dac-tas58xx.yaml
-      # Option B: TAS58xx configured with individual 15-band EQ per channel
-      # - firmware/esphome/packages/dac-tas58xx-biamp.yaml
-      # Option C: TAS58xx configured with bi-amp mode, with filters applied to both channels (HF or LF)
-      # - firmware/esphome/packages/dac-tas58xx-presets.yaml
-
-      - firmware/esphome/packages/audio.yaml
-      - firmware/esphome/packages/sendspin.yaml
-      # Optional: OLED displays clock when idling, and track/artist info when playing
-      # - firmware/esphome/packages/sendspin-addon-oled.yaml
-      - firmware/esphome/packages/sendspin-audio-addon-external-dac.yaml
-      - firmware/esphome/packages/sendspin-addon-dac-enable.yaml
-      - firmware/esphome/packages/sendspin-addon-tas58xx.yaml
-      
-      - firmware/esphome/packages/light.yaml
-      - firmware/esphome/packages/ir-receiver.yaml
-      - firmware/esphome/packages/monitoring.yaml
-      - firmware/esphome/packages/monitoring-wifi.yaml
+    password: !secret ota_pwd_sec
 
 external_components:
-  - source: github://PxPert/a2dp_sink
+  - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
-
     
 a2dp_sink:
-  name: "My A2DP Sink"          # (Required) Friendly name for the device
-  auto_reconnect: true          # (Optional, default: true) Reconnect to last paired device
+  name: SampleBTPlayer
   minimal_bluetooth: true
+          
+i2s_audio:
+  - id: i2s_spdif
+    
+speaker:
+  - platform: i2s_audio
+    id: speaker_spdif
+    dac_type: external
+    channel: stereo
+    use_apll: true
+    sample_rate: 48000
+    i2s_dout_pin: GPIO32
+    spdif_mode: true
+    timeout: 1s
+    buffer_duration: 50ms
+    
+
+media_source:
+  - platform: a2dp_sink
+    id: media_source_bluetooth
+    
+media_player:    
+  - platform: speaker_source
+    id: external_media_player
+    name: Media Player
+    media_pipeline:
+      format: WAV
+      num_channels: 2
+      sample_rate: 48000
+      speaker: speaker_spdif
+      sources:
+        - media_source_bluetooth
+
+        
+number:
+  - platform: a2dp_sink
+    name: "Bluetooth Volume"
+
+    
+switch:
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    id: "btConnection"
+    restore_mode: ALWAYS_OFF
+
+  - platform: a2dp_sink
+    type: bluetooth
+    name: "Bluetooth state"
+    id: "btState"
+    restore_mode: RESTORE_DEFAULT_OFF
+
+button:
+  - platform: template
+    name: next
+    on_press:
+      - then:
+          - media_player.next: external_media_player
+  - platform: template
+    name: previous
+    on_press:
+      - then:
+          - media_player.previous: external_media_player
+            
+  - platform: restart
+    name: "restart"
+    id: button_restart_1
