@@ -1,0 +1,25 @@
+esphome:
+  name: test-v
+  friendly_name: test_v
+
+# Replace this with your actual platform if you aren't using ESP32.
+esp32:
+  board: esp32dev
+
+logger:
+
+api:
+  encryption:
+    key: "4if8DEsZ6QcJfymGuspX8Zi0Db20epkf0YwnedS1LK8="
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: test_v Fallback Hotspot
+    password: "g42UOfgMMU6m"
+
+captive_portal:
