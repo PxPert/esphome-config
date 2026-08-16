@@ -231,7 +231,7 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
 
-  on_start:
+  on_listening:
     then:
       - if:
           condition:
