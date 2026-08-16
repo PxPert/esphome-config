@@ -219,14 +219,14 @@ media_player:
       format: FLAC
       num_channels: 1
       sample_rate: 48000
-      speaker: announcement_mixing_input
+      speaker: announcement_resampling_speaker
       sources:
         - http_announcement_source
     media_pipeline:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
-      speaker: media_mixing_input
+      speaker: media_resampling_speaker
       sources:
         - http_media_source
         - sendspin_media_source
