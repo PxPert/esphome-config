@@ -67,10 +67,10 @@ packages:
       - firmware/esphome/packages/monitoring.yaml
       - firmware/esphome/packages/monitoring-wifi.yaml
 
-#external_components:
-#  source: github://PxPert/a2dp_sink
+external_components:
+  source: github://PxPert/a2dp_sink
   
-#a2dp_sink:
-#  name: "My A2DP Sink"          # (Required) Friendly name for the device
-#  auto_reconnect: true          # (Optional, default: true) Reconnect to last paired device
-#  minimal_bluetooth: true
+a2dp_sink:
+  name: "My A2DP Sink"          # (Required) Friendly name for the device
+  auto_reconnect: true          # (Optional, default: true) Reconnect to last paired device
+  minimal_bluetooth: true
