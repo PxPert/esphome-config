@@ -333,7 +333,7 @@ script:
           - logger.log: "STOP PLAY!!"
           - if: 
               condition:
-                  lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING)"
+                  lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);"
               then:
                 - media_player.stop: 
               else:
