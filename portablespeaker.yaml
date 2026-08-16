@@ -231,6 +231,17 @@ voice_assistant:
   auto_gain: 31dBFS
   volume_multiplier: 2.0
 
+  on_start:
+    then:
+      - if:
+          condition:
+            - speaker.is_playing:
+          then:
+            - logger.log: "STOP PLAY!!"
+            - media_player.pause: 
+            - wait_until:
+              - not:
+                  speaker.is_playing:
   on_end:
     - wait_until:
         condition:
