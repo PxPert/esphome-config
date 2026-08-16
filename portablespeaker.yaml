@@ -231,6 +231,8 @@ media_source:
     id: media_source_bluetooth
     
 media_player:
+  - platform: sendspin
+    id: sendspin_media_player
   - platform: speaker_source
     id: external_media_player
     name: none
@@ -308,6 +310,7 @@ voice_assistant:
                 speaker.is_playing:
                   id: luxe_speaker
     - media_player.play: 
+        id: sendspin_media_player
                   
 sensor:
   - platform: adc
@@ -399,8 +402,10 @@ script:
                   lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING);"
               then:
                 - media_player.stop: 
+                    id: external_media_player
               else:
                 - media_player.pause: 
+                    id: external_media_player
           - wait_until:
             - not:
               - speaker.is_playing:
