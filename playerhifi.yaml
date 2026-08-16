@@ -117,6 +117,7 @@ globals:
 sendspin:
   task_stack_in_psram: false
 
+  
 a2dp_sink:
   name: HiFiPlayer
   minimal_bluetooth: true
