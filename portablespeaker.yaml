@@ -208,9 +208,8 @@ button:
     entity_category: config
     on_press:
       then:
-        - media_player.play_media:
+        - media_player.play: 
             id: sendspin_media_player
-            media_url: sendspin://current
         
 
 #audio_file:
