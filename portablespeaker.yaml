@@ -79,7 +79,9 @@ external_components:
     refresh: 0s
   - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
-
+  - source: components
+    components: [ sendspin ]
+    
 interval:
   - interval: 10s
     then: 
