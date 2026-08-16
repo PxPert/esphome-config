@@ -69,6 +69,7 @@ packages:
 
 external_components:
   source: github://PxPert/a2dp_sink
+  components: [ a2dp_sink ]
   
 a2dp_sink:
   name: "My A2DP Sink"          # (Required) Friendly name for the device
