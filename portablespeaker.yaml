@@ -11,7 +11,14 @@ esp32:
   flash_frequency: 80MHz
   framework:
     type: esp-idf
-
+    sdkconfig_options:
+      CONFIG_ESP_WIFI_RX_IRAM_OPT: "y"
+      CONFIG_ESP_WIFI_IRAM_OPT: "y"
+      CONFIG_ESP_WIFI_EXTRA_IRAM_OPT: "y"
+      CONFIG_LWIP_IRAM_OPTIMIZATION: "y"
+    advanced:
+      sram1_as_iram: true
+      
 psram:
   mode: quad
   speed: 80MHZ
@@ -57,15 +64,28 @@ speaker:
     i2s_dout_pin: GPIO26
     dac_type: external
     channel: stereo
-    buffer_duration: 300ms
+    buffer_duration: 100ms
 #    audio_dac: es8388_dac # <<< adding this line breaks volume control in MA.
+  - platform: mixer
+    id: mixing_speaker
+    output_speaker: luxe_speaker
+    num_channels: 2
+    task_stack_in_psram: false
+    source_speakers:
+      - id: announcement_mixing_input
+      - id: media_mixing_input
 
-media_player:
-  - platform: speaker
-    name: None
-    id: luxe_out
-    announcement_pipeline:
-      speaker: luxe_speaker
+  - platform: resampler
+    id: announcement_resampling_speaker
+    output_speaker: announcement_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
+
+  - platform: resampler
+    id: media_resampling_speaker
+    output_speaker: media_mixing_input
+    sample_rate: 48000
+    bits_per_sample: 16
 
 microphone:
   - platform: i2s_audio
@@ -77,46 +97,105 @@ microphone:
     channel: stereo
     adc_type: external  
 
+sendspin:
+  id: sendspin_hub
+  task_stack_in_psram: false
+
+switch:
+  - platform: gpio
+    id: amplifier_enable
+    pin:
+      number: GPIO21
+#      inverted: true
+    restore_mode: ALWAYS_ON
+    internal: true
+
+light:
+  - platform: esp32_rmt_led_strip
+    name: None
+    id: top_led
+    pin: GPIO22
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    gamma_correct: 2.8
+    effects:
+      - pulse:
+          transition_length: 250ms
+          update_interval: 250ms
+
+button:
+  - platform: safe_mode
+    id: button_safe_mode
+    name: Safe Mode Boot
+
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
+
+#audio_file:
+#  - id: ready_sound
+#    file: https://github.com/RealDeco/xiaozhi-esphome/raw/main/sounds/${startup_sound_file}.flac
+    
+media_source:
+#  - platform: audio_file
+#    id: audio_file_announcement_source
+  - platform: audio_http
+    id: http_announcement_source
+  - platform: audio_http
+    id: http_media_source
+  - platform: sendspin
+    id: sendspin_media_source
+    decode_memory: internal
+
+media_player:
+  - platform: speaker_source
+    id: external_media_player
+    name: none
+
+    announcement_pipeline:
+      format: FLAC
+      num_channels: 1
+      sample_rate: 48000
+      speaker: luxe_speaker
+      sources:
+        - http_announcement_source
+    media_pipeline:
+      format: FLAC
+      num_channels: 2
+      sample_rate: 48000
+      speaker: media_resampling_speaker
+      sources:
+        - http_media_source
+        - sendspin_media_source
+    volume_increment: 0.05
+    volume_min: 0.4
+    volume_max: 0.9
+
+      
 voice_assistant:
-  microphone: luxe_microphone
-  media_player: luxe_out
-  on_start:
-    - light.turn_on:
-        id: top_led
-        blue: 100%
-        red: 0%
-        green: 0%
-        effect: none
-  on_tts_start:
-    - light.turn_on:
-        id: top_led
-        blue: 60%
-        red: 20%
-        green: 20%
-        effect: none
-  on_tts_end:
-    - media_player.play_media: !lambda return x;
-    - light.turn_on:
-        id: top_led
-        blue: 60%
-        red: 20%
-        green: 20%
-        effect: pulse
+  id: va
+  microphone:
+    - microphone: luxe_microphone
+  media_player: external_media_player
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 2.0
+
   on_end:
-    - delay: 1s
     - wait_until:
-        not:
-          media_player.is_playing: luxe_out
-    - light.turn_off: top_led
-  on_error:
-    - light.turn_on:
-        id: top_led
-        blue: 0%
-        red: 100%
-        green: 0%
-        effect: none
-    - delay: 1s
-    - light.turn_off: top_led
+        condition:
+          media_player.is_announcing:
+            id: external_media_player
+        timeout: 0.5s
+    - wait_until:
+        - and:
+            - not:
+                media_player.is_announcing:
+                  id: external_media_player
+            - not:
+                speaker.is_playing:
+                  id: luxe_speaker
 
 sensor:
   - platform: adc
@@ -151,7 +230,7 @@ binary_sensor:
     id: volume_up
     on_click:
       - media_player.volume_up:
-          id: luxe_out
+          id: external_media_player
   - platform: gpio
     pin:
       number: GPIO32
@@ -163,7 +242,7 @@ binary_sensor:
     id: volume_down
     on_click:
       - media_player.volume_down:
-          id: luxe_out
+          id: external_media_player
   - platform: gpio
     pin:
       number: GPIO12
@@ -179,7 +258,7 @@ binary_sensor:
           - OFF FOR AT LEAST 10ms
         then:
           - media_player.toggle:
-              id: luxe_out
+              id: external_media_player
       - timing:
           - ON FOR AT LEAST 350ms
         then:
@@ -190,34 +269,3 @@ binary_sensor:
         then:
           - voice_assistant.stop:
 
-switch:
-  - platform: gpio
-    id: amplifier_enable
-    pin:
-      number: GPIO21
-#      inverted: true
-    restore_mode: ALWAYS_ON
-    internal: true
-
-light:
-  - platform: esp32_rmt_led_strip
-    name: None
-    id: top_led
-    pin: GPIO22
-    chipset: SK6812
-    num_leds: 1
-    rgb_order: grb
-    gamma_correct: 2.8
-    effects:
-      - pulse:
-          transition_length: 250ms
-          update_interval: 250ms
-
-button:
-  - platform: safe_mode
-    id: button_safe_mode
-    name: Safe Mode Boot
-
-  - platform: factory_reset
-    id: factory_reset_btn
-    name: Factory reset
