@@ -102,28 +102,28 @@ speaker:
     channel: stereo
     buffer_duration: 100ms
 #    audio_dac: es8388_dac # <<< adding this line breaks volume control in MA.
-  - platform: mixer
-    id: mixing_speaker
-    output_speaker: luxe_speaker
-    num_channels: 2
-    task_stack_in_psram: true
-    source_speakers:
-      - id: announcement_mixing_input
-      - id: media_mixing_input
+#  - platform: mixer
+#    id: mixing_speaker
+#    output_speaker: luxe_speaker
+#    num_channels: 2
+#    task_stack_in_psram: true
+#    source_speakers:
+#      - id: announcement_mixing_input
+#      - id: media_mixing_input
 
-  - platform: resampler
-    id: announcement_resampling_speaker
-    output_speaker: announcement_mixing_input
-    sample_rate: 48000
-    bits_per_sample: 16
-    task_stack_in_psram: true
+#  - platform: resampler
+#    id: announcement_resampling_speaker
+#    output_speaker: announcement_mixing_input
+#    sample_rate: 48000
+#    bits_per_sample: 16
+#    task_stack_in_psram: true
 
-  - platform: resampler
-    id: media_resampling_speaker
-    output_speaker: media_mixing_input
-    sample_rate: 48000
-    bits_per_sample: 16
-    task_stack_in_psram: true
+#  - platform: resampler
+#    id: media_resampling_speaker
+#    output_speaker: media_mixing_input
+#    sample_rate: 48000
+#    bits_per_sample: 16
+#    task_stack_in_psram: true
 
 microphone:
   - platform: i2s_audio
@@ -202,8 +202,8 @@ button:
 media_source:
 #  - platform: audio_file
 #    id: audio_file_announcement_source
-  - platform: audio_http
-    id: http_announcement_source
+#  - platform: audio_http
+#    id: http_announcement_source
   - platform: audio_http
     id: http_media_source
   - platform: sendspin
@@ -217,18 +217,18 @@ media_player:
     id: external_media_player
     name: none
 
-    announcement_pipeline:
-      format: FLAC
-      num_channels: 1
-      sample_rate: 48000
-      speaker: announcement_resampling_speaker
-      sources:
-        - http_announcement_source
+#    announcement_pipeline:
+#      format: FLAC
+#      num_channels: 1
+#      sample_rate: 48000
+#      speaker: announcement_resampling_speaker
+#      sources:
+#        - http_announcement_source
     media_pipeline:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
-      speaker: media_resampling_speaker
+      speaker: luxe_speaker
       sources:
         - http_media_source
         - sendspin_media_source
