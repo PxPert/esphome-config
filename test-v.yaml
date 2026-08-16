@@ -54,17 +54,16 @@ a2dp_sink:
   minimal_bluetooth: true
           
 i2s_audio:
-  - id: i2s_spdif
+  - id: i2s_sample
     
 speaker:
   - platform: i2s_audio
-    id: speaker_spdif
+    id: speaker_sample
     dac_type: external
     channel: stereo
     use_apll: true
     sample_rate: 48000
     i2s_dout_pin: GPIO32
-    spdif_mode: true
     timeout: 1s
     buffer_duration: 50ms
     
@@ -81,7 +80,7 @@ media_player:
       format: WAV
       num_channels: 2
       sample_rate: 48000
-      speaker: speaker_spdif
+      speaker: speaker_sample
       sources:
         - media_source_bluetooth
 
