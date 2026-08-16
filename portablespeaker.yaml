@@ -208,7 +208,7 @@ media_player:
 #      speaker: luxe_speaker
 #      sources:
 #        - http_announcement_source
-    media_pipeline:
+    announcement_pipeline:
       format: FLAC
       num_channels: 2
       sample_rate: 48000
