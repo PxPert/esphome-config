@@ -68,6 +68,11 @@ wifi:
   ssid: !secret wifi_dmz_ssid
   password: !secret wifi_dmz_password
 
+globals:
+  - id: source_type
+    type: int8_t
+    initial_value: '0'
+    
 external_components:
   - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
     components: [es8388]
@@ -207,7 +212,7 @@ media_source:
   - platform: audio_http
     id: http_media_source
   - platform: sendspin
-    id: sendspin_media_source
+    id: media_source_sendspin
     decode_memory: internal
   - platform: a2dp_sink
     id: media_source_bluetooth
@@ -231,12 +236,36 @@ media_player:
       speaker: luxe_speaker
       sources:
         - http_media_source
-        - sendspin_media_source
+        - media_source_sendspin
         - media_source_bluetooth
     volume_increment: 0.05
     volume_min: 0.4
     volume_max: 0.9
-
+    on_state:
+      - then: 
+        - logger.log:
+            format: "New mediaplayer state: %d"
+            args: [id(external_media_player).state]
+        - if: 
+            condition:
+              lambda: |-
+                return (              
+                  (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PLAYING)
+                  ||
+                  (id(external_media_player).state  == media_player::MEDIA_PLAYER_STATE_PAUSED)
+                )
+            then:
+              - if:
+                  condition:
+                    lambda: "return (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING)"
+                  then:
+                    - lambda: "id(source_type) = 1;"
+                  else:
+                    - lambda: "id(source_type) = 2;"
+                    - switch.turn_off: btState
+            else:
+              - lambda: "id(source_type) = 0;"
+              - switch.turn_on: btState
       
 voice_assistant:
   id: va
