@@ -331,7 +331,7 @@ script:
           - speaker.is_playing:
         then:
           - logger.log: "STOP PLAY!!"
-          - media_player.pause: 
+          - media_player.stop: 
           - wait_until:
             - not:
                 speaker.is_playing:
