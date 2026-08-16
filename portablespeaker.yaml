@@ -341,6 +341,6 @@ script:
                 - media_player.pause: 
           - wait_until:
             - not:
-            - speaker.is_playing:
-                id: luxe_speaker
+              - speaker.is_playing:
+                  id: luxe_speaker
     - voice_assistant.start: 
