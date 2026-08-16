@@ -1,25 +1,33 @@
-esphome:
-  name: test-v
-  friendly_name: test_v
+# ===== Packages =====
+packages:
+  esparagus_remote:
+    url: https://github.com/sonocotta/esp32-audio-dock
+    ref: main
+    files:
+      # Option A: TAS58xx configured with ganged 15-band EQ
+      - firmware/esphome/packages/dac-tas58xx.yaml
+      # Option B: TAS58xx configured with individual 15-band EQ per channel
+      # - firmware/esphome/packages/dac-tas58xx-biamp.yaml
+      # Option C: TAS58xx configured with bi-amp mode, with filters applied to both channels (HF or LF)
+      # - firmware/esphome/packages/dac-tas58xx-presets.yaml
 
-# Replace this with your actual platform if you aren't using ESP32.
-esp32:
-  board: esp32dev
+      - firmware/esphome/packages/audio.yaml
+      - firmware/esphome/packages/sendspin.yaml
+      # Optional: OLED displays clock when idling, and track/artist info when playing
+      # - firmware/esphome/packages/sendspin-addon-oled.yaml
+      - firmware/esphome/packages/sendspin-audio-addon-external-dac.yaml
+      - firmware/esphome/packages/sendspin-addon-dac-enable.yaml
+      - firmware/esphome/packages/sendspin-addon-tas58xx.yaml
+      
+      - firmware/esphome/packages/light.yaml
+      - firmware/esphome/packages/ir-receiver.yaml
+      - firmware/esphome/packages/monitoring.yaml
+      - firmware/esphome/packages/monitoring-wifi.yaml
 
-logger:
-
-api:
-  encryption:
-    key: "4if8DEsZ6QcJfymGuspX8Zi0Db20epkf0YwnedS1LK8="
-
-ota:
-  - platform: esphome
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  ap:
-    ssid: test_v Fallback Hotspot
-    password: "g42UOfgMMU6m"
-
-captive_portal:
+external_components:
+  source: github://PxPert/a2dp_sink
+  
+a2dp_sink:
+  name: "My A2DP Sink"          # (Required) Friendly name for the device
+  auto_reconnect: true          # (Optional, default: true) Reconnect to last paired device
+  minimal_bluetooth: true
