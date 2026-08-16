@@ -190,7 +190,7 @@ button:
     name: "Restart"
     id: button_restart
   - platform: template
-    name: Start/Stop assistant
+    name: Start-Stop assistant
     id: start_assistant
     entity_category: config
     on_press:
@@ -203,8 +203,8 @@ button:
             - script.execute: start_assistant_script
 
   - platform: template
-    name: Start/Stop assistant
-    id: start_assistant
+    name: Force play
+    id: force_sendspin
     entity_category: config
     on_press:
       then:
