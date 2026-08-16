@@ -209,7 +209,7 @@ button:
     on_press:
       then:
         - media_player.play_media:
-            id: external_media_player
+            id: sendspin_media_player
             media_url: sendspin://current
         
 
