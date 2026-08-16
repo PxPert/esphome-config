@@ -52,6 +52,7 @@ logger:
   baud_rate: 115200
   
 api:
+  id: api_ha
   encryption:
     key: !secret api_key
 
@@ -75,6 +76,9 @@ globals:
   - id: source_type_before_va
     type: int8_t
     initial_value: '0'
+  - id: va_state
+    type: uint8_t
+    initial_value: '0'
     
 external_components:
   - source: github://pr#3552  # DAC support https://github.com/esphome/esphome/pull/3552
@@ -82,8 +86,8 @@ external_components:
     refresh: 0s
   - source: github://PxPert/a2dp_sink@master
     components: [ a2dp_sink ]
-  - source: components
-    components: [ sendspin ]
+#  - source: components
+#    components: [ sendspin ]
     
 interval:
   - interval: 10s
@@ -162,8 +166,17 @@ light:
     gamma_correct: 2.8
     effects:
       - pulse:
+          name: slow_pulse
+          transition_length: 2s
+          update_interval: 2s
+      - pulse:
+          name: fast_pulse
           transition_length: 250ms
           update_interval: 250ms
+      - pulse:
+          name: flash
+          transition_length: 50ms
+          update_interval: 50ms
 
 button:
   - platform: restart
@@ -265,6 +278,8 @@ media_player:
                 - script.execute:
                     id: start_stop_bt
                     s: 'false'
+                - script.execute:
+                    id: update_led
       
 voice_assistant:
   id: va
@@ -274,6 +289,26 @@ voice_assistant:
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 2.0
+  on_stt_vad_start:
+    - lambda: id(va_state) = 1;
+    - script.execute:
+        id: update_led
+  on_stt_end:
+    - lambda: id(va_state) = 2;
+    - script.execute:
+        id: update_led
+  on_tts_start:
+    - lambda: id(va_state) = 3;
+    - script.execute:
+        id: update_led
+  on_error:
+    - lambda: id(va_state) = 4;
+    - script.execute:
+        id: update_led
+  on_idle:
+    - lambda: id(va_state) = 0;
+    - script.execute:
+        id: update_led
   on_end:
     - wait_until:
         condition:
@@ -288,6 +323,7 @@ voice_assistant:
             - not:
                 speaker.is_playing:
                   id: luxe_speaker
+    - lambda: id(va_state) = 3;
     - if: 
         condition:
           lambda: "return id(source_type_before_va)==2;"
@@ -404,4 +440,91 @@ script:
               - not:
                 - speaker.is_playing:
                     id: luxe_speaker
-      - voice_assistant.start: 
+      - voice_assistant.start:
+
+  - id: update_led
+    then:
+      - lambda: |
+          auto *led = id(top_led);
+          uint8_t va = id(va_state).state;
+          
+          // Check if media player is in a playing/paused state
+          bool mp_playing = (id(external_media_player).state == media_player::MEDIA_PLAYER_STATE_PLAYING);
+          bool mp_paused = (id(external_media_player).state == media_player::MEDIA_PLAYER_STATE_PAUSED);
+          bool has_activity = mp_playing || mp_paused;
+          
+          // Priority 1: Voice Assistant states
+          if (va == 1) { // Listening
+            // led->turn_off().perform();
+            led->turn_on(esphome::Color(0, 32, 0).with_brightness(0.3f)).perform();
+            led->start_effect("slow_pulse").perform();
+            return;
+          }
+          if (va == 2) { // Thinking
+            // led->turn_off().perform();
+            led->turn_on(esphome::Color(0, 32, 0).with_brightness(0.3f)).perform();
+            led->start_effect("fast_pulse").perform();
+            return;
+          }
+          if (va == 3) { // Playing (TTS)
+            // led->turn_off().perform();
+            led->turn_on(esphome::Color(0, 32, 0).with_brightness(0.3f)).perform();
+            return;
+          }
+          if (va == 4) { // Error
+            // led->turn_off().perform();
+            led->turn_on(esphome::Color(32, 0, 0).with_brightness(0.3f)).perform();
+            led->start_effect("flash").perform();
+            return;
+          }
+          
+          // Priority 2: Battery low
+          if (id(battery_sensor).state < 3.0f) {
+            if (has_activity) {
+              // led->turn_off().perform();
+              led->turn_on(esphome::Color(32, 0, 0).with_brightness(0.3f)).perform();
+              led->start_effect("slow_pulse").perform();
+              return;
+            } else {
+              // led->turn_off().perform();
+              led->turn_on(esphome::Color(32, 0, 0).with_brightness(0.3f)).perform();
+              return;
+            }
+          }
+          
+          // Priority 3: Audio source states
+          if (mp_playing || mp_paused) {
+            // Check which source
+            if (id(media_source_bluetooth).get_state() == media_source::MediaSourceState::PLAYING) {
+              // BT source
+              if (mp_playing) {
+                // led->turn_off().perform();
+                led->turn_on(esphome::Color(0, 0, 32).with_brightness(0.3f)).perform();
+                led->start_effect("slow_pulse").perform();
+              } else {
+                led->turn_off().perform();
+                led->turn_on(esphome::Color(0, 0, 32).with_brightness(0.3f)).perform();
+              }
+              return;
+            } else {
+              // Sendspin source
+              if (mp_playing) {
+                // led->turn_off().perform();
+                led->turn_on(esphome::Color(32, 32, 32).with_brightness(0.3f)).perform();
+                led->start_effect("slow_pulse").perform();
+              } else {
+                // led->turn_off().perform();
+                led->turn_on(esphome::Color(32, 32, 32).with_brightness(0.3f)).perform();
+              }
+              return;
+            }
+          }
+          
+          // Priority 4: API connectivity / Idle
+          if (id(api_ha).is_connected(true)) {
+            // led->turn_off().perform();
+            led->turn_on(esphome::Color(32, 32, 32).with_brightness(0.3f)).perform();
+          } else {
+            // led->turn_off().perform();
+            led->turn_on(esphome::Color(32, 32, 0).with_brightness(0.3f)).perform();
+          } 
