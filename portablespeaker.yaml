@@ -166,6 +166,18 @@ button:
   - platform: restart
     name: "Restart"
     id: button_restart
+  - platform: template
+    name: Start/Stop assistant
+    id: start_assistant
+    entity_category: config
+    on_press:
+      - if:
+          condition:
+            voice_assistant.is_running
+          then:
+            - voice_assistant.stop
+          else:
+            - voice_assistant.start
 
 #audio_file:
 #  - id: ready_sound
