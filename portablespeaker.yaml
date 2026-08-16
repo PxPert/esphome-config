@@ -164,16 +164,8 @@ light:
 
 button:
   - platform: restart
-    name: "restart"
-    id: button_restart_1
-    
-  - platform: safe_mode
-    id: button_safe_mode
-    name: Safe Mode Boot
-
-  - platform: factory_reset
-    id: factory_reset_btn
-    name: Factory reset
+    name: "Restart"
+    id: button_restart
 
 #audio_file:
 #  - id: ready_sound
