@@ -202,6 +202,17 @@ button:
           else:
             - script.execute: start_assistant_script
 
+  - platform: template
+    name: Start/Stop assistant
+    id: start_assistant
+    entity_category: config
+    on_press:
+      then:
+        - media_player.play_media:
+            id: external_media_player
+            media_url: sendspin://current
+        
+
 #audio_file:
 #  - id: ready_sound
 #    file: https://github.com/RealDeco/xiaozhi-esphome/raw/main/sounds/${startup_sound_file}.flac
