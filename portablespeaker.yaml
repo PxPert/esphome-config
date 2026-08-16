@@ -136,6 +136,18 @@ switch:
     restore_mode: ALWAYS_ON
     internal: true
 
+  - platform: a2dp_sink
+    type: connection
+    name: "Bluetooth connection"
+    id: "btConnection"
+    restore_mode: ALWAYS_OFF
+
+  - platform: a2dp_sink
+    type: bluetooth
+    name: "Bluetooth state"
+    id: "btState"
+    restore_mode: RESTORE_DEFAULT_OFF
+    
 light:
   - platform: esp32_rmt_led_strip
     name: None
@@ -151,6 +163,10 @@ light:
           update_interval: 250ms
 
 button:
+  - platform: restart
+    name: "restart"
+    id: button_restart_1
+    
   - platform: safe_mode
     id: button_safe_mode
     name: Safe Mode Boot
