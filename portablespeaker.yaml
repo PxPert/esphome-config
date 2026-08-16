@@ -177,7 +177,7 @@ button:
           then:
             - voice_assistant.stop
           else:
-            - voice_assistant.start
+            - script.execute: start_assistant_script
 
 #audio_file:
 #  - id: ready_sound
@@ -234,15 +234,7 @@ voice_assistant:
   on_listening:
     then:
       - logger.log: "IS LISTENING!!"
-      - if:
-          condition:
-            - speaker.is_playing:
-          then:
-            - logger.log: "STOP PLAY!!"
-            - media_player.pause: 
-            - wait_until:
-              - not:
-                  speaker.is_playing:
+
   on_end:
     - wait_until:
         condition:
@@ -323,10 +315,24 @@ binary_sensor:
       - timing:
           - ON FOR AT LEAST 350ms
         then:
-          - voice_assistant.start:
+          - script.execute: start_assistant_script
 #      - timing:
 #          - ON FOR AT LEAST 350ms
 #          - OFF FOR AT LEAST 10ms
 #        then:
 #          - voice_assistant.stop:
 
+script:
+  id: start_assistant_script
+  mode: single
+  then:
+    - if:
+        condition:
+          - speaker.is_playing:
+        then:
+          - logger.log: "STOP PLAY!!"
+          - media_player.pause: 
+          - wait_until:
+            - not:
+                speaker.is_playing:
+    - voice_assistant.start: 
