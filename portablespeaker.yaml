@@ -263,7 +263,8 @@ voice_assistant:
             - not:
                 speaker.is_playing:
                   id: luxe_speaker
-
+    - media_player.play: 
+                  
 sensor:
   - platform: adc
     id: battery_sensor
