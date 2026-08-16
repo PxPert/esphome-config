@@ -233,6 +233,7 @@ voice_assistant:
 
   on_listening:
     then:
+      - logger.log: "IS LISTENING!!"
       - if:
           condition:
             - speaker.is_playing:
